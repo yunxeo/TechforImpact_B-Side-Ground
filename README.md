@@ -1,16 +1,37 @@
-# TechforImpact_B-Side-Ground
+# Team B개발구역
 
-# [Project Name]
 ## 📌 Overview
-Short description of the project.
 
-## 🚀 Features
-- Feature 1
-- Feature 2
+연세대학교 2026-1학기 테크포임팩트프로젝트 서울환경연합 B조 **B개발구역**입니다.
 
-## 🛠 How to Set Up
-1. Install dependencies: `npm install`
-2. Run the project: `npm start`
+## 🌿 About 서울환경연합
 
-## 👥 Contributors
-List team members.
+서울환경연합(Seoul KFEM)은 시민의 참여를 기반으로 기후위기와 도시 환경 문제를 해결하기 위해 활동하는 시민단체입니다. 캠페인, 시민과학, 정책 감시 활동을 통해 **환경 문제를 시민의 일상과 연결**하고, **개인의 실천이 사회적 변화로 이어지는** 구조를 만들고자 합니다.
+
+## 🔗 Links
+
+- [https://seoulkfem.or.kr](https://seoulkfem.or.kr/?NaPm=ct%3Dmm1v8fhf%7Cci%3Dcheckout%7Ctr%3Dds%7Ctrx%3Dnull%7Chk%3D14bdeeb707ae39f839fce9c601d8feafab7665c3)
+- https://blog.naver.com/seoulkfem
+
+## 📄 Team Rules
+
+1. **카카오톡 응답**
+    - 멘션(언급)이 있을 경우 **24시간 이내에 답장**합니다.
+    - 피드백이 필요한 메시지는 **멘션이 없어도 가능한 빠르게 확인**합니다.
+    - 별도의 의견이 없을 경우 **공감 표시 또는 ‘확인했습니다’ 등의 답장**을 남깁니다.
+2. **회의 참석**
+    - 대면 또는 비대면 회의 참여가 어려운 경우 **최소 3시간 전에 팀에 공유**합니다.
+
+## 👥 Team Member
+
+**장윤진** (연세대학교 화공생명공학과 23) ;Team Leader
+
+**이윤서** (연세대학교 문헌정보학과 25)
+
+**이재원** (연세대학교 융합과학공학부 25)
+
+**송지호** (연세대학교 바이오융합과 25)
+
+**채준하** (연세대학교 통합디자인학과 24) ;Schedule Manager
+
+**이예은** (연세대학교 언론홍보영상학부 21)
