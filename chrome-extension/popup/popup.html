@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chatpull Green</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="header">
+        <div>
+          <h1>Chatpull Green</h1>
+          <p>ChatGPT · Gemini 지원</p>
+        </div>
+        <label class="switch" title="확장 프로그램 켜기/끄기">
+          <input id="enabled" type="checkbox" />
+          <span></span>
+        </label>
+      </header>
+
+      <section class="card fixed-card">
+        <div class="eyebrow">현재 고정값</div>
+        <div class="fixed-row"><strong>디자인</strong><span>02 · Tree Status Badge</span></div>
+        <div class="fixed-row"><strong>크기</strong><span>플로팅 90% · 문구 90%</span></div>
+      </section>
+
+      <section class="card control-card">
+        <label class="field-label" for="floatingLogoPlacement">플로팅 위치</label>
+        <select id="floatingLogoPlacement">
+          <option value="chat-left">채팅창 왼쪽 옆</option>
+          <option value="top-left">왼쪽 위</option>
+          <option value="top-center">중앙 위</option>
+          <option value="top-right">오른쪽 위</option>
+          <option value="chat-right">오른쪽 옆</option>
+        </select>
+        <label class="check-row">
+          <input id="dragEnabled" type="checkbox" />
+          <span>드래그해서 위치 옮기기</span>
+        </label>
+        <button id="resetCustomPosition" type="button" class="secondary">드래그 위치 초기화</button>
+      </section>
+
+      <section class="card stats-card">
+        <div class="row"><span>오늘 전송</span><strong id="submitCount">0회</strong></div>
+        <div class="row"><span>오늘 입력 토큰</span><strong id="totalTokens">0</strong></div>
+        <div class="row"><span>최대 입력</span><strong id="maxTokens">0</strong></div>
+        <div class="row"><span>높음 구간</span><strong id="highCount">0회</strong></div>
+      </section>
+
+      <section class="card recent">
+        <h2>최근 로그</h2>
+        <ol id="events"></ol>
+      </section>
+
+      <footer class="footer">
+        <button id="openChatGPT" type="button">ChatGPT 열기</button>
+        <button id="openGemini" type="button">Gemini 열기</button>
+        <button id="clearLogs" type="button" class="danger">로그 삭제</button>
+      </footer>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
