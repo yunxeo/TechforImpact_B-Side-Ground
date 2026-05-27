@@ -10,7 +10,7 @@
   };
 
   const FIXED_DESIGN_VARIANT = "tree-status-badge";
-  const LOGO_PLACEMENTS = new Set(["chat-left", "top-left", "top-center", "top-right", "chat-right"]);
+  const LOGO_PLACEMENTS = new Set(["top-right", "top-center", "top-left", "chat-right"]);
   const DEFAULT_SETTINGS = {
     enabled: true,
     designVariant: FIXED_DESIGN_VARIANT,
@@ -19,6 +19,7 @@
     floatingLogoPlacement: "top-right",
     dragEnabled: false,
     customPosition: null,
+    onboardingGuideShown: false,
     thresholds: {
       lowMax: 100,
       mediumMax: 400
@@ -69,17 +70,39 @@
     low: { hover: ["딱 좋은 길이예요. AI가 핵심에 집중할 수 있어요"] },
     medium: {
       entry: ["핵심만 남기면 더 빠르고 정확한 답변을 받을 수 있어요"],
-      hover: ["군더더기를 빼면 AI가 더 잘 파악해요. 커피 한 잔 분량의 물이 쓰이는 입력이에요"]
+      hover: ["군더더기를 빼면 AI가 더 잘 파악해요. 처리해야 할 토큰도 줄어들 수 있어요"]
     },
     high: {
       entry: ["나눠서 물어보면 각각 더 정확한 답변을 받을 수 있어요"],
-      hover: ["긴 입력은 AI가 앞 맥락을 놓칠 수 있어요. 나누면 답변이 선명해지고 생수 한 병 분량의 냉각수를 줄이는 데 도움이 돼요"],
+      hover: ["긴 입력은 AI가 앞 맥락을 놓칠 수 있어요. 나누면 답변이 더 선명해질 수 있어요"],
       on_send: ["새 채팅을 열면 AI가 더 집중할 수 있어요"],
-      on_send_hover: ["방금 입력엔 생수 한 병 정도의 냉각수가 쓰였어요. 다음엔 나눠서 물어보면 물 소비를 줄일 수 있어요"]
+      on_send_hover: ["방금처럼 긴 입력은 다음번에 주제별로 나누면 처리 부담을 줄일 수 있어요"]
     }
   };
 
   const PROMPT_TIP_BANK = Array.isArray(window.CHATPULL_PROMPT_TIPS) ? window.CHATPULL_PROMPT_TIPS : [];
+  const ENVIRONMENT_NUDGE_TEXTS = {
+    idle: [
+      "마우스를 올리면 입력 길이에 따른 환경 넛지를 볼 수 있어요.",
+      "배지는 답변 품질 팁과 환경 넛지를 분리해서 보여줍니다."
+    ],
+    low: [
+      "짧고 명확한 입력은 불필요한 연산을 줄이는 데 도움이 돼요.",
+      "핵심만 담긴 입력은 AI가 더 적은 맥락으로도 답하기 쉬워요."
+    ],
+    medium: [
+      "조금 줄이면 처리해야 할 토큰이 줄어 환경 부담도 낮아질 수 있어요.",
+      "중간 길이 입력입니다. 반복 표현을 덜어내면 연산량을 줄이는 데 도움이 돼요."
+    ],
+    high: [
+      "긴 입력은 처리 토큰이 많아져 연산량과 에너지 사용이 커질 수 있어요.",
+      "질문을 나누면 답변 품질을 높이면서 한 번에 처리되는 토큰 부담을 줄일 수 있어요."
+    ],
+    postSendHigh: [
+      "방금처럼 긴 입력은 다음번에 주제별로 나누면 처리 부담을 줄일 수 있어요.",
+      "긴 입력을 보낸 뒤에는 새 채팅이나 단계별 질문으로 맥락 비용을 줄일 수 있어요."
+    ]
+  };
   const PROMPT_TIP_RULES = [
     { caseId: "code_error_only", category: "code", priority: 120 },
     { caseId: "code_version_missing", category: "code", priority: 116 },
@@ -143,6 +166,8 @@
   let promptTipState = { recentIds: [], recentCaseIds: [], recentCategories: [] };
   let dragState = { active: false, pointerId: null, offsetX: 0, offsetY: 0, moved: false };
   let entryShown = { medium: false, high: false };
+  let lastAutoPromptTipAt = 0;
+  let lastAutoPromptTipKey = "";
 
   function storageGet(key) {
     return new Promise((resolve) => {
@@ -175,10 +200,11 @@
     const next = deepMerge(DEFAULT_SETTINGS, input || {});
     next.enabled = Boolean(next.enabled);
     next.designVariant = FIXED_DESIGN_VARIANT;
-    next.nudgeTextScale = 90;
-    next.floatingLogoScale = 90;
-    if (!LOGO_PLACEMENTS.has(next.floatingLogoPlacement) || next.floatingLogoPlacement === "chat-left") next.floatingLogoPlacement = DEFAULT_SETTINGS.floatingLogoPlacement;
+    next.nudgeTextScale = clamp(Math.round(Number(next.nudgeTextScale) || DEFAULT_SETTINGS.nudgeTextScale), 50, 140);
+    next.floatingLogoScale = clamp(Math.round(Number(next.floatingLogoScale) || DEFAULT_SETTINGS.floatingLogoScale), 50, 140);
+    if (!LOGO_PLACEMENTS.has(next.floatingLogoPlacement)) next.floatingLogoPlacement = DEFAULT_SETTINGS.floatingLogoPlacement;
     next.dragEnabled = Boolean(next.dragEnabled);
+    next.onboardingGuideShown = Boolean(next.onboardingGuideShown);
     next.customPosition = next.dragEnabled ? sanitizeCustomPosition(next.customPosition) : null;
     next.thresholds.lowMax = Math.max(20, Math.round(Number(next.thresholds.lowMax) || DEFAULT_SETTINGS.thresholds.lowMax));
     next.thresholds.mediumMax = Math.max(next.thresholds.lowMax + 50, Math.round(Number(next.thresholds.mediumMax) || DEFAULT_SETTINGS.thresholds.mediumMax));
@@ -373,7 +399,22 @@
   }
 
   function getImpactLabel(level) {
-    return { idle: "원문 미저장", low: "딱 좋은 길이", medium: "커피 한 잔", high: "생수 한 병" }[level] || "원문 미저장";
+    return { idle: "도움말 준비", low: "좋은 길이", medium: "조금 다듬기", high: "나눠 묻기" }[level] || "도움말 준비";
+  }
+
+  function getBadgeHint(level) {
+    return {
+      idle: "프롬프팅 팁 준비됨",
+      low: "핵심이 잘 보이는 길이",
+      medium: "조금 줄이면 더 선명함",
+      high: "나눠 물으면 더 정확함"
+    }[level] || "프롬프팅 팁 준비됨";
+  }
+
+  function pickEnvironmentNudge(level) {
+    const highPostSend = level === "high" && Date.now() - lastHighSubmitAt < 180000;
+    if (highPostSend) return randomOf(ENVIRONMENT_NUDGE_TEXTS.postSendHigh);
+    return randomOf(ENVIRONMENT_NUDGE_TEXTS[level] || ENVIRONMENT_NUDGE_TEXTS.idle);
   }
 
   function randomOf(list) {
@@ -394,7 +435,7 @@
 
   function triggerHoverBubble() {
     const snapshot = buildSnapshot();
-    if (!snapshot || snapshot.level === "idle") return;
+    if (!snapshot) return;
 
     const hoverKey = getHoverSessionKey(snapshot);
     let isNewHoverSession = false;
@@ -421,33 +462,15 @@
   }
 
   function pickHoverContent(snapshot) {
-    const highPostSend = snapshot.level === "high" && Date.now() - lastHighSubmitAt < 180000;
-    if (highPostSend) {
-      return {
-        title: "전송 후 팁",
-        message: pickNudge("hover", snapshot.level) || `${getImpactLabel(snapshot.level)} 정도의 입력이에요.`
-      };
-    }
-
-    const contextual = pickContextualPromptTip(lastText, snapshot);
-    if (contextual) {
-      rememberPromptTip(contextual);
-      return {
-        title: getPromptTipTitle(contextual),
-        message: contextual.text
-      };
-    }
-
     return {
-      title: `${getLevelLabel(snapshot.level)} 구간`,
-      message: pickNudge("hover", snapshot.level) || `${getImpactLabel(snapshot.level)} 정도의 입력이에요.`
+      title: snapshot.level === "idle" ? "환경 넛지" : `${getLevelLabel(snapshot.level)} 환경 넛지`,
+      message: pickEnvironmentNudge(snapshot.level)
     };
   }
 
   function getHoverSessionKey(snapshot) {
     const highPostSend = snapshot.level === "high" && Date.now() - lastHighSubmitAt < 180000;
-    const caseId = highPostSend ? "post-send" : getTopPromptCaseId(lastText, snapshot);
-    return `${snapshot.level}:${caseId || "normal"}`;
+    return `${snapshot.level}:${highPostSend ? "post-send" : "environment"}`;
   }
 
   function pickContextualPromptTip(text, snapshot) {
@@ -709,7 +732,7 @@
     const bubble = document.createElement("div");
     bubble.className = "cp-bubble";
     bubble.dataset.visible = "false";
-    bubble.innerHTML = `<strong>대기</strong><span>${esc(PLATFORM.label)} 입력창에 글을 쓰면 예상 토큰량을 보여드립니다.</span>`;
+    bubble.innerHTML = `<button class="cp-bubble-close" type="button" aria-label="팝업 닫기">×</button><strong>대기</strong><span>${esc(PLATFORM.label)} 입력창에 글을 쓰면 예상 토큰량을 보여드립니다.</span>`;
 
     const tipBar = document.createElement("div");
     tipBar.className = "cp-tip-bar";
@@ -724,7 +747,6 @@
     card.addEventListener("mouseenter", showHoverBubble);
     card.addEventListener("pointerenter", showHoverBubble);
     card.addEventListener("mouseover", showHoverBubble);
-    card.addEventListener("mousemove", showHoverBubble);
     card.addEventListener("focus", showHoverBubble);
     card.addEventListener("click", showHoverBubble);
     card.addEventListener("mouseleave", () => {
@@ -737,6 +759,10 @@
     });
     bubble.addEventListener("mouseenter", () => clearTimeout(overlayTimer));
     bubble.addEventListener("mouseleave", () => scheduleHideBubble(800));
+    bubble.querySelector(".cp-bubble-close")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      hideBubble();
+    });
 
     card.addEventListener("pointerdown", handleDragStart);
     card.addEventListener("pointermove", handleDragMove);
@@ -837,7 +863,7 @@
     const primary = calculateLogoPlacementRect(settings.floatingLogoPlacement, anchor, width, height, margin);
     if (primary && isSafeRect(primary, forbidden, margin)) return { name: settings.floatingLogoPlacement, left: primary.left, top: primary.top };
 
-    // 요청 기준: 선택한 위치가 어렵다면 중앙 위로 자동 전환한다.
+    // 기본 위치는 채팅창 오른쪽 위다. 공간이 부족한 경우에만 중앙 위로 자동 전환한다.
     const centerFallback = calculateLogoPlacementRect("top-center", anchor, width, height, margin);
     if (centerFallback && isSafeRect(centerFallback, forbidden, margin)) {
       return { name: "top-center-auto", left: centerFallback.left, top: centerFallback.top };
@@ -1119,10 +1145,11 @@
     title.textContent = options.title || `${getLevelLabel(snapshot.level)} 구간`;
     body.textContent = options.message || "";
     overlay.bubble.dataset.visible = "true";
+    overlay.bubble.dataset.kind = options.kind || "default";
     updateOverlayPosition();
 
     clearTimeout(overlayTimer);
-    if (!options.manual) overlayTimer = window.setTimeout(hideBubble, options.duration || 4200);
+    if (!options.manual) overlayTimer = window.setTimeout(hideBubble, options.duration || 5200);
   }
 
   function hideBubble() {
@@ -1134,6 +1161,43 @@
   function scheduleHideBubble(delay = 900) {
     clearTimeout(overlayTimer);
     overlayTimer = window.setTimeout(hideBubble, delay);
+  }
+
+  function maybeShowAutoPromptTip(snapshot, text) {
+    const trimmed = String(text || "").trim();
+    if (!trimmed || !PROMPT_TIP_BANK.length) return false;
+
+    const contextual = pickContextualPromptTip(trimmed, snapshot);
+    if (!contextual) return false;
+
+    const key = `${contextual.id || contextual.caseId}:${snapshot.level}`;
+    const now = Date.now();
+    if (key === lastAutoPromptTipKey && now - lastAutoPromptTipAt < 15000) return false;
+    if (now - lastAutoPromptTipAt < 5200) return false;
+
+    rememberPromptTip(contextual);
+    lastAutoPromptTipKey = key;
+    lastAutoPromptTipAt = now;
+    showBubble(snapshot, {
+      title: getPromptTipTitle(contextual),
+      message: contextual.text,
+      duration: 3600,
+      kind: "prompt-tip"
+    });
+    return true;
+  }
+
+  function showOnboardingGuide() {
+    if (!settings.enabled || !currentEditor || settings.onboardingGuideShown) return;
+    const snapshot = buildSnapshot();
+    showBubble(snapshot, {
+      title: "사용 가이드",
+      message: "오른쪽 위 배지는 입력 길이를 보여줍니다. 프롬프팅 팁은 자동으로 뜨고, 환경 넛지는 나무 배지에 마우스를 올리면 볼 수 있어요.",
+      duration: 7600,
+      kind: "guide"
+    });
+    settings = sanitizeSettings({ ...settings, onboardingGuideShown: true });
+    storageSet({ [STORAGE_KEYS.SETTINGS]: settings });
   }
 
   function toLogEvent(type, snapshot) {
@@ -1170,7 +1234,7 @@
       lastLevel = "idle";
       lastTokenCount = 0;
       lastLoggedLevel = "idle";
-      hideBubble();
+      if (overlay?.bubble?.dataset.kind !== "guide") hideBubble();
       return;
     }
 
@@ -1192,11 +1256,13 @@
     if (snapshot.level === "high" && !entryShown.high) {
       entryShown.high = true;
       const message = pickNudge("entry", "high") || "나눠서 물어보면 각각 더 정확한 답변을 받을 수 있어요";
-      showBubble(snapshot, { title: "높음 구간 진입", message, duration: 5400 });
+      showBubble(snapshot, { title: "높음 구간 진입", message, duration: 7000, kind: "level" });
     } else if (snapshot.level === "medium" && !entryShown.medium) {
       entryShown.medium = true;
       const message = pickNudge("entry", "medium") || "핵심만 남기면 더 빠르고 정확한 답변을 받을 수 있어요";
-      showBubble(snapshot, { title: "중간 구간 진입", message, duration: 4400 });
+      showBubble(snapshot, { title: "중간 구간 진입", message, duration: 6200, kind: "level" });
+    } else if (maybeShowAutoPromptTip(snapshot, text)) {
+      // 프롬프팅 팁은 hover가 아니라 입력 맥락에 따라 자동 노출한다.
     } else if (snapshot.level === "low" && levelChanged) {
       hideBubble();
     }
@@ -1272,6 +1338,7 @@
     editorObserver = new MutationObserver(() => handleTextChange());
     editorObserver.observe(editor, { childList: true, characterData: true, subtree: true });
     handleTextChange();
+    window.setTimeout(showOnboardingGuide, 500);
   }
 
   function delayedHandleTextChange() {
@@ -1307,7 +1374,7 @@
 
       if (insideCard) {
         const now = Date.now();
-        if (now - lastHoverAt > 260) {
+        if (!hoverSession.active && now - lastHoverAt > 260) {
           lastHoverAt = now;
           triggerHoverBubble();
         }
@@ -2007,17 +2074,17 @@
         color: #000000;
         background: rgba(255, 255, 255, 0.94);
         border: 1px solid rgba(0, 0, 0, 0.08);
-        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14);
+        box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
         backdrop-filter: blur(14px);
         pointer-events: auto;
         opacity: 0;
-        transform: scale(var(--cp-logo-scale, 0.9)) translateY(8px);
+        transform: scale(var(--cp-logo-scale, 0.8)) translateY(8px);
         transform-origin: top left;
         transition: opacity 160ms ease, transform 160ms ease, box-shadow 160ms ease;
         user-select: none;
       }
-      .cp-widget[data-visible="true"] { opacity: 1; transform: scale(var(--cp-logo-scale, 0.9)) translateY(0); }
-      .cp-widget:hover { box-shadow: 0 18px 44px rgba(0, 0, 0, 0.18); }
+      .cp-widget[data-visible="true"] { opacity: 1; transform: scale(var(--cp-logo-scale, 0.8)) translateY(0); }
+      .cp-widget:hover { box-shadow: 0 15px 40px rgba(0, 0, 0, 0.14); }
       .cp-widget[data-drag-enabled="true"] { cursor: grab; }
       .cp-widget[data-dragging="true"] { cursor: grabbing; transition: none; }
       .cp-widget[data-level="low"] { --level-color: #65CFA0; --level-deep: #58A27E; }
@@ -2056,13 +2123,13 @@
         z-index: 2147483647;
         width: max-content;
         max-width: 252px;
-        padding: 12px 14px;
+        padding: 12px 34px 12px 14px;
         border-radius: 18px;
         background: #ffffff;
         border: 1px solid rgba(0, 0, 0, 0.08);
         color: #000000;
-        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.16);
-        font-size: calc(13px * var(--cp-nudge-scale, 0.9));
+        box-shadow: 0 16px 38px rgba(0, 0, 0, 0.13);
+        font-size: calc(13px * var(--cp-nudge-scale, 0.8));
         line-height: 1.45;
         opacity: 0;
         transform: translateY(5px);
@@ -2070,7 +2137,7 @@
         transition: opacity 160ms ease, transform 160ms ease;
       }
       .cp-bubble[data-visible="true"] { opacity: 1; transform: translateY(0); pointer-events: auto; }
-      .cp-bubble strong { display: block; margin: 0 0 4px; font-size: calc(12px * var(--cp-nudge-scale, 0.9)); font-weight: 800; color: var(--level-deep, #153C2D); }
+      .cp-bubble strong { display: block; margin: 0 0 4px; font-size: calc(12px * var(--cp-nudge-scale, 0.8)); font-weight: 800; color: var(--level-deep, #153C2D); }
       .cp-bubble span { color: #333333; }
       .variant-tree-status-badge {
         display: flex; align-items: center; padding: 9px; border-radius: 999px;
@@ -2104,6 +2171,21 @@
       }
       .cp-tip-bar strong { display: block; font-size: 13px; font-weight: 800; color: #153C2D; }
       .cp-tip-bar span { display: block; font-size: 11px; color: #777; }
+      .cp-bubble-close {
+        position: absolute;
+        top: 7px;
+        right: 9px;
+        width: 20px;
+        height: 20px;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.05);
+        color: #555;
+        font: 700 14px/20px "SUIT", "Pretendard", sans-serif;
+        cursor: pointer;
+        padding: 0;
+      }
+      .cp-bubble-close:hover { background: rgba(0, 0, 0, 0.1); color: #000; }
     `;
   }
 
