@@ -3,6 +3,8 @@
 
   const APP = "Chatpull Green";
   const ROOT_ID = "chatpull-green-root";
+  const ONBOARDING_ROOT_ID = "chatpull-onboarding-root";
+  const ONBOARDING_KEY = "chatpool.onboarded";
   const STORAGE_KEYS = {
     SETTINGS: "chatpool.settings"
   };
@@ -14,7 +16,7 @@
     designVariant: FIXED_DESIGN_VARIANT,
     nudgeTextScale: 90,
     floatingLogoScale: 90,
-    floatingLogoPlacement: "chat-left",
+    floatingLogoPlacement: "top-right",
     dragEnabled: false,
     customPosition: null,
     thresholds: {
@@ -175,9 +177,9 @@
     next.designVariant = FIXED_DESIGN_VARIANT;
     next.nudgeTextScale = 90;
     next.floatingLogoScale = 90;
-    if (!LOGO_PLACEMENTS.has(next.floatingLogoPlacement)) next.floatingLogoPlacement = DEFAULT_SETTINGS.floatingLogoPlacement;
+    if (!LOGO_PLACEMENTS.has(next.floatingLogoPlacement) || next.floatingLogoPlacement === "chat-left") next.floatingLogoPlacement = DEFAULT_SETTINGS.floatingLogoPlacement;
     next.dragEnabled = Boolean(next.dragEnabled);
-    next.customPosition = sanitizeCustomPosition(next.customPosition);
+    next.customPosition = next.dragEnabled ? sanitizeCustomPosition(next.customPosition) : null;
     next.thresholds.lowMax = Math.max(20, Math.round(Number(next.thresholds.lowMax) || DEFAULT_SETTINGS.thresholds.lowMax));
     next.thresholds.mediumMax = Math.max(next.thresholds.lowMax + 50, Math.round(Number(next.thresholds.mediumMax) || DEFAULT_SETTINGS.thresholds.mediumMax));
     return next;
@@ -676,6 +678,7 @@
         storedOverlay.host &&
         storedOverlay.card &&
         storedOverlay.bubble &&
+        storedOverlay.tipBar &&
         storedOverlay.host.isConnected
       ) {
         return storedOverlay;
@@ -708,8 +711,12 @@
     bubble.dataset.visible = "false";
     bubble.innerHTML = `<strong>대기</strong><span>${esc(PLATFORM.label)} 입력창에 글을 쓰면 예상 토큰량을 보여드립니다.</span>`;
 
-    shadow.append(style, card, bubble);
-    const result = { host, shadow, card, bubble };
+    const tipBar = document.createElement("div");
+    tipBar.className = "cp-tip-bar";
+    tipBar.dataset.visible = "false";
+
+    shadow.append(style, tipBar, card, bubble);
+    const result = { host, shadow, card, bubble, tipBar };
     host.__chatpullOverlay = result;
 
     const showHoverBubble = triggerHoverBubble;
@@ -749,33 +756,39 @@
     overlay.host.style.setProperty("--cp-logo-scale", `${settings.floatingLogoScale / 100}`);
     const card = overlay.card;
     card.className = "cp-widget variant-tree-status-badge";
-    card.dataset.visible = settings.enabled && currentEditor ? "true" : "false";
+    const isActive = !!(settings.enabled && currentEditor);
+    card.dataset.visible = isActive ? "true" : "false";
     card.dataset.level = snapshot.level;
     card.dataset.dragEnabled = settings.dragEnabled ? "true" : "false";
     card.style.setProperty("--progress", `${snapshot.progress}%`);
     card.innerHTML = renderTreeStatusBadge(snapshot);
+
+    // 팁 바: 타이핑 중(level이 idle이 아닐 때)에만 표시
+    const tipBar = overlay.tipBar;
+    if (tipBar) {
+      tipBar.innerHTML = renderTipBarContent(snapshot);
+      tipBar.dataset.visible = isActive && snapshot.level !== "idle" ? "true" : "false";
+    }
+
     updateOverlayPosition();
   }
 
   function renderTreeStatusBadge(snapshot) {
-    const level = snapshot.level;
-    const levelLabel = getLevelLabel(level);
-    const impact = getImpactLabel(level);
+    return `<div class="cp-tree-wrap">${characterIcon(snapshot.level)}</div>`;
+  }
+
+  function renderTipBarContent(snapshot) {
+    const levelLabel = getLevelLabel(snapshot.level);
     const count = `${snapshot.estimatedTokens.toLocaleString()} tokens`;
-    const tree = treeIcon(level, "current");
-    return `
-      <div class="cp-tree-wrap">${tree}</div>
-      <div class="cp-badge-copy">
-        <strong>${esc(levelLabel)} · ${esc(count)}</strong>
-        <span>${esc(impact)}</span>
-      </div>
-    `;
+    const impact = getImpactLabel(snapshot.level);
+    return `<strong>${esc(levelLabel)} · ${esc(count)}</strong><span>${esc(impact)}</span>`;
   }
 
   function updateOverlayPosition() {
     if (!overlay || !currentEditor) return;
     const card = overlay.card;
     const bubble = overlay.bubble;
+    const tipBar = overlay.tipBar;
 
     const cardPlacement = chooseCardPlacement(card);
     applyPlacement(card, cardPlacement);
@@ -785,6 +798,20 @@
       const bubblePlacement = chooseBubblePlacementNearLogo(bubble);
       applyPlacement(bubble, bubblePlacement);
       bubble.dataset.placement = bubblePlacement.name;
+    }
+
+    // 팁 바: 배지 왼쪽에 고정 (right 좌표 기반, max-width로 넘침 방지)
+    if (tipBar) {
+      const cardRect = card.getBoundingClientRect();
+      if (cardRect.width > 0) {
+        const GAP = 8;
+        const rightPx = window.innerWidth - cardRect.left + GAP;
+        const maxW = Math.max(80, cardRect.left - GAP - 8);
+        tipBar.style.right = `${Math.round(rightPx)}px`;
+        tipBar.style.top = `${Math.round(cardRect.top)}px`;
+        tipBar.style.height = `${Math.round(cardRect.height)}px`;
+        tipBar.style.setProperty("--cp-tip-max-w", `${Math.round(maxW)}px`);
+      }
     }
   }
 
@@ -846,13 +873,13 @@
           width,
           height
         );
-      case "top-right":
-        return makeRect(
-          clamp(anchor.right - width, margin, window.innerWidth - width - margin),
-          aboveY,
-          width,
-          height
-        );
+      case "top-right": {
+        const left = clamp(anchor.right - width, margin, window.innerWidth - width - margin);
+        const rect = makeRect(left, aboveY, width, height);
+        // 배지 아이콘이 오른쪽 고정되어야 팁 바가 왼쪽으로 슬라이드될 때 아이콘이 안 밀림
+        rect.rightEdge = window.innerWidth - rect.right;
+        return rect;
+      }
       case "chat-right":
         return makeRect(
           anchor.right + 16,
@@ -936,7 +963,7 @@
     );
 
     const placement = overlay?.card?.dataset.placement || settings.floatingLogoPlacement;
-    if (placement.includes("left") || placement === "chat-left" || placement === "custom-drag") {
+    if (placement === "chat-left" || placement === "custom-drag") {
       return [
         { name: "right-of-logo", rect: rightOfLogo },
         { name: "above-logo", rect: aboveLogo },
@@ -944,7 +971,7 @@
         { name: "left-of-logo", rect: leftOfLogo }
       ];
     }
-    if (placement.includes("right") || placement === "chat-right") {
+    if (placement === "chat-right") {
       return [
         { name: "left-of-logo", rect: leftOfLogo },
         { name: "above-logo", rect: aboveLogo },
@@ -952,6 +979,7 @@
         { name: "right-of-logo", rect: rightOfLogo }
       ];
     }
+    // top-left, top-center, top-right: 뱃지 바로 위 우선
     return [
       { name: "above-logo", rect: aboveLogo },
       { name: "right-of-logo", rect: rightOfLogo },
@@ -1011,7 +1039,13 @@
   }
 
   function applyPlacement(element, placement) {
-    element.style.left = `${Math.round(placement.left)}px`;
+    if (placement.rightEdge !== undefined) {
+      element.style.right = `${Math.round(placement.rightEdge)}px`;
+      element.style.removeProperty("left");
+    } else {
+      element.style.left = `${Math.round(placement.left)}px`;
+      element.style.removeProperty("right");
+    }
     element.style.top = `${Math.round(placement.top)}px`;
     if (placement.hidden) element.dataset.visible = "false";
   }
@@ -1019,6 +1053,9 @@
   function handleDragStart(event) {
     if (!settings.dragEnabled || event.button !== 0 || !overlay?.card) return;
     const rect = overlay.card.getBoundingClientRect();
+    // right-anchor → left-anchor로 전환 (드래그 중 left 좌표 기반)
+    overlay.card.style.left = `${Math.round(rect.left)}px`;
+    overlay.card.style.removeProperty("right");
     dragState = {
       active: true,
       pointerId: event.pointerId,
@@ -1280,15 +1317,643 @@
     }, true);
   }
 
+  function showOnboarding() {
+    if (document.getElementById(ONBOARDING_ROOT_ID)) return;
+
+    const puzzleUrl = chrome.runtime.getURL("assets/extension-puzzle-outline.svg");
+    const puzzleImg = (size) => `<img src="${puzzleUrl}" width="${size}" height="${size}" style="vertical-align:middle;margin:0 2px;" alt="🧩" />`;
+
+    const puriLowUrl = chrome.runtime.getURL("assets/푸리_낮음.svg");
+    const puriMedUrl = chrome.runtime.getURL("assets/푸리_중간.svg");
+    const puriHighUrl = chrome.runtime.getURL("assets/푸리_높음.svg");
+
+    const SLIDES = [
+      {
+        imgUrl: puriLowUrl,
+        imgSize: 80,
+        title: "챗풀에 오신 걸 환영해요",
+        body: "ChatGPT에 입력할 때마다\n푸리가 입력 길이를 알려드려요\n\n길게 쓸수록 푸리가 힘들어하고\n간결하게 쓸수록 푸리가 건강해져요",
+        note: null
+      },
+      {
+        imgLevel: "low",
+        title: "푸리 상태로 입력 길이를 확인해요",
+        htmlBody: `<div class="level-row"><img src="${puriLowUrl}" width="32" height="32" alt="낮음" /><span>낮음 — 딱 좋은 길이예요</span></div><div class="level-row"><img src="${puriMedUrl}" width="32" height="32" alt="중간" /><span>중간 — 핵심만 남기면 더 빠른 답변을 받을 수 있어요</span></div><div class="level-row"><img src="${puriHighUrl}" width="32" height="32" alt="높음" /><span>높음 — 나눠서 물어보면 더 정확한 답변을 얻을 수 있어요</span></div>`,
+        note: "채팅을 입력하면 푸리가 프롬프트를 더 잘 쓰는 팁을 알려줘요"
+      },
+      {
+        imgUrl: puzzleUrl,
+        title: "설정은 여기서 바꿀 수 있어요",
+        htmlBody: `<span>브라우저 주소창 오른쪽</span><span>${puzzleImg(16)} 아이콘을 클릭하고</span><span>챗풀을 선택하면 설정을 바꿀 수 있어요</span>`,
+        steps: `① ${puzzleImg(14)} 클릭 &nbsp;→&nbsp; ② 챗풀 선택`,
+        note: null
+      }
+    ];
+
+    const host = document.createElement("div");
+    host.id = ONBOARDING_ROOT_ID;
+    document.documentElement.appendChild(host);
+    host.style.pointerEvents = "auto"; // backdrop과 card가 클릭 이벤트를 받을 수 있도록
+
+    const shadow = host.attachShadow({ mode: "open" });
+    const styleEl = document.createElement("style");
+    styleEl.textContent = getOnboardingStyleText();
+
+    // backdrop and card are siblings — both position:fixed
+    const backdrop = document.createElement("div");
+    backdrop.className = "cp-ob-backdrop";
+
+    const card = document.createElement("div");
+    card.className = "cp-ob-card";
+
+    const skipBtn = document.createElement("button");
+    skipBtn.className = "cp-ob-skip";
+    skipBtn.textContent = "건너뛰기";
+
+    const slideArea = document.createElement("div");
+    slideArea.className = "cp-ob-slide-area";
+
+    const emojiEl = document.createElement("div");
+    emojiEl.className = "cp-ob-emoji";
+
+    const titleEl = document.createElement("div");
+    titleEl.className = "cp-ob-title";
+
+    const bodyEl = document.createElement("div");
+    bodyEl.className = "cp-ob-body";
+
+    const noteEl = document.createElement("div");
+    noteEl.className = "cp-ob-note";
+
+    slideArea.append(emojiEl, titleEl, bodyEl, noteEl);
+
+    const nav = document.createElement("div");
+    nav.className = "cp-ob-nav";
+
+    const dotsEl = document.createElement("div");
+    dotsEl.className = "cp-ob-dots";
+
+    const dots = SLIDES.map((_, i) => {
+      const dot = document.createElement("span");
+      dot.className = "cp-ob-dot" + (i === 0 ? " active" : "");
+      dotsEl.appendChild(dot);
+      return dot;
+    });
+
+    const prevBtn = document.createElement("button");
+    prevBtn.className = "cp-ob-prev";
+    prevBtn.textContent = "← 이전";
+
+    const nextBtn = document.createElement("button");
+    nextBtn.className = "cp-ob-next";
+    nextBtn.textContent = "다음";
+
+    nav.append(prevBtn, dotsEl, nextBtn);
+    card.append(skipBtn, slideArea, nav);
+    shadow.append(styleEl, backdrop, card);
+
+    let currentSlide = 0;
+
+    // --- Badge helpers ---
+    function getBadgeCard() {
+      return overlay?.card || document.getElementById(ROOT_ID)?.__chatpullOverlay?.card || null;
+    }
+
+    function applyBadgeHighlight() {
+      const bc = getBadgeCard();
+      if (!bc) return;
+      bc.dataset.visible = "true";
+      if (bc.dataset.level === "idle") bc.dataset.level = "low";
+      bc.style.boxShadow = "0 0 0 3px rgba(29, 158, 117, 0.4), 0 0 12px rgba(29, 158, 117, 0.2)";
+      bc.style.transition = "box-shadow 300ms ease, opacity 160ms ease, transform 160ms ease";
+    }
+
+    function removeBadgeHighlight() {
+      const bc = getBadgeCard();
+      if (!bc) return;
+      bc.style.boxShadow = "";
+      bc.style.transition = "";
+      bc.dataset.visible = String(!!(settings.enabled && currentEditor));
+    }
+
+    // --- Card positioning ---
+    // All slides use pixel-based left/top so transitions between them are smooth.
+
+    function calcBadgePos() {
+      const bc = getBadgeCard();
+      if (!bc) return null;
+      const r = bc.getBoundingClientRect();
+      if (!r || r.width === 0 || (r.left === 0 && r.top === 0)) return null;
+      return r;
+    }
+
+    function applyCardPos(pos, skipTransition) {
+      if (skipTransition) {
+        card.style.transition = "none";
+        void card.offsetHeight;
+      }
+      card.style.top = `${pos.top}px`;
+      card.style.left = `${pos.left}px`;
+      card.style.maxWidth = `${pos.maxWidth}px`;
+      if (pos.tail) {
+        card.setAttribute("data-tail", pos.tail);
+      } else {
+        card.removeAttribute("data-tail");
+      }
+      if (skipTransition) {
+        void card.offsetHeight;
+        card.style.removeProperty("transition");
+      }
+    }
+
+    function posSlide0(skipTransition) {
+      const CARD_W = Math.min(400, window.innerWidth - 32);
+      const CARD_H_EST = 380;
+      applyCardPos({
+        left: (window.innerWidth - CARD_W) / 2,
+        top: Math.max(20, (window.innerHeight - CARD_H_EST) / 2),
+        maxWidth: CARD_W,
+        tail: null
+      }, skipTransition);
+    }
+
+    function posSlide1(skipTransition, badgeRect) {
+      const CARD_W = 280;
+      const GAP = 12;
+      const MARGIN = 8;
+
+      // 1단계: transition 없이 off-screen invisible 위치로 이동 → 실제 높이 확보
+      card.style.transition = "none";
+      card.style.visibility = "hidden";
+      card.style.maxWidth = `${CARD_W}px`;
+      card.style.top = "-9999px";
+      card.style.left = "0px";
+      card.removeAttribute("data-tail");
+      void card.getBoundingClientRect(); // force reflow
+
+      function measureAndApply(r) {
+        requestAnimationFrame(() => {
+          if (currentSlide !== 1) return;
+
+          const measured = card.getBoundingClientRect();
+          const cardH = measured.height || 280;
+          const cardW = measured.width || CARD_W;
+          const vw = window.innerWidth;
+          const vh = window.innerHeight;
+
+          // 가로: 뱃지 오른쪽 끝 기준 정렬, 화면 밖 clamp
+          let left = r.right - cardW;
+          left = Math.max(MARGIN, Math.min(left, vw - cardW - MARGIN));
+
+          // 말풍선 하단 = 뱃지 상단 - gap (기본: 위)
+          let top = r.top - cardH - GAP;
+          let tail = "down";
+
+          // 위 공간 부족 → 뱃지 아래로 fallback
+          if (top < MARGIN) {
+            top = r.bottom + GAP;
+            tail = "up";
+          }
+
+          top = Math.max(MARGIN, Math.min(top, vh - cardH - MARGIN));
+
+          // 2단계: transition 복원 후 최종 위치 적용
+          card.style.removeProperty("transition");
+          card.style.top = `${Math.round(top)}px`;
+          card.style.left = `${Math.round(left)}px`;
+          card.setAttribute("data-tail", tail);
+          card.style.visibility = "visible";
+        });
+      }
+
+      if (badgeRect) {
+        measureAndApply(badgeRect);
+      } else {
+        // 뱃지 rect가 없으면 등장 대기 후 재시도
+        let tries = 0;
+        const retry = () => {
+          if (currentSlide !== 1) return;
+          tries++;
+          const r = calcBadgePos();
+          if (r) {
+            measureAndApply(r);
+            updateBackdrop(1);
+          } else if (tries < 6) {
+            setTimeout(retry, 300);
+          }
+        };
+        setTimeout(retry, 200);
+      }
+    }
+
+    function posSlide2(skipTransition) {
+      const CARD_W = Math.min(400, window.innerWidth - 32);
+      const CARD_H_EST = 320;
+      applyCardPos({
+        left: (window.innerWidth - CARD_W) / 2,
+        top: Math.max(20, (window.innerHeight - CARD_H_EST) / 2),
+        maxWidth: CARD_W,
+        tail: null
+      }, skipTransition);
+    }
+
+    // --- Backdrop / spotlight ---
+    function updateBackdrop(slideIndex) {
+      backdrop.classList.add("visible");
+      if (slideIndex === 1) {
+        const r = calcBadgePos();
+        if (r) {
+          applySpotlight(r);
+        } else {
+          backdrop.style.background = "rgba(0,0,0,0.5)";
+          let tries = 0;
+          const retry = () => {
+            if (currentSlide !== 1) return;
+            tries++;
+            const rect = calcBadgePos();
+            if (rect) {
+              applySpotlight(rect);
+            } else if (tries < 6) {
+              setTimeout(retry, 300);
+            }
+          };
+          setTimeout(retry, 200);
+        }
+      } else {
+        backdrop.style.background = "rgba(0,0,0,0.5)";
+      }
+    }
+
+    function applySpotlight(r) {
+      const cx = Math.round(r.left + r.width / 2);
+      const cy = Math.round(r.top + r.height / 2);
+      const radius = Math.round(Math.max(r.width, r.height) / 2 + 14);
+      backdrop.style.background =
+        `radial-gradient(circle ${radius}px at ${cx}px ${cy}px, transparent 0%, rgba(0,0,0,0.6) 100%)`;
+    }
+
+    // --- Slide rendering ---
+    function renderSlide(index) {
+      const slide = SLIDES[index];
+      const isLast = index === SLIDES.length - 1;
+
+      if (slide.imgLevel) {
+        emojiEl.innerHTML = characterIcon(slide.imgLevel);
+        emojiEl.classList.add("cp-ob-emoji-img");
+      } else if (slide.imgUrl) {
+        const s = slide.imgSize || 48;
+        emojiEl.innerHTML = `<img src="${slide.imgUrl}" width="${s}" height="${s}" style="width:${s}px;height:${s}px" alt="" draggable="false" />`;
+        emojiEl.classList.add("cp-ob-emoji-img");
+      } else {
+        emojiEl.textContent = slide.emoji || "";
+        emojiEl.classList.remove("cp-ob-emoji-img");
+      }
+      titleEl.textContent = slide.title;
+      if (slide.htmlBody) {
+        bodyEl.innerHTML = slide.htmlBody;
+      } else {
+        bodyEl.innerHTML = (slide.body || "").split("\n").map((line) =>
+          line
+            ? `<span>${esc(line)}</span>`
+            : `<span class="spacer"></span>`
+        ).join("");
+      }
+
+      if (slide.steps) {
+        noteEl.innerHTML = slide.steps;
+        noteEl.style.display = "block";
+      } else if (slide.note) {
+        noteEl.textContent = slide.note;
+        noteEl.style.display = "block";
+      } else {
+        noteEl.style.display = "none";
+      }
+
+      dots.forEach((dot, i) => dot.classList.toggle("active", i === index));
+      nextBtn.textContent = isLast ? "시작하기" : "다음";
+      prevBtn.style.visibility = index === 0 ? "hidden" : "visible";
+      skipBtn.style.visibility = isLast ? "hidden" : "visible";
+    }
+
+    // --- Lifecycle ---
+    function hideBubbleForOnboarding() {
+      if (overlay?.bubble) overlay.bubble.dataset.visible = "false";
+      if (overlay?.tipBar) overlay.tipBar.dataset.visible = "false";
+    }
+
+    function restoreBubbleFromOnboarding() {
+      handleTextChange();
+    }
+
+    function closeOnboarding() {
+      if (currentSlide === 1) restoreBubbleFromOnboarding();
+      removeBadgeHighlight();
+      host.remove();
+      storageSet({ [ONBOARDING_KEY]: true });
+    }
+
+    function goNext() {
+      if (currentSlide >= SLIDES.length - 1) {
+        closeOnboarding();
+        return;
+      }
+
+      const nextIndex = currentSlide + 1;
+      const badgeRect = nextIndex === 1 ? calcBadgePos() : null;
+
+      if (nextIndex === 1) {
+        applyBadgeHighlight();
+        hideBubbleForOnboarding();
+      } else {
+        if (currentSlide === 1) restoreBubbleFromOnboarding();
+        removeBadgeHighlight();
+      }
+
+      slideArea.classList.remove("cp-ob-exit-rev");
+      slideArea.classList.add("cp-ob-exit");
+
+      setTimeout(() => {
+        currentSlide = nextIndex;
+        renderSlide(currentSlide);
+        updateBackdrop(currentSlide);
+
+        if (nextIndex === 0) posSlide0(false);
+        else if (nextIndex === 1) posSlide1(false, badgeRect);
+        else posSlide2(false);
+
+        slideArea.classList.remove("cp-ob-exit");
+        slideArea.classList.add("cp-ob-enter");
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => slideArea.classList.remove("cp-ob-enter"));
+        });
+      }, 150);
+    }
+
+    function goPrev() {
+      if (currentSlide <= 0) return;
+
+      const prevIndex = currentSlide - 1;
+      const badgeRect = prevIndex === 1 ? calcBadgePos() : null;
+
+      if (currentSlide === 1) {
+        restoreBubbleFromOnboarding();
+        removeBadgeHighlight();
+      } else if (prevIndex === 1) {
+        applyBadgeHighlight();
+        hideBubbleForOnboarding();
+      }
+
+      slideArea.classList.remove("cp-ob-enter-rev");
+      slideArea.classList.add("cp-ob-exit-rev");
+
+      setTimeout(() => {
+        currentSlide = prevIndex;
+        renderSlide(currentSlide);
+        updateBackdrop(currentSlide);
+
+        if (prevIndex === 0) posSlide0(false);
+        else if (prevIndex === 1) posSlide1(false, badgeRect);
+        else posSlide2(false);
+
+        slideArea.classList.remove("cp-ob-exit-rev");
+        slideArea.classList.add("cp-ob-enter-rev");
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => slideArea.classList.remove("cp-ob-enter-rev"));
+        });
+      }, 150);
+    }
+
+    // Initial setup — no transition, then fade in
+    renderSlide(0);
+    posSlide0(true);
+    updateBackdrop(0);
+    requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add("visible")));
+
+    backdrop.addEventListener("click", closeOnboarding);
+    skipBtn.addEventListener("click", closeOnboarding);
+    nextBtn.addEventListener("click", goNext);
+    prevBtn.addEventListener("click", goPrev);
+  }
+
+  function getOnboardingStyleText() {
+    return `
+      :host {
+        all: initial;
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        display: block !important;
+        z-index: 2147483647 !important;
+        pointer-events: none !important;
+        overflow: visible !important;
+      }
+      * { box-sizing: border-box; }
+      .cp-ob-backdrop {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2147483645;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 300ms ease;
+      }
+      .cp-ob-backdrop.visible {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .cp-ob-card {
+        position: fixed;
+        z-index: 2147483646;
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 28px 28px 24px;
+        width: calc(100vw - 32px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14);
+        font-family: "SUIT", "Pretendard", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: -0.018em;
+        pointer-events: auto;
+        opacity: 0;
+        transition: top 300ms ease, left 300ms ease, max-width 300ms ease, opacity 240ms ease;
+      }
+      .cp-ob-card.visible { opacity: 1; }
+      .cp-ob-card[data-tail="right"]::after {
+        content: "";
+        position: absolute;
+        right: -10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+        border-left: 10px solid #ffffff;
+        filter: drop-shadow(2px 0 1px rgba(0,0,0,0.06));
+      }
+      .cp-ob-card[data-tail="up"]::after {
+        content: "";
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 10px solid #ffffff;
+        filter: drop-shadow(0 -2px 1px rgba(0,0,0,0.06));
+      }
+      .cp-ob-card[data-tail="down"]::after {
+        content: "";
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-top: 10px solid #ffffff;
+        filter: drop-shadow(0 2px 1px rgba(0,0,0,0.06));
+      }
+      .cp-ob-skip {
+        position: absolute;
+        top: 16px;
+        right: 20px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
+        color: #999999;
+        font-family: inherit;
+        letter-spacing: inherit;
+        padding: 4px 0;
+      }
+      .cp-ob-skip:hover { color: #666666; }
+      .cp-ob-slide-area {
+        transition: opacity 150ms ease, transform 150ms ease;
+      }
+      .cp-ob-exit {
+        opacity: 0;
+        transform: translateX(-12px);
+      }
+      .cp-ob-enter {
+        opacity: 0;
+        transform: translateX(12px);
+      }
+      .cp-ob-exit-rev {
+        opacity: 0;
+        transform: translateX(12px);
+      }
+      .cp-ob-enter-rev {
+        opacity: 0;
+        transform: translateX(-12px);
+      }
+      .cp-ob-emoji {
+        font-size: 40px;
+        margin-bottom: 14px;
+        line-height: 1;
+      }
+      .cp-ob-emoji-img { font-size: 0; }
+      .cp-ob-emoji-img .cp-character { width: 48px; height: 48px; }
+      .cp-ob-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: #000000;
+        margin-bottom: 12px;
+        line-height: 1.3;
+      }
+      .cp-ob-body {
+        font-size: 13px;
+        color: #333333;
+        line-height: 1.7;
+        margin-bottom: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .cp-ob-body .spacer { display: block; height: 8px; }
+      .cp-ob-body .level-row { display: flex; align-items: center; gap: 10px; margin: 5px 0; }
+      .cp-ob-body .level-row img { flex-shrink: 0; width: 32px; height: 32px; }
+      .cp-ob-note {
+        font-size: 11px;
+        color: #666666;
+        background: #EAF3DE;
+        border-radius: 8px;
+        padding: 8px 10px;
+        line-height: 1.5;
+        margin-bottom: 0;
+      }
+      .cp-ob-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 20px;
+      }
+      .cp-ob-dots {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .cp-ob-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #DDDDDD;
+        transition: background 200ms ease, width 200ms ease, border-radius 200ms ease;
+      }
+      .cp-ob-dot.active {
+        background: #1D9E75;
+        width: 18px;
+        border-radius: 3px;
+      }
+      .cp-ob-next {
+        background: #1D9E75;
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+        letter-spacing: inherit;
+        transition: background 160ms ease;
+      }
+      .cp-ob-next:hover { background: #178763; }
+      .cp-ob-prev {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 13px;
+        color: #888888;
+        font-family: inherit;
+        letter-spacing: inherit;
+        padding: 10px 4px;
+        transition: color 160ms ease;
+      }
+      .cp-ob-prev:hover { color: #333333; }
+    `;
+  }
+
   async function boot() {
     await loadSettings();
+    const onboarded = await storageGet(ONBOARDING_KEY);
+    if (onboarded !== true) showOnboarding();
     observePage();
     scanAndBind();
     window.setInterval(scanAndBind, 1500);
     chrome?.storage?.onChanged?.addListener((changes, areaName) => {
-      if (areaName !== "local" || !changes[STORAGE_KEYS.SETTINGS]) return;
-      settings = sanitizeSettings(deepMerge(settings, changes[STORAGE_KEYS.SETTINGS].newValue || {}));
-      handleTextChange();
+      if (areaName !== "local") return;
+      if (changes[STORAGE_KEYS.SETTINGS]) {
+        settings = sanitizeSettings(deepMerge(settings, changes[STORAGE_KEYS.SETTINGS].newValue || {}));
+        handleTextChange();
+      }
+      if (changes[ONBOARDING_KEY]?.newValue === false) {
+        showOnboarding();
+      }
     });
   }
 
@@ -1301,20 +1966,15 @@
       .replace(/'/g, "&#039;");
   }
 
-  function leafIcon() {
-    return `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 4C12.5 4.4 7 8.5 6.3 15.4C10.7 14.9 15.5 12.4 20 4Z" fill="currentColor" opacity="0.82"/><path d="M4 20C7.5 14.2 11.2 10.4 17 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
-  }
-
-  function treeIcon(level, state = "current") {
-    const className = `cp-tree cp-tree-${esc(state)}`;
-    if (level === "idle") return `<span class="${className}">${leafIcon()}</span>`;
-    if (level === "high") {
-      return `<svg class="${className}" viewBox="0 0 72 72" fill="none" aria-hidden="true"><ellipse cx="36" cy="64" rx="15" ry="6" fill="#D7CABA"/><path d="M36 63V42M36 42L18 25M36 42L54 24M36 51L20 50M36 51L54 50M36 34L25 18M36 34L47 17" stroke="#76523A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-    }
-    if (level === "medium") {
-      return `<svg class="${className}" viewBox="0 0 72 72" fill="none" aria-hidden="true"><ellipse cx="36" cy="64" rx="15" ry="6" fill="#D7CABA"/><rect x="31" y="38" width="10" height="26" rx="5" fill="#76523A"/><circle cx="36" cy="33" r="23" fill="#82A456"/><ellipse cx="36" cy="22" rx="19" ry="14" fill="#B2D371"/></svg>`;
-    }
-    return `<svg class="${className}" viewBox="0 0 72 72" fill="none" aria-hidden="true"><ellipse cx="36" cy="64" rx="15" ry="6" fill="#D7CABA"/><rect x="31" y="38" width="10" height="26" rx="5" fill="#76523A"/><circle cx="36" cy="33" r="23" fill="#58A27E"/><ellipse cx="36" cy="23" rx="19" ry="15" fill="#9EE3C9"/></svg>`;
+  function characterIcon(level) {
+    const map = {
+      idle: chrome.runtime.getURL("assets/푸리_대기.svg"),
+      low: chrome.runtime.getURL("assets/푸리_낮음.svg"),
+      medium: chrome.runtime.getURL("assets/푸리_중간.svg"),
+      high: chrome.runtime.getURL("assets/푸리_높음.svg")
+    };
+    const src = map[level] || map.idle;
+    return `<img src="${src}" class="cp-character" alt="${esc(level)}" draggable="false" />`;
   }
 
   function getStyleText() {
@@ -1364,7 +2024,33 @@
       .cp-widget[data-level="medium"] { --level-color: #B2D371; --level-deep: #82A456; }
       .cp-widget[data-level="high"] { --level-color: #76523A; --level-deep: #153C2D; }
       .cp-widget[data-level="idle"] { --level-color: #B5B5B5; --level-deep: #333333; }
-      .cp-tree { display: block; width: 44px; height: 44px; }
+      .cp-character {
+        width: 36px;
+        height: 36px;
+        display: block;
+        transition: all 300ms ease;
+        pointer-events: none;
+      }
+      .cp-widget[data-level="idle"] .cp-character { animation: puri-idle 3s ease-in-out infinite; }
+      .cp-widget[data-level="low"] .cp-character { animation: puri-bounce 1.5s ease-in-out infinite; }
+      .cp-widget[data-level="medium"] .cp-character { animation: puri-shake 0.8s ease-in-out infinite; }
+      .cp-widget[data-level="high"] .cp-character { animation: puri-panic 0.4s ease-in-out infinite; }
+      @keyframes puri-idle {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-4px); }
+      }
+      @keyframes puri-bounce {
+        0%, 100% { transform: translateY(0px) scale(1); }
+        50% { transform: translateY(-6px) scale(1.05); }
+      }
+      @keyframes puri-shake {
+        0%, 100% { transform: rotate(-5deg); }
+        50% { transform: rotate(5deg); }
+      }
+      @keyframes puri-panic {
+        0%, 100% { transform: translateX(-2px) rotate(-3deg); }
+        50% { transform: translateX(2px) rotate(3deg); }
+      }
       .cp-bubble {
         position: fixed;
         z-index: 2147483647;
@@ -1387,12 +2073,37 @@
       .cp-bubble strong { display: block; margin: 0 0 4px; font-size: calc(12px * var(--cp-nudge-scale, 0.9)); font-weight: 800; color: var(--level-deep, #153C2D); }
       .cp-bubble span { color: #333333; }
       .variant-tree-status-badge {
-        display: flex; align-items: center; gap: 9px; min-width: 188px; padding: 9px 12px 9px 9px; border-radius: 999px;
+        display: flex; align-items: center; padding: 9px; border-radius: 999px;
       }
       .cp-tree-wrap { flex: 0 0 auto; display: grid; place-items: center; width: 46px; height: 46px; }
-      .cp-badge-copy { min-width: 0; display: grid; gap: 3px; }
-      .cp-badge-copy strong { font-size: 13px; font-weight: 800; white-space: nowrap; }
-      .cp-badge-copy span { font-size: 11px; color: #777; white-space: nowrap; }
+      .cp-tip-bar {
+        position: fixed;
+        z-index: 2147483647;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 3px;
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+        backdrop-filter: blur(14px);
+        border-radius: 999px;
+        padding: 0 14px;
+        font-family: "SUIT", "Pretendard", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: -0.018em;
+        white-space: nowrap;
+        overflow: hidden;
+        max-width: 0;
+        opacity: 0;
+        pointer-events: none;
+        transition: max-width 1.5s ease, opacity 0.3s ease;
+      }
+      .cp-tip-bar[data-visible="true"] {
+        max-width: var(--cp-tip-max-w, 300px);
+        opacity: 1;
+      }
+      .cp-tip-bar strong { display: block; font-size: 13px; font-weight: 800; color: #153C2D; }
+      .cp-tip-bar span { display: block; font-size: 11px; color: #777; }
     `;
   }
 

@@ -30,6 +30,7 @@ const nodes = {
   events: $("#events"),
   openChatGPT: $("#openChatGPT"),
   openGemini: $("#openGemini"),
+  showGuide: $("#showGuide"),
   clearLogs: $("#clearLogs")
 };
 
@@ -118,6 +119,12 @@ function bindEvents(settings) {
   nodes.resetCustomPosition.addEventListener("click", () => updateSetting({ customPosition: null }));
   nodes.openChatGPT.addEventListener("click", () => chrome.tabs.create({ url: "https://chatgpt.com/" }));
   nodes.openGemini.addEventListener("click", () => chrome.tabs.create({ url: "https://gemini.google.com/" }));
+  nodes.showGuide.addEventListener("click", async () => {
+    await storageSet({ "chatpool.onboarded": false });
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) chrome.tabs.update(tab.id, { active: true });
+    window.close();
+  });
   nodes.clearLogs.addEventListener("click", async () => {
     await storageSet({ [STORAGE_KEYS.EVENTS]: [], [STORAGE_KEYS.DAILY]: {} });
     render(await getState());

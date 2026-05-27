@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS = {
   designVariant: "tree-status-badge",
   nudgeTextScale: 90,
   floatingLogoScale: 90,
-  floatingLogoPlacement: "chat-left",
+  floatingLogoPlacement: "top-right",
   dragEnabled: false,
   customPosition: null,
   thresholds: {
@@ -22,12 +22,13 @@ const DEFAULT_SETTINGS = {
 
 const MAX_EVENTS = 400;
 
-chrome.runtime.onInstalled.addListener(async () => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   const existing = await storageGet([STORAGE_KEYS.SETTINGS, STORAGE_KEYS.EVENTS, STORAGE_KEYS.DAILY]);
   const patch = {};
   patch[STORAGE_KEYS.SETTINGS] = sanitizeSettings(existing[STORAGE_KEYS.SETTINGS]);
   if (!existing[STORAGE_KEYS.EVENTS]) patch[STORAGE_KEYS.EVENTS] = [];
   if (!existing[STORAGE_KEYS.DAILY]) patch[STORAGE_KEYS.DAILY] = {};
+  if (details.reason === "install") patch["chatpool.onboarded"] = false;
   await chrome.storage.local.set(patch);
 });
 
@@ -51,7 +52,7 @@ function sanitizeSettings(value) {
   next.floatingLogoScale = 90;
   if (!["chat-left", "top-left", "top-center", "top-right", "chat-right"].includes(next.floatingLogoPlacement)) next.floatingLogoPlacement = DEFAULT_SETTINGS.floatingLogoPlacement;
   next.dragEnabled = Boolean(next.dragEnabled);
-  next.customPosition = sanitizeCustomPosition(next.customPosition);
+  next.customPosition = next.dragEnabled ? sanitizeCustomPosition(next.customPosition) : null;
   next.thresholds.lowMax = Math.max(20, Math.round(Number(next.thresholds.lowMax) || DEFAULT_SETTINGS.thresholds.lowMax));
   next.thresholds.mediumMax = Math.max(next.thresholds.lowMax + 50, Math.round(Number(next.thresholds.mediumMax) || DEFAULT_SETTINGS.thresholds.mediumMax));
   return next;
