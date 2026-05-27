@@ -9,18 +9,18 @@ const STORAGE_KEYS = {
 const DEFAULT_SETTINGS = {
   enabled: true,
   designVariant: "tree-status-badge",
-  nudgeTextScale: 90,
-  floatingLogoScale: 90,
-  floatingLogoPlacement: "chat-left",
+  nudgeTextScale: 80,
+  floatingLogoScale: 80,
+  floatingLogoPlacement: "top-right",
   dragEnabled: false,
   customPosition: null,
+  onboardingGuideShown: false,
   thresholds: { lowMax: 100, mediumMax: 400 }
 };
 
 const $ = (selector) => document.querySelector(selector);
 const nodes = {
   enabled: $("#enabled"),
-  floatingLogoPlacement: $("#floatingLogoPlacement"),
   dragEnabled: $("#dragEnabled"),
   resetCustomPosition: $("#resetCustomPosition"),
   submitCount: $("#submitCount"),
@@ -59,11 +59,12 @@ function sanitizeSettings(value) {
   const next = merge(DEFAULT_SETTINGS, value || {});
   next.enabled = Boolean(next.enabled);
   next.designVariant = "tree-status-badge";
-  next.nudgeTextScale = 90;
-  next.floatingLogoScale = 90;
-  if (!["chat-left", "top-left", "top-center", "top-right", "chat-right"].includes(next.floatingLogoPlacement)) next.floatingLogoPlacement = DEFAULT_SETTINGS.floatingLogoPlacement;
+  next.nudgeTextScale = 80;
+  next.floatingLogoScale = 80;
+  next.floatingLogoPlacement = "top-right";
   next.dragEnabled = Boolean(next.dragEnabled);
   next.customPosition = sanitizeCustomPosition(next.customPosition);
+  next.onboardingGuideShown = Boolean(next.onboardingGuideShown);
   return next;
 }
 function sanitizeCustomPosition(value) {
@@ -90,7 +91,6 @@ function todayKey() {
 }
 function render(state) {
   nodes.enabled.checked = Boolean(state.settings.enabled);
-  nodes.floatingLogoPlacement.value = state.settings.floatingLogoPlacement || DEFAULT_SETTINGS.floatingLogoPlacement;
   nodes.dragEnabled.checked = Boolean(state.settings.dragEnabled);
   const today = state.daily[todayKey()] || {};
   nodes.submitCount.textContent = `${today.submitCount || 0}회`;
@@ -113,8 +113,7 @@ function render(state) {
 }
 function bindEvents(settings) {
   nodes.enabled.addEventListener("change", () => updateSetting({ enabled: nodes.enabled.checked }));
-  nodes.floatingLogoPlacement.addEventListener("change", () => updateSetting({ floatingLogoPlacement: nodes.floatingLogoPlacement.value, customPosition: null }));
-  nodes.dragEnabled.addEventListener("change", () => updateSetting({ dragEnabled: nodes.dragEnabled.checked }));
+  nodes.dragEnabled.addEventListener("change", () => updateSetting({ dragEnabled: nodes.dragEnabled.checked, customPosition: nodes.dragEnabled.checked ? settings.customPosition : null }));
   nodes.resetCustomPosition.addEventListener("click", () => updateSetting({ customPosition: null }));
   nodes.openChatGPT.addEventListener("click", () => chrome.tabs.create({ url: "https://chatgpt.com/" }));
   nodes.openGemini.addEventListener("click", () => chrome.tabs.create({ url: "https://gemini.google.com/" }));
