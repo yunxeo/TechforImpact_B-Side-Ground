@@ -9,9 +9,9 @@ const STORAGE_KEYS = {
 const DEFAULT_SETTINGS = {
   enabled: true,
   designVariant: "tree-status-badge",
-  nudgeTextScale: 90,
-  floatingLogoScale: 90,
-  floatingLogoPlacement: "chat-left",
+  nudgeTextScale: 80,
+  floatingLogoScale: 80,
+  floatingLogoPlacement: "top-right",
   dragEnabled: false,
   customPosition: null,
   thresholds: {
@@ -47,11 +47,11 @@ function sanitizeSettings(value) {
   const next = merge(DEFAULT_SETTINGS, value || {});
   next.enabled = Boolean(next.enabled);
   next.designVariant = "tree-status-badge";
-  next.nudgeTextScale = 90;
-  next.floatingLogoScale = 90;
-  if (!["chat-left", "top-left", "top-center", "top-right", "chat-right"].includes(next.floatingLogoPlacement)) next.floatingLogoPlacement = DEFAULT_SETTINGS.floatingLogoPlacement;
-  next.dragEnabled = Boolean(next.dragEnabled);
-  next.customPosition = sanitizeCustomPosition(next.customPosition);
+  next.nudgeTextScale = 80;
+  next.floatingLogoScale = 80;
+  next.floatingLogoPlacement = "top-right";
+  next.dragEnabled = false;
+  next.customPosition = null;
   next.thresholds.lowMax = Math.max(20, Math.round(Number(next.thresholds.lowMax) || DEFAULT_SETTINGS.thresholds.lowMax));
   next.thresholds.mediumMax = Math.max(next.thresholds.lowMax + 50, Math.round(Number(next.thresholds.mediumMax) || DEFAULT_SETTINGS.thresholds.mediumMax));
   return next;

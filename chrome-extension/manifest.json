@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Chatpull Green",
-  "version": "0.3.13",
-  "description": "ChatGPT와 Gemini 입력창의 예상 토큰량을 02번 Tree Status Badge로 표시하고, 위치 preset과 드래그 이동을 지원하는 Chatpull Green v1.2.13 프로토타입입니다.",
+  "name": "챗풀Chatpull",
+  "version": "2.0.0",
+  "description": "더 나은 질문, 더 가벼운 AI. 푸르게 AI를 사용하는 새로운 방식으로",
   "permissions": [
     "storage"
   ],
@@ -32,7 +32,7 @@
     }
   ],
   "action": {
-    "default_title": "Chatpull Green",
+    "default_title": "챗풀Chatpull",
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "assets/icon16.png",

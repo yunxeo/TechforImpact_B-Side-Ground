@@ -1,27 +1,33 @@
 (() => {
   "use strict";
 
-  const APP = "Chatpull Green";
+  const APP = "챗풀Chatpull";
   const ROOT_ID = "chatpull-green-root";
   const STORAGE_KEYS = {
     SETTINGS: "chatpool.settings"
   };
 
   const FIXED_DESIGN_VARIANT = "tree-status-badge";
-  const LOGO_PLACEMENTS = new Set(["chat-left", "top-left", "top-center", "top-right", "chat-right"]);
+  const LOGO_PLACEMENTS = new Set(["top-right"]);
   const DEFAULT_SETTINGS = {
     enabled: true,
     designVariant: FIXED_DESIGN_VARIANT,
-    nudgeTextScale: 90,
-    floatingLogoScale: 90,
-    floatingLogoPlacement: "chat-left",
+    nudgeTextScale: 80,
+    floatingLogoScale: 80,
+    floatingLogoPlacement: "top-right",
     dragEnabled: false,
     customPosition: null,
+    onboardingGuideShown: false,
     thresholds: {
       lowMax: 100,
       mediumMax: 400
     }
   };
+
+  const PROMPT_TIP_INLINE_DURATION_MS = 10000;
+  const PROMPT_TIP_INLINE_REPEAT_GUARD_MS = 45000;
+  const PROMPT_TIP_INLINE_COOLDOWN_MS = 5000;
+  const PROMPT_TIP_INLINE_ANIMATION_MS = 1500;
 
   const SELECTORS = {
     editor: [
@@ -67,17 +73,39 @@
     low: { hover: ["딱 좋은 길이예요. AI가 핵심에 집중할 수 있어요"] },
     medium: {
       entry: ["핵심만 남기면 더 빠르고 정확한 답변을 받을 수 있어요"],
-      hover: ["군더더기를 빼면 AI가 더 잘 파악해요. 커피 한 잔 분량의 물이 쓰이는 입력이에요"]
+      hover: ["군더더기를 빼면 AI가 더 잘 파악해요. 처리해야 할 토큰도 줄어들 수 있어요"]
     },
     high: {
       entry: ["나눠서 물어보면 각각 더 정확한 답변을 받을 수 있어요"],
-      hover: ["긴 입력은 AI가 앞 맥락을 놓칠 수 있어요. 나누면 답변이 선명해지고 생수 한 병 분량의 냉각수를 줄이는 데 도움이 돼요"],
+      hover: ["긴 입력은 AI가 앞 맥락을 놓칠 수 있어요. 나누면 답변이 더 선명해질 수 있어요"],
       on_send: ["새 채팅을 열면 AI가 더 집중할 수 있어요"],
-      on_send_hover: ["방금 입력엔 생수 한 병 정도의 냉각수가 쓰였어요. 다음엔 나눠서 물어보면 물 소비를 줄일 수 있어요"]
+      on_send_hover: ["방금처럼 긴 입력은 다음번에 주제별로 나누면 처리 부담을 줄일 수 있어요"]
     }
   };
 
   const PROMPT_TIP_BANK = Array.isArray(window.CHATPULL_PROMPT_TIPS) ? window.CHATPULL_PROMPT_TIPS : [];
+  const ENVIRONMENT_NUDGE_TEXTS = {
+    idle: [
+      "마우스를 올리면 입력 길이에 따른 환경 넛지를 볼 수 있어요.",
+      "배지는 답변 품질 팁과 환경 넛지를 분리해서 보여줍니다."
+    ],
+    low: [
+      "짧고 명확한 입력은 불필요한 연산을 줄이는 데 도움이 돼요.",
+      "핵심만 담긴 입력은 AI가 더 적은 맥락으로도 답하기 쉬워요."
+    ],
+    medium: [
+      "조금 줄이면 처리해야 할 토큰이 줄어 환경 부담도 낮아질 수 있어요.",
+      "중간 길이 입력입니다. 반복 표현을 덜어내면 연산량을 줄이는 데 도움이 돼요."
+    ],
+    high: [
+      "긴 입력은 처리 토큰이 많아져 연산량과 에너지 사용이 커질 수 있어요.",
+      "질문을 나누면 답변 품질을 높이면서 한 번에 처리되는 토큰 부담을 줄일 수 있어요."
+    ],
+    postSendHigh: [
+      "방금처럼 긴 입력은 다음번에 주제별로 나누면 처리 부담을 줄일 수 있어요.",
+      "긴 입력을 보낸 뒤에는 새 채팅이나 단계별 질문으로 맥락 비용을 줄일 수 있어요."
+    ]
+  };
   const PROMPT_TIP_RULES = [
     { caseId: "code_error_only", category: "code", priority: 120 },
     { caseId: "code_version_missing", category: "code", priority: 116 },
@@ -141,6 +169,15 @@
   let promptTipState = { recentIds: [], recentCaseIds: [], recentCategories: [] };
   let dragState = { active: false, pointerId: null, offsetX: 0, offsetY: 0, moved: false };
   let entryShown = { medium: false, high: false };
+  let lastAutoPromptTipAt = 0;
+  let lastAutoPromptTipKey = "";
+  let lastInlinePromptTipHiddenAt = 0;
+  let inlinePromptTip = { visible: false, closing: false, title: "", message: "", key: "" };
+  let inlinePromptTipTimer = null;
+  let inlinePromptTipCloseTimer = null;
+  let onboardingGuideActive = false;
+  let lastOverlayRenderMode = "";
+  let lastOverlayPromptTipKey = "";
 
   function storageGet(key) {
     return new Promise((resolve) => {
@@ -173,11 +210,12 @@
     const next = deepMerge(DEFAULT_SETTINGS, input || {});
     next.enabled = Boolean(next.enabled);
     next.designVariant = FIXED_DESIGN_VARIANT;
-    next.nudgeTextScale = 90;
-    next.floatingLogoScale = 90;
-    if (!LOGO_PLACEMENTS.has(next.floatingLogoPlacement)) next.floatingLogoPlacement = DEFAULT_SETTINGS.floatingLogoPlacement;
-    next.dragEnabled = Boolean(next.dragEnabled);
-    next.customPosition = sanitizeCustomPosition(next.customPosition);
+    next.nudgeTextScale = 80;
+    next.floatingLogoScale = 80;
+    next.floatingLogoPlacement = "top-right";
+    next.dragEnabled = false;
+    next.customPosition = null;
+    next.onboardingGuideShown = Boolean(next.onboardingGuideShown);
     next.thresholds.lowMax = Math.max(20, Math.round(Number(next.thresholds.lowMax) || DEFAULT_SETTINGS.thresholds.lowMax));
     next.thresholds.mediumMax = Math.max(next.thresholds.lowMax + 50, Math.round(Number(next.thresholds.mediumMax) || DEFAULT_SETTINGS.thresholds.mediumMax));
     return next;
@@ -371,7 +409,22 @@
   }
 
   function getImpactLabel(level) {
-    return { idle: "원문 미저장", low: "딱 좋은 길이", medium: "커피 한 잔", high: "생수 한 병" }[level] || "원문 미저장";
+    return { idle: "도움말 준비", low: "좋은 길이", medium: "조금 다듬기", high: "나눠 묻기" }[level] || "도움말 준비";
+  }
+
+  function getBadgeHint(level) {
+    return {
+      idle: "프롬프팅 팁 준비됨",
+      low: "핵심이 잘 보이는 길이",
+      medium: "조금 줄이면 더 선명함",
+      high: "나눠 물으면 더 정확함"
+    }[level] || "프롬프팅 팁 준비됨";
+  }
+
+  function pickEnvironmentNudge(level) {
+    const highPostSend = level === "high" && Date.now() - lastHighSubmitAt < 180000;
+    if (highPostSend) return randomOf(ENVIRONMENT_NUDGE_TEXTS.postSendHigh);
+    return randomOf(ENVIRONMENT_NUDGE_TEXTS[level] || ENVIRONMENT_NUDGE_TEXTS.idle);
   }
 
   function randomOf(list) {
@@ -391,8 +444,9 @@
   }
 
   function triggerHoverBubble() {
+    if (onboardingGuideActive) return;
     const snapshot = buildSnapshot();
-    if (!snapshot || snapshot.level === "idle") return;
+    if (!snapshot) return;
 
     const hoverKey = getHoverSessionKey(snapshot);
     let isNewHoverSession = false;
@@ -419,33 +473,15 @@
   }
 
   function pickHoverContent(snapshot) {
-    const highPostSend = snapshot.level === "high" && Date.now() - lastHighSubmitAt < 180000;
-    if (highPostSend) {
-      return {
-        title: "전송 후 팁",
-        message: pickNudge("hover", snapshot.level) || `${getImpactLabel(snapshot.level)} 정도의 입력이에요.`
-      };
-    }
-
-    const contextual = pickContextualPromptTip(lastText, snapshot);
-    if (contextual) {
-      rememberPromptTip(contextual);
-      return {
-        title: getPromptTipTitle(contextual),
-        message: contextual.text
-      };
-    }
-
     return {
-      title: `${getLevelLabel(snapshot.level)} 구간`,
-      message: pickNudge("hover", snapshot.level) || `${getImpactLabel(snapshot.level)} 정도의 입력이에요.`
+      title: snapshot.level === "idle" ? "환경 넛지" : `${getLevelLabel(snapshot.level)} 환경 넛지`,
+      message: pickEnvironmentNudge(snapshot.level)
     };
   }
 
   function getHoverSessionKey(snapshot) {
     const highPostSend = snapshot.level === "high" && Date.now() - lastHighSubmitAt < 180000;
-    const caseId = highPostSend ? "post-send" : getTopPromptCaseId(lastText, snapshot);
-    return `${snapshot.level}:${caseId || "normal"}`;
+    return `${snapshot.level}:${highPostSend ? "post-send" : "environment"}`;
   }
 
   function pickContextualPromptTip(text, snapshot) {
@@ -717,7 +753,6 @@
     card.addEventListener("mouseenter", showHoverBubble);
     card.addEventListener("pointerenter", showHoverBubble);
     card.addEventListener("mouseover", showHoverBubble);
-    card.addEventListener("mousemove", showHoverBubble);
     card.addEventListener("focus", showHoverBubble);
     card.addEventListener("click", showHoverBubble);
     card.addEventListener("mouseleave", () => {
@@ -730,7 +765,6 @@
     });
     bubble.addEventListener("mouseenter", () => clearTimeout(overlayTimer));
     bubble.addEventListener("mouseleave", () => scheduleHideBubble(800));
-
     card.addEventListener("pointerdown", handleDragStart);
     card.addEventListener("pointermove", handleDragMove);
     card.addEventListener("pointerup", handleDragEnd);
@@ -748,27 +782,74 @@
     overlay.host.style.setProperty("--cp-nudge-scale", `${settings.nudgeTextScale / 100}`);
     overlay.host.style.setProperty("--cp-logo-scale", `${settings.floatingLogoScale / 100}`);
     const card = overlay.card;
+    const promptTipVisible = (inlinePromptTip.visible || inlinePromptTip.closing) && Boolean(inlinePromptTip.message);
+    const renderMode = promptTipVisible ? (inlinePromptTip.closing ? "tip-closing" : "tip") : "status";
+    const promptTipKey = promptTipVisible ? inlinePromptTip.key : "";
+
     card.className = "cp-widget variant-tree-status-badge";
     card.dataset.visible = settings.enabled && currentEditor ? "true" : "false";
     card.dataset.level = snapshot.level;
+    card.dataset.promptTipVisible = promptTipVisible ? "true" : "false";
     card.dataset.dragEnabled = settings.dragEnabled ? "true" : "false";
     card.style.setProperty("--progress", `${snapshot.progress}%`);
-    card.innerHTML = renderTreeStatusBadge(snapshot);
+
+    const canPatch =
+      card.querySelector(".cp-status-segment") &&
+      lastOverlayRenderMode === renderMode &&
+      lastOverlayPromptTipKey === promptTipKey;
+
+    if (canPatch) {
+      patchStatusSegment(card, snapshot);
+    } else {
+      card.innerHTML = renderTreeStatusBadge(snapshot);
+      lastOverlayRenderMode = renderMode;
+      lastOverlayPromptTipKey = promptTipKey;
+      patchStatusSegment(card, snapshot);
+    }
+
     updateOverlayPosition();
+  }
+
+  function patchStatusSegment(card, snapshot) {
+    const level = snapshot.level;
+    const levelLabel = getLevelLabel(level);
+    const count = `${snapshot.estimatedTokens.toLocaleString()} tokens`;
+    const treeWrap = card.querySelector(".cp-tree-wrap");
+    const strong = card.querySelector(".cp-badge-copy strong");
+    const hint = card.querySelector(".cp-badge-copy span");
+
+    if (treeWrap && card.dataset.iconLevel !== level) {
+      treeWrap.innerHTML = treeIcon(level, "current");
+      card.dataset.iconLevel = level;
+    }
+    if (strong) strong.textContent = `${levelLabel} · ${count}`;
+    if (hint) hint.textContent = getBadgeHint(level);
   }
 
   function renderTreeStatusBadge(snapshot) {
     const level = snapshot.level;
     const levelLabel = getLevelLabel(level);
-    const impact = getImpactLabel(level);
     const count = `${snapshot.estimatedTokens.toLocaleString()} tokens`;
     const tree = treeIcon(level, "current");
-    return `
-      <div class="cp-tree-wrap">${tree}</div>
-      <div class="cp-badge-copy">
-        <strong>${esc(levelLabel)} · ${esc(count)}</strong>
-        <span>${esc(impact)}</span>
+    const status = `
+      <div class="cp-status-segment" aria-label="현재 입력 상태">
+        <div class="cp-tree-wrap">${tree}</div>
+        <div class="cp-badge-copy">
+          <strong>${esc(levelLabel)} · ${esc(count)}</strong>
+          <span>${esc(getBadgeHint(level))}</span>
+        </div>
       </div>
+    `;
+
+    if ((!inlinePromptTip.visible && !inlinePromptTip.closing) || !inlinePromptTip.message) return status;
+
+    return `
+      <div class="cp-prompt-tip-inline" data-state="${inlinePromptTip.closing ? "closing" : "opening"}" aria-live="polite">
+        <strong>${esc(inlinePromptTip.title || "프롬프트 팁")}</strong>
+        <span>${esc(inlinePromptTip.message)}</span>
+      </div>
+      <div class="cp-inline-divider" aria-hidden="true"></div>
+      ${status}
     `;
   }
 
@@ -780,6 +861,7 @@
     const cardPlacement = chooseCardPlacement(card);
     applyPlacement(card, cardPlacement);
     card.dataset.placement = cardPlacement.name;
+    card.style.setProperty("--cp-tip-width", `${getPromptTipDrawerWidth(cardPlacement)}px`);
 
     if (bubble.dataset.visible === "true") {
       const bubblePlacement = chooseBubblePlacementNearLogo(bubble);
@@ -810,7 +892,7 @@
     const primary = calculateLogoPlacementRect(settings.floatingLogoPlacement, anchor, width, height, margin);
     if (primary && isSafeRect(primary, forbidden, margin)) return { name: settings.floatingLogoPlacement, left: primary.left, top: primary.top };
 
-    // 요청 기준: 선택한 위치가 어렵다면 중앙 위로 자동 전환한다.
+    // 기본 위치는 채팅창 오른쪽 위다. 공간이 부족한 경우에만 중앙 위로 자동 전환한다.
     const centerFallback = calculateLogoPlacementRect("top-center", anchor, width, height, margin);
     if (centerFallback && isSafeRect(centerFallback, forbidden, margin)) {
       return { name: "top-center-auto", left: centerFallback.left, top: centerFallback.top };
@@ -820,6 +902,14 @@
     if (isSafeRect(windowFallback, forbidden, margin)) return { name: "top-center-window", left: windowFallback.left, top: windowFallback.top };
 
     return { name: "top-center-forced", left: windowFallback.left, top: windowFallback.top };
+  }
+
+  function getPromptTipDrawerWidth(cardPlacement) {
+    const margin = 12;
+    const leftSpace = Math.max(0, Math.floor((cardPlacement?.left || margin) - margin));
+    const viewportFallback = Math.max(260, Math.floor(window.innerWidth - 240));
+    const available = leftSpace || viewportFallback;
+    return clamp(available, 260, 560);
   }
 
   function calculateLogoPlacementRect(placement, anchor, width, height, margin) {
@@ -879,8 +969,8 @@
   function chooseBubblePlacementNearLogo(element) {
     const margin = 12;
     const cardRect = overlay?.card?.getBoundingClientRect();
-    const width = Math.ceil(Math.min(Math.max(element.offsetWidth || 240, 190), 252));
-    const height = Math.ceil(Math.max(element.offsetHeight || 72, 56));
+    const width = Math.ceil(Math.min(Math.max(element.offsetWidth || 150, 132), 168));
+    const height = Math.ceil(Math.max(element.offsetHeight || 62, 48));
 
     if (!cardRect || !isUsefulRect(cardRect)) {
       const fallback = centeredAboveWindowRect(width, height, margin);
@@ -1082,10 +1172,11 @@
     title.textContent = options.title || `${getLevelLabel(snapshot.level)} 구간`;
     body.textContent = options.message || "";
     overlay.bubble.dataset.visible = "true";
+    overlay.bubble.dataset.kind = options.kind || "default";
     updateOverlayPosition();
 
     clearTimeout(overlayTimer);
-    if (!options.manual) overlayTimer = window.setTimeout(hideBubble, options.duration || 4200);
+    if (!options.manual) overlayTimer = window.setTimeout(hideBubble, options.duration || 5200);
   }
 
   function hideBubble() {
@@ -1095,8 +1186,86 @@
   }
 
   function scheduleHideBubble(delay = 900) {
+    if (onboardingGuideActive && overlay?.bubble?.dataset.kind === "guide") return;
     clearTimeout(overlayTimer);
     overlayTimer = window.setTimeout(hideBubble, delay);
+  }
+
+  function maybeShowAutoPromptTip(snapshot, text) {
+    const trimmed = String(text || "").trim();
+    if (!trimmed || !PROMPT_TIP_BANK.length) return false;
+
+    const now = Date.now();
+    if (inlinePromptTip.visible || inlinePromptTip.closing) return false;
+    if (now - lastInlinePromptTipHiddenAt < PROMPT_TIP_INLINE_COOLDOWN_MS) return false;
+
+    const contextual = pickContextualPromptTip(trimmed, snapshot);
+    if (!contextual) return false;
+
+    const key = `${contextual.id || contextual.caseId}:${snapshot.level}`;
+    if (key === lastAutoPromptTipKey && now - lastAutoPromptTipAt < PROMPT_TIP_INLINE_REPEAT_GUARD_MS) return false;
+    if (now - lastAutoPromptTipAt < PROMPT_TIP_INLINE_DURATION_MS) return false;
+
+    rememberPromptTip(contextual);
+    lastAutoPromptTipKey = key;
+    lastAutoPromptTipAt = now;
+    showInlinePromptTip(snapshot, contextual, key);
+    return true;
+  }
+
+  function showInlinePromptTip(snapshot, tip, key) {
+    inlinePromptTip = {
+      visible: true,
+      closing: false,
+      title: getPromptTipTitle(tip),
+      message: tip?.text || "",
+      key: key || tip?.id || ""
+    };
+    clearTimeout(inlinePromptTipTimer);
+    clearTimeout(inlinePromptTipCloseTimer);
+    updateOverlay(snapshot);
+    inlinePromptTipTimer = window.setTimeout(() => hideInlinePromptTip(), PROMPT_TIP_INLINE_DURATION_MS);
+  }
+
+  function hideInlinePromptTip() {
+    if (!inlinePromptTip.visible && !inlinePromptTip.closing) return;
+    if (inlinePromptTip.visible) {
+      inlinePromptTip = { ...inlinePromptTip, visible: false, closing: true };
+      lastInlinePromptTipHiddenAt = Date.now();
+      clearTimeout(inlinePromptTipTimer);
+      if (settings.enabled && currentEditor) updateOverlay(buildSnapshot());
+      clearTimeout(inlinePromptTipCloseTimer);
+      inlinePromptTipCloseTimer = window.setTimeout(() => {
+        inlinePromptTip = { visible: false, closing: false, title: "", message: "", key: "" };
+        if (settings.enabled && currentEditor) updateOverlay(buildSnapshot());
+      }, PROMPT_TIP_INLINE_ANIMATION_MS);
+      return;
+    }
+    inlinePromptTip = { visible: false, closing: false, title: "", message: "", key: "" };
+    clearTimeout(inlinePromptTipTimer);
+    clearTimeout(inlinePromptTipCloseTimer);
+    if (settings.enabled && currentEditor) updateOverlay(buildSnapshot());
+  }
+
+  function showOnboardingGuide() {
+    if (!settings.enabled || !currentEditor || settings.onboardingGuideShown || onboardingGuideActive) return;
+    const snapshot = buildSnapshot();
+    onboardingGuideActive = true;
+    showBubble(snapshot, {
+      title: "사용 가이드",
+      message: "오른쪽 위 배지는 입력 길이를 보여줍니다. 프롬프팅 팁은 자동으로 뜨고, 환경 넛지는 나무 배지에 마우스를 올렸을 때만 작게 표시됩니다.",
+      manual: true,
+      forceVisible: true,
+      kind: "guide"
+    });
+  }
+
+  function dismissOnboardingGuide() {
+    if (!onboardingGuideActive) return;
+    onboardingGuideActive = false;
+    hideBubble();
+    settings = sanitizeSettings({ ...settings, onboardingGuideShown: true });
+    storageSet({ [STORAGE_KEYS.SETTINGS]: settings });
   }
 
   function toLogEvent(type, snapshot) {
@@ -1119,6 +1288,7 @@
     }
 
     const text = getEditorText(currentEditor);
+    if (String(text || "").trim()) dismissOnboardingGuide();
     lastText = text;
     const snapshot = buildSnapshot();
     const previousTokens = lastTokenCount;
@@ -1133,7 +1303,8 @@
       lastLevel = "idle";
       lastTokenCount = 0;
       lastLoggedLevel = "idle";
-      hideBubble();
+      if (overlay?.bubble?.dataset.kind !== "guide") hideBubble();
+      hideInlinePromptTip();
       return;
     }
 
@@ -1155,11 +1326,13 @@
     if (snapshot.level === "high" && !entryShown.high) {
       entryShown.high = true;
       const message = pickNudge("entry", "high") || "나눠서 물어보면 각각 더 정확한 답변을 받을 수 있어요";
-      showBubble(snapshot, { title: "높음 구간 진입", message, duration: 5400 });
+      showBubble(snapshot, { title: "높음 구간 진입", message, duration: 7000, kind: "level" });
     } else if (snapshot.level === "medium" && !entryShown.medium) {
       entryShown.medium = true;
       const message = pickNudge("entry", "medium") || "핵심만 남기면 더 빠르고 정확한 답변을 받을 수 있어요";
-      showBubble(snapshot, { title: "중간 구간 진입", message, duration: 4400 });
+      showBubble(snapshot, { title: "중간 구간 진입", message, duration: 6200, kind: "level" });
+    } else if (maybeShowAutoPromptTip(snapshot, text)) {
+      // 프롬프팅 팁은 hover가 아니라 입력 맥락에 따라 자동 노출한다.
     } else if (snapshot.level === "low" && levelChanged) {
       hideBubble();
     }
@@ -1235,6 +1408,7 @@
     editorObserver = new MutationObserver(() => handleTextChange());
     editorObserver.observe(editor, { childList: true, characterData: true, subtree: true });
     handleTextChange();
+    window.setTimeout(showOnboardingGuide, 500);
   }
 
   function delayedHandleTextChange() {
@@ -1244,6 +1418,19 @@
   function scanAndBind() {
     const editor = findEditor();
     if (editor) bindEditor(editor);
+  }
+
+  function handleGlobalPointerDown(event) {
+    dismissOnboardingGuide();
+    if (!overlay) return;
+    const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+    const insideCard = path.includes(overlay.card);
+
+    if (!insideCard) {
+      if (overlay.bubble?.dataset.visible === "true") hideBubble();
+      // 프롬프팅 팁 바는 외부 클릭으로 즉시 닫지 않는다.
+      // 노출 시간이 끝날 때 hideInlinePromptTip()의 접힘 애니메이션으로만 사라지게 한다.
+    }
   }
 
   function observePage() {
@@ -1260,6 +1447,8 @@
       const text = `${button.getAttribute("aria-label") || ""} ${button.getAttribute("data-testid") || ""} ${button.getAttribute("data-test-id") || ""} ${button.textContent || ""}`;
       if (/send|submit|전송|보내기|제출/i.test(text)) window.setTimeout(handleSubmitSignal, 40);
     }, true);
+    document.addEventListener("pointerdown", handleGlobalPointerDown, true);
+    document.addEventListener("keydown", () => dismissOnboardingGuide(), true);
 
     document.addEventListener("mousemove", (event) => {
       if (!overlay || !settings.enabled || !currentEditor) return;
@@ -1270,7 +1459,7 @@
 
       if (insideCard) {
         const now = Date.now();
-        if (now - lastHoverAt > 260) {
+        if (!hoverSession.active && now - lastHoverAt > 260) {
           lastHoverAt = now;
           triggerHoverBubble();
         }
@@ -1345,54 +1534,152 @@
         position: fixed;
         z-index: 2147483647;
         color: #000000;
-        background: rgba(255, 255, 255, 0.94);
+        background: #ffffff;
         border: 1px solid rgba(0, 0, 0, 0.08);
-        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14);
-        backdrop-filter: blur(14px);
+        box-shadow: none;
+        filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.12));
+        backdrop-filter: none;
         pointer-events: auto;
         opacity: 0;
-        transform: scale(var(--cp-logo-scale, 0.9)) translateY(8px);
+        transform: scale(var(--cp-logo-scale, 0.8)) translateY(8px);
         transform-origin: top left;
-        transition: opacity 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+        transition: opacity 160ms ease, transform 160ms ease, filter 160ms ease;
         user-select: none;
       }
-      .cp-widget[data-visible="true"] { opacity: 1; transform: scale(var(--cp-logo-scale, 0.9)) translateY(0); }
-      .cp-widget:hover { box-shadow: 0 18px 44px rgba(0, 0, 0, 0.18); }
+      .cp-widget[data-visible="true"] { opacity: 1; transform: scale(var(--cp-logo-scale, 0.8)) translateY(0); }
+      .cp-widget:hover { filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.12)); }
       .cp-widget[data-drag-enabled="true"] { cursor: grab; }
       .cp-widget[data-dragging="true"] { cursor: grabbing; transition: none; }
       .cp-widget[data-level="low"] { --level-color: #65CFA0; --level-deep: #58A27E; }
       .cp-widget[data-level="medium"] { --level-color: #B2D371; --level-deep: #82A456; }
       .cp-widget[data-level="high"] { --level-color: #76523A; --level-deep: #153C2D; }
       .cp-widget[data-level="idle"] { --level-color: #B5B5B5; --level-deep: #333333; }
-      .cp-tree { display: block; width: 44px; height: 44px; }
+      .cp-tree { display: block; width: 40px; height: 40px; }
       .cp-bubble {
         position: fixed;
         z-index: 2147483647;
         width: max-content;
-        max-width: 252px;
-        padding: 12px 14px;
-        border-radius: 18px;
+        max-width: 158px;
+        padding: 5px 7px 6px 7px;
+        border-radius: 10px;
         background: #ffffff;
         border: 1px solid rgba(0, 0, 0, 0.08);
         color: #000000;
-        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.16);
-        font-size: calc(13px * var(--cp-nudge-scale, 0.9));
-        line-height: 1.45;
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
+        font-size: calc(13px * var(--cp-nudge-scale, 0.8));
+        line-height: 1.42;
         opacity: 0;
         transform: translateY(5px);
         pointer-events: none;
         transition: opacity 160ms ease, transform 160ms ease;
       }
       .cp-bubble[data-visible="true"] { opacity: 1; transform: translateY(0); pointer-events: auto; }
-      .cp-bubble strong { display: block; margin: 0 0 4px; font-size: calc(12px * var(--cp-nudge-scale, 0.9)); font-weight: 800; color: var(--level-deep, #153C2D); }
-      .cp-bubble span { color: #333333; }
+      .cp-bubble strong { display: block; margin: 0 0 2px; font-size: calc(12px * var(--cp-nudge-scale, 0.8)); font-weight: 800; color: var(--level-deep, #153C2D); }
+      .cp-bubble span { display: block; color: #333333; }
       .variant-tree-status-badge {
-        display: flex; align-items: center; gap: 9px; min-width: 188px; padding: 9px 12px 9px 9px; border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        min-width: 170px;
+        max-width: 188px;
+        padding: 8px 11px 8px 10px;
+        border-radius: 999px;
+        overflow: visible;
       }
-      .cp-tree-wrap { flex: 0 0 auto; display: grid; place-items: center; width: 46px; height: 46px; }
+      .variant-tree-status-badge[data-prompt-tip-visible="true"] {
+        border-radius: 999px;
+      }
+      .cp-status-segment {
+        position: relative;
+        z-index: 2;
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 152px;
+      }
+      .cp-tree-wrap { flex: 0 0 auto; display: grid; place-items: center; width: 42px; height: 42px; }
       .cp-badge-copy { min-width: 0; display: grid; gap: 3px; }
-      .cp-badge-copy strong { font-size: 13px; font-weight: 800; white-space: nowrap; }
-      .cp-badge-copy span { font-size: 11px; color: #777; white-space: nowrap; }
+      .cp-badge-copy strong { font-size: 12px; font-weight: 800; white-space: nowrap; }
+      .cp-badge-copy span { font-size: 10.5px; color: #777; white-space: nowrap; }
+      .cp-prompt-tip-inline {
+        position: absolute;
+        right: calc(100% - 28px);
+        top: -1px;
+        bottom: -1px;
+        width: var(--cp-tip-width, 480px);
+        min-height: 0;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        column-gap: 10px;
+        row-gap: 2px;
+        padding: 0 42px 0 16px;
+        border-radius: 999px 0 0 999px;
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-right: 0;
+        box-shadow: none;
+        backdrop-filter: none;
+        white-space: normal;
+        overflow: hidden;
+        transform: none;
+        transform-origin: right center;
+        z-index: 1;
+        animation: cp-tip-unfold-left 1500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+      .cp-prompt-tip-inline[data-state="closing"] {
+        animation: cp-tip-fold-left 1500ms cubic-bezier(0.7, 0, 0.84, 0) both;
+      }
+      .cp-prompt-tip-inline strong {
+        font-size: 12.5px;
+        font-weight: 800;
+        white-space: nowrap;
+        color: var(--level-deep, #153C2D);
+      }
+      .cp-prompt-tip-inline span {
+        min-width: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        white-space: normal;
+        text-overflow: ellipsis;
+        color: #222222;
+        font-size: 13px;
+        line-height: 1.34;
+        font-weight: 650;
+      }
+      @keyframes cp-tip-unfold-left {
+        from {
+          opacity: 1;
+          width: 28px;
+          padding-left: 0;
+          padding-right: 0;
+        }
+        to {
+          opacity: 1;
+          width: var(--cp-tip-width, 480px);
+          padding-left: 16px;
+          padding-right: 42px;
+        }
+      }
+      @keyframes cp-tip-fold-left {
+        from {
+          opacity: 1;
+          width: var(--cp-tip-width, 480px);
+          padding-left: 16px;
+          padding-right: 42px;
+        }
+        to {
+          opacity: 1;
+          width: 28px;
+          padding-left: 0;
+          padding-right: 0;
+        }
+      }
+      .cp-inline-divider { display: none; }
     `;
   }
 
