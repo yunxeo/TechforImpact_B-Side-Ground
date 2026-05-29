@@ -149,15 +149,6 @@ button.secondary {
   background: var(--green-50);
 }
 
-.footer {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.footer button { width: 100%; }
-
 /* Report */
 .report-card {
   background: linear-gradient(135deg, var(--color-surface) 0%, var(--gray-50) 100%);

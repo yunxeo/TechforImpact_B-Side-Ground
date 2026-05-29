@@ -183,6 +183,8 @@
   let inlinePromptTipTimer = null;
   let inlinePromptTipCloseTimer = null;
   let badgeHoverActive = false;
+  let badgeClickSuppress = false;
+  let reportNudgeShownThisPage = false;
   let onboardingGuideActive = false;
   let lastOverlayRenderMode = "";
   let lastOverlayPromptTipKey = "";
@@ -213,6 +215,81 @@
     chrome.runtime.sendMessage({ type: "CHATPOOL_LOG_EVENT", event }, () => {
       void chrome.runtime.lastError;
     });
+  }
+
+  function sendRuntimeMessage(message) {
+    return new Promise((resolve) => {
+      if (!chrome?.runtime?.sendMessage) return resolve(null);
+      chrome.runtime.sendMessage(message, (response) => {
+        void chrome.runtime.lastError;
+        resolve(response || null);
+      });
+    });
+  }
+
+  function getDailyReportNudge(stat) {
+    if (!stat || stat.submitCount === 0) return null;
+
+    const highRatio = stat.highCount / stat.submitCount;
+    const messages = [];
+
+    if (highRatio > 0.5) {
+      messages.push(`오늘 ${stat.submitCount}번 중 ${stat.highCount}번이 길었어요. 리포트 확인해볼까요?`);
+      messages.push("긴 입력이 많았던 하루예요. 팝업에서 자세히 볼 수 있어요 📊");
+    } else if (highRatio > 0.2) {
+      messages.push(`오늘 ${stat.submitCount}번 전송했어요. 오늘 프롬프트 패턴 확인해볼까요?`);
+      messages.push("조금씩 나아지고 있어요! 오늘 리포트 확인해봐요 🌿");
+    } else {
+      messages.push("오늘도 간결하게 잘 쓰고 있어요! 리포트에서 확인해봐요 🌱");
+      messages.push(`오늘 ${stat.submitCount}번 전송했는데 대부분 짧았어요. 최고예요 ✨`);
+    }
+
+    return messages[Math.floor(Math.random() * messages.length)];
+  }
+
+  function formatBadgeCount(snapshot) {
+    const chars = Math.max(0, Math.round(Number(snapshot?.charCount) || 0)).toLocaleString();
+    const tokens = Math.max(0, Math.round(Number(snapshot?.estimatedTokens) || 0)).toLocaleString();
+    return `${chars}자 · ${tokens} tokens`;
+  }
+
+  async function maybeShowDailyReportNudge(snapshot, options = {}) {
+    if (reportNudgeShownThisPage && !options.allowRepeat) return;
+    if (onboardingGuideActive || document.getElementById(ONBOARDING_ROOT_ID)) return;
+
+    const response = await sendRuntimeMessage({ type: "CHATPOOL_GET_DAILY_REPORT" });
+    if (!response?.ok || !response.report) return;
+
+    const stat = {
+      submitCount: response.report.totalSent || 0,
+      highCount: response.report.highCount || 0
+    };
+    const message = getDailyReportNudge(stat);
+    if (!message) return;
+
+    const delay = Number(options.delay) || 0;
+    window.setTimeout(() => {
+      if (!settings.enabled || !currentEditor) return;
+      if (onboardingGuideActive || document.getElementById(ONBOARDING_ROOT_ID)) return;
+      reportNudgeShownThisPage = true;
+      showBubble(buildSnapshot(), {
+        title: "오늘의 리포트",
+        message,
+        duration: 5200,
+        kind: "report"
+      });
+    }, delay);
+  }
+
+  async function tryShowPageLoadReportNudge() {
+    if (reportNudgeShownThisPage) return;
+    if (!settings.enabled || !currentEditor) return;
+    if (onboardingGuideActive || document.getElementById(ONBOARDING_ROOT_ID)) return;
+
+    const onboarded = await storageGet(ONBOARDING_KEY);
+    if (onboarded !== true) return;
+
+    await maybeShowDailyReportNudge(buildSnapshot(), { delay: 600 });
   }
 
   async function loadSettings() {
@@ -786,6 +863,7 @@
     card.addEventListener("pointermove", handleDragMove);
     card.addEventListener("pointerup", handleDragEnd);
     card.addEventListener("pointercancel", handleDragCancel);
+    card.addEventListener("click", handleBadgeClick);
 
     return result;
   }
@@ -847,7 +925,7 @@
   function patchStatusSegment(card, snapshot) {
     const level = snapshot.level;
     const levelLabel = getLevelLabel(level);
-    const count = `${snapshot.estimatedTokens.toLocaleString()} tokens`;
+    const count = formatBadgeCount(snapshot);
     const treeWrap = card.querySelector(".cp-tree-wrap");
     const strong = card.querySelector(".cp-badge-copy strong");
     const hint = card.querySelector(".cp-badge-copy span");
@@ -863,14 +941,16 @@
   function renderTreeStatusBadge(snapshot) {
     const level = snapshot.level;
     const levelLabel = getLevelLabel(level);
-    const count = `${snapshot.estimatedTokens.toLocaleString()} tokens`;
+    const count = formatBadgeCount(snapshot);
     const tree = characterIcon(level);
     const status = `
       <div class="cp-status-segment" aria-label="현재 입력 상태">
-        <div class="cp-tree-wrap">${tree}</div>
-        <div class="cp-badge-copy">
-          <strong class="text-status">${esc(levelLabel)} · ${esc(count)}</strong>
-          <span class="text-body-m">${esc(getBadgeHint(level))}</span>
+        <div class="cp-badge-icon">
+          <div class="cp-tree-wrap">${tree}</div>
+          <div class="cp-badge-copy">
+            <strong class="text-status">${esc(levelLabel)} · ${esc(count)}</strong>
+            <span class="text-body-m">${esc(getBadgeHint(level))}</span>
+          </div>
         </div>
       </div>
     `;
@@ -1175,6 +1255,7 @@
 
   function handleDragEnd(event) {
     if (!dragState.active || dragState.pointerId !== event.pointerId || !overlay?.card) return;
+    badgeClickSuppress = Boolean(dragState.moved);
     const rect = overlay.card.getBoundingClientRect();
     const nextSettings = {
       ...settings,
@@ -1189,6 +1270,24 @@
     overlay.card.releasePointerCapture?.(event.pointerId);
     dragState = { active: false, pointerId: null, offsetX: 0, offsetY: 0, moved: false };
     event.preventDefault();
+  }
+
+  function handleBadgeClick(event) {
+    if (badgeClickSuppress) {
+      badgeClickSuppress = false;
+      return;
+    }
+    if (dragState.moved) {
+      dragState.moved = false;
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    if (chrome?.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ type: "CHATPOOL_OPEN_POPUP" }, () => {
+        void chrome.runtime.lastError;
+      });
+    }
   }
 
   function handleDragCancel(event) {
@@ -1613,6 +1712,9 @@
       lastHighSubmitAt = now;
       const message = pickNudge("on_send", "high");
       if (message) showBubble(snapshot, { title: "전송 후 제안", message, duration: 5200 });
+      maybeShowDailyReportNudge(snapshot, { delay: 5400, allowRepeat: true });
+    } else {
+      maybeShowDailyReportNudge(snapshot, { delay: 400, allowRepeat: true });
     }
 
     window.setTimeout(() => {
@@ -1681,6 +1783,7 @@
     editorObserver.observe(editor, { childList: true, characterData: true, subtree: true });
     handleTextChange();
     window.setTimeout(showOnboardingGuide, 500);
+    window.setTimeout(() => tryShowPageLoadReportNudge(), 900);
   }
 
   function delayedHandleTextChange() {
@@ -1783,7 +1886,7 @@
       {
         imgUrl: puzzleUrl,
         title: "설정은 여기서 바꿀 수 있어요",
-        htmlBody: `<span class="text-body-l">브라우저 주소창 오른쪽</span><span class="text-body-l">${puzzleImg(16)} 아이콘을 클릭하고</span><span class="text-body-l">챗풀을 선택하면 설정을 바꿀 수 있어요</span>`,
+        htmlBody: `<span class="text-body-l">브라우저 주소창 오른쪽</span><span class="text-body-l">${puzzleImg(16)} 아이콘을 클릭하고</span><span class="text-body-l">챗풀을 선택하면 설정을 바꿀 수 있어요</span><span class="text-body-l">오늘의 프롬프팅 리포트도 여기서 확인할 수 있어요 📊</span>`,
         steps: `<span class="text-body-m">① ${puzzleImg(14)} 클릭 &nbsp;→&nbsp; ② 챗풀 선택</span>`,
         note: null
       }
@@ -2521,6 +2624,9 @@
         transform-origin: top left;
         transition: opacity 160ms ease, transform 160ms ease, filter 160ms ease;
         user-select: none;
+        overflow: hidden;
+        align-items: center;
+        max-width: 280px;
       }
       .cp-widget[data-visible="true"] { opacity: 1; transform: scale(var(--cp-logo-scale, 0.8)) translateY(0); }
       .cp-widget:hover { filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.12)); }
@@ -2570,11 +2676,10 @@
         align-items: center;
         justify-content: flex-end;
         gap: 10px;
-        min-width: 170px;
-        max-width: 188px;
+        min-width: 0;
         padding: 8px 11px 8px 10px;
         border-radius: 999px;
-        overflow: visible;
+        overflow: hidden;
       }
       .variant-tree-status-badge[data-prompt-tip-visible="true"] {
         border-radius: 999px;
@@ -2582,17 +2687,35 @@
       .cp-status-segment {
         position: relative;
         z-index: 2;
-        flex: 0 0 auto;
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: 100%;
         display: flex;
         align-items: center;
-        gap: 8px;
-        min-width: 152px;
       }
-      .cp-tree-wrap { flex: 0 0 auto; display: grid; place-items: center; width: 42px; height: 42px; }
+      .cp-badge-icon {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+      }
+      .cp-tree-wrap {
+        flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        overflow: hidden;
+      }
       .cp-character {
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
         display: block;
+        object-fit: contain;
         transition: all 300ms ease;
         pointer-events: none;
       }
@@ -2616,9 +2739,21 @@
         0%, 100% { transform: translateX(-2px) rotate(-3deg); }
         50% { transform: translateX(2px) rotate(3deg); }
       }
-      .cp-badge-copy { min-width: 0; display: grid; gap: 3px; }
-      .cp-badge-copy strong.text-status { white-space: nowrap; color: var(--level-deep, var(--green-900)); }
-      .cp-badge-copy span.text-body-m { white-space: nowrap; color: var(--gray-600); }
+      .cp-badge-copy {
+        min-width: 0;
+        flex: 1 1 auto;
+        display: grid;
+        gap: 3px;
+        overflow: hidden;
+      }
+      .cp-badge-copy strong.text-status,
+      .cp-badge-copy span.text-body-m {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .cp-badge-copy strong.text-status { color: var(--level-deep, var(--green-900)); }
+      .cp-badge-copy span.text-body-m { color: var(--gray-600); }
       .cp-prompt-tip-inline {
         position: absolute;
         right: calc(100% - 28px);

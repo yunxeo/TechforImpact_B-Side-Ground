@@ -81,9 +81,7 @@ const nodes = {
   categoryTabs: $("#categoryTabs"),
   activeCategoryName: $("#activeCategoryName"),
   activeCategoryCount: $("#activeCategoryCount"),
-  tipList: $("#tipList"),
-  openChatGPT: $("#openChatGPT"),
-  openGemini: $("#openGemini")
+  tipList: $("#tipList")
 };
 
 boot();
@@ -146,8 +144,6 @@ function bindEvents(settings) {
   nodes.refreshReport.addEventListener("click", loadAndRenderReport);
   nodes.openGuide.addEventListener("click", openOnboardingOnActiveTab);
   nodes.openTips.addEventListener("click", toggleTipLibrary);
-  nodes.openChatGPT.addEventListener("click", () => chrome.tabs.create({ url: "https://chatgpt.com/" }));
-  nodes.openGemini.addEventListener("click", () => chrome.tabs.create({ url: "https://gemini.google.com/" }));
 
   async function updateSetting(patch) {
     const next = sanitizeSettings(merge(settings, patch));
@@ -259,7 +255,7 @@ function renderReport(report) {
   const puri = getPuriComment(stat);
   nodes.puriReportImg.src = PURI_ASSETS[puri.imgKey] || PURI_ASSETS.idle;
   nodes.puriReportImg.alt = "푸리";
-  nodes.puriReportMsg.textContent = puri.msg;
+  nodes.puriReportMsg.textContent = getDailyReportNudge(stat) || puri.msg;
 
   nodes.reportInsights.innerHTML = buildInsightItems(stat).join("");
 
@@ -320,6 +316,26 @@ function buildLevelMixNote(stat) {
       : "짧은 것과 긴 것이 섞여 있었어요.";
 
   return `${lead} (${parts.join(" · ")})`;
+}
+
+function getDailyReportNudge(stat) {
+  if (!stat || stat.submitCount === 0) return null;
+
+  const highRatio = stat.highCount / stat.submitCount;
+  const messages = [];
+
+  if (highRatio > 0.5) {
+    messages.push(`오늘 ${stat.submitCount}번 중 ${stat.highCount}번이 길었어요. 리포트 확인해볼까요?`);
+    messages.push("긴 입력이 많았던 하루예요. 팝업에서 자세히 볼 수 있어요 📊");
+  } else if (highRatio > 0.2) {
+    messages.push(`오늘 ${stat.submitCount}번 전송했어요. 오늘 프롬프트 패턴 확인해볼까요?`);
+    messages.push("조금씩 나아지고 있어요! 오늘 리포트 확인해봐요 🌿");
+  } else {
+    messages.push("오늘도 간결하게 잘 쓰고 있어요! 리포트에서 확인해봐요 🌱");
+    messages.push(`오늘 ${stat.submitCount}번 전송했는데 대부분 짧았어요. 최고예요 ✨`);
+  }
+
+  return messages[Math.floor(Math.random() * messages.length)];
 }
 
 function getPuriComment(stat) {

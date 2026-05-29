@@ -32,8 +32,25 @@ chrome.runtime.onInstalled.addListener(async () => {
   await chrome.storage.local.set(patch);
 });
 
+async function openExtensionPopup() {
+  try {
+    if (chrome.action?.openPopup) {
+      await chrome.action.openPopup();
+    }
+  } catch {
+    // Chrome 127 미만 또는 사용자 제스처 없음 등 — 무시
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message) return false;
+
+  if (message.type === "CHATPOOL_OPEN_POPUP") {
+    openExtensionPopup()
+      .then(() => sendResponse({ ok: true }))
+      .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
 
   if (message.type === "CHATPOOL_LOG_EVENT") {
     appendEvent(message.event)
