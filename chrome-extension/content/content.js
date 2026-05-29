@@ -29,6 +29,11 @@
   const PROMPT_TIP_INLINE_COOLDOWN_MS = 5000;
   const PROMPT_TIP_INLINE_ANIMATION_MS = 1500;
 
+  const REPORT_MIN_MEANINGFUL_CHARS = 20;
+  const DRAFT_UPDATE_MIN_INTERVAL_MS = 500;
+  const DRAFT_UPDATE_MIN_CHAR_DELTA = 12;
+  const SUBMIT_FALLBACK_WINDOW_MS = 10000;
+
   const SELECTORS = {
     editor: [
       "#prompt-textarea",
@@ -178,6 +183,13 @@
   let onboardingGuideActive = false;
   let lastOverlayRenderMode = "";
   let lastOverlayPromptTipKey = "";
+  let promptSession = null;
+  let lastNonEmptyText = "";
+  let lastNonEmptySnapshot = null;
+  let lastNonEmptyAt = 0;
+  let lastDraftLogAt = 0;
+  let lastDraftLogChars = -1;
+  let lastDraftLogLevel = "idle";
 
   function storageGet(key) {
     return new Promise((resolve) => {
@@ -774,7 +786,24 @@
   }
 
   function buildSnapshot() {
-    return { ...estimateTokens(lastText) };
+    return buildSnapshotFromText(lastText);
+  }
+
+  function buildSnapshotFromText(text) {
+    return { ...estimateTokens(text || "") };
+  }
+
+  function rememberNonEmptySnapshot(text, snapshot) {
+    if (!String(text || "").trim() || !snapshot || snapshot.charCount <= 0) return;
+    lastNonEmptyText = text;
+    lastNonEmptySnapshot = { ...snapshot };
+    lastNonEmptyAt = Date.now();
+  }
+
+  function clearLastNonEmptySnapshot() {
+    lastNonEmptyText = "";
+    lastNonEmptySnapshot = null;
+    lastNonEmptyAt = 0;
   }
 
   function updateOverlay(snapshot) {
@@ -1268,16 +1297,194 @@
     storageSet({ [STORAGE_KEYS.SETTINGS]: settings });
   }
 
-  function toLogEvent(type, snapshot) {
+  function createPromptSession() {
+    return {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      platform: PLATFORM.id || "unknown",
+      startedAt: Date.now(),
+      initialChars: 0,
+      initialTokens: 0,
+      maxChars: 0,
+      maxTokens: 0,
+      maxUpdatedAt: 0,
+      levelAtMax: "idle",
+      currentChars: 0,
+      currentTokens: 0,
+      currentLevel: "idle",
+      trimEventCount: 0,
+      totalTrimmedDuringDraft: 0,
+      largestDropChars: 0
+    };
+  }
+
+  function levelRank(level) {
+    return { idle: 0, low: 1, medium: 2, high: 3 }[level] || 0;
+  }
+
+  function updatePromptSession(snapshot) {
+    if (!snapshot || snapshot.charCount <= 0) return;
+    if (!promptSession) promptSession = createPromptSession();
+
+    const previousChars = Math.max(0, Number(promptSession.currentChars) || 0);
+    const currentChars = Math.max(0, Math.round(Number(snapshot.charCount) || 0));
+    const currentTokens = Math.max(0, Math.round(Number(snapshot.estimatedTokens) || 0));
+
+    if (
+      promptSession.initialChars === 0 &&
+      currentChars >= REPORT_MIN_MEANINGFUL_CHARS
+    ) {
+      promptSession.initialChars = currentChars;
+      promptSession.initialTokens = currentTokens;
+    }
+
+    if (previousChars > currentChars) {
+      const droppedChars = previousChars - currentChars;
+      if (droppedChars >= REPORT_MIN_MEANINGFUL_CHARS) {
+        promptSession.trimEventCount += 1;
+        promptSession.totalTrimmedDuringDraft += droppedChars;
+        promptSession.largestDropChars = Math.max(promptSession.largestDropChars || 0, droppedChars);
+      }
+    }
+
+    if (currentChars > (promptSession.maxChars || 0)) {
+      promptSession.maxChars = currentChars;
+      promptSession.maxUpdatedAt = Date.now();
+    }
+
+    if (currentTokens > (promptSession.maxTokens || 0)) {
+      promptSession.maxTokens = currentTokens;
+    }
+
+    if (levelRank(snapshot.level) > levelRank(promptSession.levelAtMax)) {
+      promptSession.levelAtMax = snapshot.level;
+    }
+
+    promptSession.currentChars = currentChars;
+    promptSession.currentTokens = currentTokens;
+    promptSession.currentLevel = snapshot.level;
+  }
+
+  function buildPromptSessionPayload(snapshot, flags = {}) {
+    const session = promptSession || createPromptSession();
+    const finalChars = Math.max(0, Math.round(Number(snapshot?.charCount) || 0));
+    const finalTokens = Math.max(0, Math.round(Number(snapshot?.estimatedTokens) || 0));
+    const maxChars = Math.max(session.maxChars || 0, finalChars);
+    const maxTokens = Math.max(session.maxTokens || 0, finalTokens);
+    const initialChars = session.initialChars || finalChars;
+    const initialTokens = session.initialTokens || finalTokens;
+    const sentAt = Date.now();
+
+    return {
+      id: session.id,
+      platform: session.platform || PLATFORM.id || "unknown",
+      startedAt: session.startedAt || sentAt,
+      sentAt,
+      durationMs: Math.max(0, sentAt - (session.startedAt || sentAt)),
+      initialChars,
+      initialTokens,
+      maxChars,
+      maxTokens,
+      finalChars,
+      finalTokens,
+      levelAtMax: session.levelAtMax || snapshot?.level || "idle",
+      levelAtSend: flags.wasDiscarded ? "idle" : (snapshot?.level || "idle"),
+      reducedChars: Math.max(0, maxChars - finalChars),
+      reducedTokens: Math.max(0, maxTokens - finalTokens),
+      trimEventCount: Math.max(0, Math.round(Number(session.trimEventCount) || 0)),
+      totalTrimmedDuringDraft: Math.max(0, Math.round(Number(session.totalTrimmedDuringDraft) || 0)),
+      largestDropChars: Math.max(0, Math.round(Number(session.largestDropChars) || 0)),
+      wasDraft: Boolean(flags.wasDraft),
+      wasSent: Boolean(flags.wasSent),
+      wasDiscarded: Boolean(flags.wasDiscarded)
+    };
+  }
+
+  function resetPromptSession() {
+    promptSession = null;
+    resetDraftLogGuard();
+  }
+
+  function discardPromptSessionIfNeeded(snapshot) {
+    if (!promptSession) return;
+    if ((promptSession.maxChars || 0) < REPORT_MIN_MEANINGFUL_CHARS) {
+      resetPromptSession();
+      clearLastNonEmptySnapshot();
+      return;
+    }
+
+    sendLog(toLogEvent("discard", snapshot, {
+      session: buildPromptSessionPayload(snapshot, { wasDiscarded: true })
+    }));
+    resetPromptSession();
+    clearLastNonEmptySnapshot();
+  }
+
+  function maybeLogDraftUpdate(snapshot, reason = "typing") {
+    logDraftUpdate(snapshot, reason, false);
+  }
+
+  function forceLogDraftUpdate(snapshot, reason = "force") {
+    logDraftUpdate(snapshot, reason, true);
+  }
+
+  function logDraftUpdate(snapshot, reason = "typing", force = false) {
+    if (!snapshot || snapshot.charCount <= 0 || !promptSession) return;
+
+    const now = Date.now();
+    const charDelta = Math.abs(snapshot.charCount - lastDraftLogChars);
+    const levelChanged = snapshot.level !== lastDraftLogLevel;
+    const enoughTimePassed = now - lastDraftLogAt >= DRAFT_UPDATE_MIN_INTERVAL_MS;
+    const enoughChange = lastDraftLogChars < 0 || charDelta >= DRAFT_UPDATE_MIN_CHAR_DELTA || levelChanged;
+
+    if (!force && (!enoughTimePassed || !enoughChange)) return;
+
+    sendLog(toLogEvent("draft_update", snapshot, {
+      draftReason: reason,
+      session: buildPromptSessionPayload(snapshot, { wasDraft: true })
+    }));
+
+    lastDraftLogAt = now;
+    lastDraftLogChars = snapshot.charCount;
+    lastDraftLogLevel = snapshot.level;
+  }
+
+  function forceLogCurrentDraft(reason = "force") {
+    if (!settings.enabled || !currentEditor) return;
+    const liveText = getEditorText(currentEditor);
+    const now = Date.now();
+    const canUseFallback = lastNonEmptyText && now - lastNonEmptyAt <= SUBMIT_FALLBACK_WINDOW_MS;
+    const text = String(liveText || "").trim() ? liveText : (canUseFallback ? lastNonEmptyText : "");
+    if (!String(text || "").trim()) return;
+
+    lastText = text;
+    const snapshot = buildSnapshotFromText(text);
+    updatePromptSession(snapshot);
+    rememberNonEmptySnapshot(text, snapshot);
+    forceLogDraftUpdate(snapshot, reason);
+  }
+
+  function resetDraftLogGuard() {
+    lastDraftLogAt = 0;
+    lastDraftLogChars = -1;
+    lastDraftLogLevel = "idle";
+  }
+
+  function toLogEvent(type, snapshot, extra = {}) {
     return {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       timestamp: Date.now(),
       designVariant: FIXED_DESIGN_VARIANT,
+      platform: PLATFORM.id || "unknown",
       type,
-      estimatedTokens: snapshot.estimatedTokens,
-      charCount: snapshot.charCount,
-      level: snapshot.level,
-      languageMix: { hangul: snapshot.hangulCount, cjk: snapshot.cjkCount, other: snapshot.otherCount }
+      estimatedTokens: Math.max(0, Math.round(Number(snapshot?.estimatedTokens) || 0)),
+      charCount: Math.max(0, Math.round(Number(snapshot?.charCount) || 0)),
+      level: snapshot?.level || "idle",
+      languageMix: {
+        hangul: Math.max(0, Math.round(Number(snapshot?.hangulCount) || 0)),
+        cjk: Math.max(0, Math.round(Number(snapshot?.cjkCount) || 0)),
+        other: Math.max(0, Math.round(Number(snapshot?.otherCount) || 0))
+      },
+      ...extra
     };
   }
 
@@ -1299,6 +1506,7 @@
     updateOverlay(snapshot);
 
     if (!text.trim()) {
+      discardPromptSessionIfNeeded(snapshot);
       entryShown = { medium: false, high: false };
       lastLevel = "idle";
       lastTokenCount = 0;
@@ -1307,6 +1515,10 @@
       hideInlinePromptTip();
       return;
     }
+
+    updatePromptSession(snapshot);
+    rememberNonEmptySnapshot(text, snapshot);
+    maybeLogDraftUpdate(snapshot);
 
     if (levelChanged && snapshot.level !== "idle" && snapshot.level !== lastLoggedLevel) {
       sendLog(toLogEvent("level_change", snapshot));
@@ -1341,16 +1553,47 @@
     lastTokenCount = snapshot.estimatedTokens;
   }
 
-  function handleSubmitSignal() {
+  function getBestSubmitCapture(options = {}) {
+    const liveText = typeof options.text === "string"
+      ? options.text
+      : (currentEditor ? getEditorText(currentEditor) : lastText);
+
     const now = Date.now();
-    if (now - lastSubmitAt < 1200) return;
-    const text = currentEditor ? getEditorText(currentEditor) : lastText;
-    if (!text.trim()) return;
+    const canUseFallback = lastNonEmptyText && now - lastNonEmptyAt <= SUBMIT_FALLBACK_WINDOW_MS;
+    const text = String(liveText || "").trim() ? liveText : (canUseFallback ? lastNonEmptyText : "");
+    if (!String(text || "").trim()) return null;
+
+    const snapshot = String(liveText || "").trim() && options.snapshot?.charCount > 0
+      ? options.snapshot
+      : buildSnapshotFromText(text);
+
+    return { text, snapshot };
+  }
+
+  function handleSubmitSignal(options = {}) {
+    if (options && options.target) options = {};
+
+    const now = Date.now();
+    if (now - lastSubmitAt < 900) return;
+
+    const capture = getBestSubmitCapture(options);
+    if (!capture || !capture.snapshot || capture.snapshot.charCount <= 0) return;
+
+    const { text, snapshot } = capture;
     lastText = text;
     lastSubmitAt = now;
 
-    const snapshot = buildSnapshot();
-    sendLog(toLogEvent("submit", snapshot));
+    updatePromptSession(snapshot);
+    rememberNonEmptySnapshot(text, snapshot);
+    forceLogDraftUpdate(snapshot, `submit_flush:${options.source || "unknown"}`);
+
+    const sessionPayload = buildPromptSessionPayload(snapshot, { wasSent: true });
+    sendLog(toLogEvent("submit", snapshot, {
+      submitSource: options.source || "unknown",
+      session: sessionPayload
+    }));
+    resetPromptSession();
+    clearLastNonEmptySnapshot();
 
     if (snapshot.level === "high") {
       lastHighSubmitAt = now;
@@ -1364,10 +1607,23 @@
     }, 700);
   }
 
+  function captureSubmitFromCurrentEditor(source = "button") {
+    const text = currentEditor ? getEditorText(currentEditor) : lastText;
+    const snapshot = String(text || "").trim() ? buildSnapshotFromText(text) : null;
+    handleSubmitSignal({ text, snapshot, source });
+  }
+
+  function isSendButtonLike(button) {
+    if (!button) return false;
+    if (button.disabled || button.getAttribute("aria-disabled") === "true") return false;
+    const text = `${button.getAttribute("aria-label") || ""} ${button.getAttribute("data-testid") || ""} ${button.getAttribute("data-test-id") || ""} ${button.textContent || ""}`;
+    return /send|submit|전송|보내기|제출/i.test(text);
+  }
+
   function handleEditorKeydown(event) {
     if (event.defaultPrevented || event.isComposing) return;
     if (event.key !== "Enter" || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return;
-    window.setTimeout(handleSubmitSignal, 80);
+    captureSubmitFromCurrentEditor("enter");
   }
 
   function bindEditor(editor) {
@@ -1397,7 +1653,9 @@
       for (const selector of SELECTORS.sendButton) {
         try {
           for (const button of querySelectorAllDeep(selector, currentComposer)) {
-            button.addEventListener("click", handleSubmitSignal, true);
+            button.addEventListener("pointerdown", () => captureSubmitFromCurrentEditor("button_pointerdown"), true);
+            button.addEventListener("mousedown", () => captureSubmitFromCurrentEditor("button_mousedown"), true);
+            button.addEventListener("click", () => captureSubmitFromCurrentEditor("button_click"), true);
           }
         } catch {
           // 서비스별 DOM 실험으로 selector가 실패해도 전역 click fallback이 처리한다.
@@ -1412,7 +1670,10 @@
   }
 
   function delayedHandleTextChange() {
-    window.setTimeout(handleTextChange, 0);
+    window.setTimeout(() => {
+      handleTextChange();
+      forceLogCurrentDraft("paste");
+    }, 0);
   }
 
   function scanAndBind() {
@@ -1441,14 +1702,29 @@
     pageObserver.observe(document.documentElement, { childList: true, subtree: true });
     window.addEventListener("resize", () => updateOverlayPosition(), { passive: true });
     window.addEventListener("scroll", () => updateOverlayPosition(), { passive: true });
-    document.addEventListener("click", (event) => {
+    const handleGlobalSendButtonSignal = (event) => {
       const button = event.target?.closest?.("button, [role='button']");
       if (!button || !currentComposer || !currentComposer.contains(button)) return;
-      const text = `${button.getAttribute("aria-label") || ""} ${button.getAttribute("data-testid") || ""} ${button.getAttribute("data-test-id") || ""} ${button.textContent || ""}`;
-      if (/send|submit|전송|보내기|제출/i.test(text)) window.setTimeout(handleSubmitSignal, 40);
-    }, true);
+      if (isSendButtonLike(button)) captureSubmitFromCurrentEditor(`global_${event.type}`);
+    };
+    const handleGlobalSubmitKeydown = (event) => {
+      dismissOnboardingGuide();
+      if (event.defaultPrevented || event.isComposing || event.keyCode === 229) return;
+      if (event.key !== "Enter" || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return;
+      const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+      const targetInsideEditor = currentEditor && (event.target === currentEditor || currentEditor.contains?.(event.target) || path.includes(currentEditor));
+      const targetInsideComposer = currentComposer && (event.target === currentComposer || currentComposer.contains?.(event.target) || path.includes(currentComposer));
+      if (!targetInsideEditor && !targetInsideComposer) return;
+      captureSubmitFromCurrentEditor("enter_global");
+    };
+    document.addEventListener("pointerdown", handleGlobalSendButtonSignal, true);
+    document.addEventListener("click", handleGlobalSendButtonSignal, true);
     document.addEventListener("pointerdown", handleGlobalPointerDown, true);
-    document.addEventListener("keydown", () => dismissOnboardingGuide(), true);
+    document.addEventListener("keydown", handleGlobalSubmitKeydown, true);
+    window.addEventListener("blur", () => forceLogCurrentDraft("blur"), { passive: true });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") forceLogCurrentDraft("visibility_hidden");
+    }, true);
 
     document.addEventListener("mousemove", (event) => {
       if (!overlay || !settings.enabled || !currentEditor) return;

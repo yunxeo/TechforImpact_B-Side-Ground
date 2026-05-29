@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "챗풀Chatpull",
-  "version": "2.0.0",
-  "description": "더 나은 질문, 더 가벼운 AI. 푸르게 AI를 사용하는 새로운 방식으로",
+  "version": "2.0.2",
+  "description": "ChatGPT와 Gemini 입력창의 예상 토큰량을 표시하고, draft/submit/discard 기반 리포트용 프롬프트 세션 데이터와 전송 직전 snapshot을 로컬에 저장하는 챗풀Chatpull 프로토타입입니다.",
   "permissions": [
     "storage"
   ],
@@ -44,5 +44,6 @@
     "16": "assets/icon16.png",
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
-  }
+  },
+  "version_name": "2.0.2 Submit capture reliability patch"
 }

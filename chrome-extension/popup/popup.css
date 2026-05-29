@@ -55,3 +55,29 @@ button:hover { filter: brightness(1.04); }
 .usage-item { padding: 10px 11px; border-radius: 14px; background: #ffffff; border: 1px solid rgba(0,0,0,0.05); }
 .usage-item strong { display: block; margin-bottom: 4px; color: var(--green-5); font-size: 12.5px; font-weight: 850; }
 .usage-item p { color: #333; font-size: 12px; line-height: 1.5; }
+
+
+.report-panel { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.08); display: grid; gap: 10px; }
+.report-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #777; font-size: 11px; font-weight: 750; }
+.report-refresh { flex: 0 0 auto; padding: 7px 9px; border-radius: 999px; background: #ffffff; color: var(--green-5); border: 1px solid rgba(0,0,0,0.08); font-size: 11px; }
+.report-status { padding: 10px 11px; border-radius: 14px; background: #ffffff; color: #555; font-size: 12px; line-height: 1.45; border: 1px solid rgba(0,0,0,0.05); }
+.report-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.report-summary-card { padding: 11px; border-radius: 16px; background: #ffffff; border: 1px solid rgba(0,0,0,0.05); }
+.report-summary-card strong { display: block; color: var(--green-5); font-size: 18px; font-weight: 900; letter-spacing: -0.02em; }
+.report-summary-card span { display: block; margin-top: 4px; color: #777; font-size: 11px; font-weight: 750; line-height: 1.35; }
+.report-block { padding: 11px; border-radius: 16px; background: #ffffff; border: 1px solid rgba(0,0,0,0.05); }
+.report-block-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
+.report-block-head strong { color: #111; font-size: 12px; font-weight: 850; }
+.report-block-head span { color: var(--green-3); font-size: 11px; font-weight: 850; }
+.report-level-bars { display: grid; gap: 7px; }
+.report-level-row { display: grid; grid-template-columns: 54px 1fr 34px; align-items: center; gap: 8px; font-size: 11px; color: #555; font-weight: 800; }
+.report-level-track { height: 8px; border-radius: 999px; background: rgba(0,0,0,0.06); overflow: hidden; }
+.report-level-fill { display: block; height: 100%; min-width: 2px; border-radius: 999px; background: var(--green-2); }
+.report-level-fill.medium { background: var(--green-3); }
+.report-level-fill.high { background: var(--green-5); }
+.report-metrics { display: grid; gap: 8px; }
+.report-metric-item { display: flex; justify-content: space-between; gap: 8px; padding: 9px 10px; border-radius: 14px; background: rgba(255,255,255,0.78); border: 1px solid rgba(0,0,0,0.04); }
+.report-metric-item span { color: #777; font-size: 11.5px; font-weight: 750; }
+.report-metric-item strong { color: #111; font-size: 12px; font-weight: 900; text-align: right; }
+.report-message { padding: 10px 11px; border-radius: 14px; color: var(--green-5); background: rgba(167,230,204,0.18); font-size: 12px; font-weight: 800; line-height: 1.45; }
+.report-badge { min-width: 48px; font-size: 12px; }
