@@ -3,15 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Chatpull Green</title>
+    <title>챗풀Chatpull</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <main class="wrap">
       <header class="header">
         <div>
-          <h1>Chatpull Green</h1>
-          <p>ChatGPT · Gemini 지원</p>
+          <h1 class="text-h1">챗풀Chatpull</h1>
+          <p class="text-body-m">ChatGPT · Gemini 지원</p>
         </div>
         <label class="switch" title="확장 프로그램 켜기/끄기">
           <input id="enabled" type="checkbox" />
@@ -19,49 +19,82 @@
         </label>
       </header>
 
-      <section class="card fixed-card">
-        <div class="eyebrow">현재 고정값</div>
-        <div class="fixed-row"><strong>디자인</strong><span>02 · Tree Status Badge</span></div>
-        <div class="fixed-row"><strong>크기</strong><span>플로팅 80% · 문구 80%</span></div>
-        <div class="fixed-row"><strong>기본 위치</strong><span>채팅창 오른쪽 위</span></div>
+      <section class="card report-card">
+        <span class="eyebrow text-body-s">Prompting Report</span>
+        <h2 class="text-h2">오늘의 프롬프팅 리포트</h2>
+
+        <div class="report-header">
+          <div class="report-date text-body-s" id="reportDate">오늘 기준</div>
+          <button class="report-refresh text-body-s" id="refreshReport" type="button">새로고침</button>
+        </div>
+
+        <div id="reportStatus" class="report-status text-body-m" hidden></div>
+
+        <div class="puri-comment">
+          <img class="puri-img" id="puriReportImg" alt="" width="44" height="44" />
+          <div class="puri-bubble text-body-l">
+            <span id="puriReportMsg">오늘도 간결하게 잘 쓰고 있어요!</span>
+          </div>
+        </div>
+
+        <div class="report-insights" id="reportInsights"></div>
+
+        <div class="level-mix">
+          <p class="level-mix-title text-h3">오늘 프롬프트 길이 느낌</p>
+          <div class="level-bar">
+            <div class="level-seg low" id="lowRatio"></div>
+            <div class="level-seg medium" id="mediumRatio"></div>
+            <div class="level-seg high" id="highRatio"></div>
+          </div>
+          <div class="level-legend">
+            <span class="legend-item text-body-m">
+              <span class="legend-dot low-dot"></span>낮음
+            </span>
+            <span class="legend-item text-body-m">
+              <span class="legend-dot medium-dot"></span>중간
+            </span>
+            <span class="legend-item text-body-m">
+              <span class="legend-dot high-dot"></span>높음
+            </span>
+          </div>
+          <p class="level-mix-note text-body-m" id="levelMixNote"></p>
+        </div>
+
+        <div class="week-calendar">
+          <div class="week-label text-body-s">최근 7일</div>
+          <div class="week-days" id="weekDays"></div>
+        </div>
       </section>
 
-      <section class="card control-card">
-        <div class="field-label">위치 설정</div>
-        <p class="control-help">기본값은 채팅창 오른쪽 위 고정입니다. 필요할 때만 드래그 이동을 켜세요.</p>
-        <label class="field-label" for="floatingLogoPlacement">플로팅 위치</label>
-        <select id="floatingLogoPlacement">
-          <option value="top-right">오른쪽 위 (기본)</option>
-          <option value="top-center">중앙 위</option>
-          <option value="top-left">왼쪽 위</option>
-          <option value="chat-right">오른쪽 옆</option>
-        </select>
-        <label class="check-row">
-          <input id="dragEnabled" type="checkbox" />
-          <span>드래그해서 위치 옮기기</span>
-        </label>
-        <button id="resetCustomPosition" type="button" class="secondary">드래그 위치 초기화</button>
+      <section class="card usage-card">
+        <span class="eyebrow text-body-s">Usage Guide</span>
+        <h2 class="text-h2">처음 사용 팁</h2>
+        <p class="help-text text-body-m">ChatGPT·Gemini 입력창 위 챗풀 배지와 팁 사용법을 다시 볼 수 있어요.</p>
+        <button id="openGuide" class="secondary text-body-l" type="button">사용 팁 열기</button>
       </section>
 
-      <section class="card stats-card">
-        <div class="row"><span>오늘 전송</span><strong id="submitCount">0회</strong></div>
-        <div class="row"><span>오늘 입력 토큰</span><strong id="totalTokens">0</strong></div>
-        <div class="row"><span>최대 입력</span><strong id="maxTokens">0</strong></div>
-        <div class="row"><span>높음 구간</span><strong id="highCount">0회</strong></div>
-      </section>
+      <section class="card tips-card">
+        <span class="eyebrow text-body-s">Prompt Guide</span>
+        <h2 class="text-h2">프롬프트 팁 모음</h2>
+        <p class="help-text text-body-m"><span id="tipTotal">0</span>개의 프롬프팅 팁을 확인해보세요</p>
+        <button id="openTips" class="secondary text-body-l" type="button">팁 모음 열기</button>
 
-      <section class="card recent">
-        <h2>최근 로그</h2>
-        <ol id="events"></ol>
+        <section id="tipLibrary" class="tip-library" hidden>
+          <div id="categoryTabs" class="category-tabs" role="tablist" aria-label="프롬프트 팁 카테고리"></div>
+          <div class="tip-list-head">
+            <strong id="activeCategoryName" class="text-h3">전체</strong>
+            <span id="activeCategoryCount" class="text-body-s">0개</span>
+          </div>
+          <div id="tipList" class="tip-list"></div>
+        </section>
       </section>
 
       <footer class="footer">
-        <button id="openChatGPT" type="button">ChatGPT 열기</button>
-        <button id="openGemini" type="button">Gemini 열기</button>
-        <button id="showGuide" type="button">사용 가이드 보기</button>
-        <button id="clearLogs" type="button" class="danger">로그 삭제</button>
+        <button id="openChatGPT" class="text-body-l" type="button">ChatGPT 열기</button>
+        <button id="openGemini" class="text-body-l" type="button">Gemini 열기</button>
       </footer>
     </main>
+    <script src="../content/prompt-tips.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

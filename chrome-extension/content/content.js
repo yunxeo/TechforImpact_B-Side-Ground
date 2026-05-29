@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const APP = "Chatpull Green";
+  const APP = "챗풀Chatpull";
   const ROOT_ID = "chatpull-green-root";
   const ONBOARDING_ROOT_ID = "chatpull-onboarding-root";
   const ONBOARDING_KEY = "chatpool.onboarded";
@@ -10,12 +10,12 @@
   };
 
   const FIXED_DESIGN_VARIANT = "tree-status-badge";
-  const LOGO_PLACEMENTS = new Set(["top-right", "top-center", "top-left", "chat-right"]);
+  const LOGO_PLACEMENTS = new Set(["top-right"]);
   const DEFAULT_SETTINGS = {
     enabled: true,
     designVariant: FIXED_DESIGN_VARIANT,
-    nudgeTextScale: 90,
-    floatingLogoScale: 90,
+    nudgeTextScale: 80,
+    floatingLogoScale: 80,
     floatingLogoPlacement: "top-right",
     dragEnabled: false,
     customPosition: null,
@@ -25,6 +25,16 @@
       mediumMax: 400
     }
   };
+
+  const PROMPT_TIP_AUTO_DURATION_MS = 5000;
+  const PROMPT_TIP_INLINE_REPEAT_GUARD_MS = 45000;
+  const PROMPT_TIP_INLINE_COOLDOWN_MS = 5000;
+  const PROMPT_TIP_INLINE_ANIMATION_MS = 1500;
+
+  const REPORT_MIN_MEANINGFUL_CHARS = 20;
+  const DRAFT_UPDATE_MIN_INTERVAL_MS = 500;
+  const DRAFT_UPDATE_MIN_CHAR_DELTA = 12;
+  const SUBMIT_FALLBACK_WINDOW_MS = 10000;
 
   const SELECTORS = {
     editor: [
@@ -168,6 +178,21 @@
   let entryShown = { medium: false, high: false };
   let lastAutoPromptTipAt = 0;
   let lastAutoPromptTipKey = "";
+  let lastInlinePromptTipHiddenAt = 0;
+  let inlinePromptTip = { visible: false, closing: false, title: "", message: "", key: "" };
+  let inlinePromptTipTimer = null;
+  let inlinePromptTipCloseTimer = null;
+  let badgeHoverActive = false;
+  let onboardingGuideActive = false;
+  let lastOverlayRenderMode = "";
+  let lastOverlayPromptTipKey = "";
+  let promptSession = null;
+  let lastNonEmptyText = "";
+  let lastNonEmptySnapshot = null;
+  let lastNonEmptyAt = 0;
+  let lastDraftLogAt = 0;
+  let lastDraftLogChars = -1;
+  let lastDraftLogLevel = "idle";
 
   function storageGet(key) {
     return new Promise((resolve) => {
@@ -200,12 +225,12 @@
     const next = deepMerge(DEFAULT_SETTINGS, input || {});
     next.enabled = Boolean(next.enabled);
     next.designVariant = FIXED_DESIGN_VARIANT;
-    next.nudgeTextScale = clamp(Math.round(Number(next.nudgeTextScale) || DEFAULT_SETTINGS.nudgeTextScale), 50, 140);
-    next.floatingLogoScale = clamp(Math.round(Number(next.floatingLogoScale) || DEFAULT_SETTINGS.floatingLogoScale), 50, 140);
-    if (!LOGO_PLACEMENTS.has(next.floatingLogoPlacement)) next.floatingLogoPlacement = DEFAULT_SETTINGS.floatingLogoPlacement;
+    next.nudgeTextScale = 80;
+    next.floatingLogoScale = 80;
+    next.floatingLogoPlacement = "top-right";
     next.dragEnabled = Boolean(next.dragEnabled);
+    next.customPosition = sanitizeCustomPosition(next.customPosition);
     next.onboardingGuideShown = Boolean(next.onboardingGuideShown);
-    next.customPosition = next.dragEnabled ? sanitizeCustomPosition(next.customPosition) : null;
     next.thresholds.lowMax = Math.max(20, Math.round(Number(next.thresholds.lowMax) || DEFAULT_SETTINGS.thresholds.lowMax));
     next.thresholds.mediumMax = Math.max(next.thresholds.lowMax + 50, Math.round(Number(next.thresholds.mediumMax) || DEFAULT_SETTINGS.thresholds.mediumMax));
     return next;
@@ -434,6 +459,7 @@
   }
 
   function triggerHoverBubble() {
+    if (onboardingGuideActive || document.getElementById(ONBOARDING_ROOT_ID)) return;
     const snapshot = buildSnapshot();
     if (!snapshot) return;
 
@@ -455,10 +481,22 @@
       title: hoverSession.title,
       message: hoverSession.message,
       manual: true,
-      forceVisible: true
+      kind: "hover"
     });
 
     if (isNewHoverSession) sendLog(toLogEvent("hover", snapshot));
+  }
+
+  function handleBadgePointerLeave() {
+    badgeHoverActive = false;
+    if (overlay?.bubble?.dataset.visible === "true" && overlay.bubble.dataset.kind === "hover") {
+      scheduleHideBubble(120);
+    }
+  }
+
+  function handleBadgePointerEnter() {
+    badgeHoverActive = true;
+    triggerHoverBubble();
   }
 
   function pickHoverContent(snapshot) {
@@ -701,7 +739,6 @@
         storedOverlay.host &&
         storedOverlay.card &&
         storedOverlay.bubble &&
-        storedOverlay.tipBar &&
         storedOverlay.host.isConnected
       ) {
         return storedOverlay;
@@ -732,38 +769,19 @@
     const bubble = document.createElement("div");
     bubble.className = "cp-bubble";
     bubble.dataset.visible = "false";
-    bubble.innerHTML = `<button class="cp-bubble-close" type="button" aria-label="팝업 닫기">×</button><strong>대기</strong><span>${esc(PLATFORM.label)} 입력창에 글을 쓰면 예상 토큰량을 보여드립니다.</span>`;
+    bubble.innerHTML = `<strong class="text-status">대기</strong><span class="text-body-m">${esc(PLATFORM.label)} 입력창에 글을 쓰면 예상 토큰량을 보여드립니다.</span>`;
 
-    const tipBar = document.createElement("div");
-    tipBar.className = "cp-tip-bar";
-    tipBar.dataset.visible = "false";
-
-    shadow.append(style, tipBar, card, bubble);
-    const result = { host, shadow, card, bubble, tipBar };
+    shadow.append(style, card, bubble);
+    const result = { host, shadow, card, bubble };
     host.__chatpullOverlay = result;
 
-    const showHoverBubble = triggerHoverBubble;
-
-    card.addEventListener("mouseenter", showHoverBubble);
-    card.addEventListener("pointerenter", showHoverBubble);
-    card.addEventListener("mouseover", showHoverBubble);
-    card.addEventListener("focus", showHoverBubble);
-    card.addEventListener("click", showHoverBubble);
-    card.addEventListener("mouseleave", () => {
-      resetHoverSession();
-      scheduleHideBubble(1200);
-    });
-    card.addEventListener("pointerleave", () => {
-      resetHoverSession();
-      scheduleHideBubble(1200);
-    });
+    card.addEventListener("mouseenter", handleBadgePointerEnter);
+    card.addEventListener("pointerenter", handleBadgePointerEnter);
+    card.addEventListener("focus", handleBadgePointerEnter);
+    card.addEventListener("mouseleave", handleBadgePointerLeave);
+    card.addEventListener("pointerleave", handleBadgePointerLeave);
     bubble.addEventListener("mouseenter", () => clearTimeout(overlayTimer));
     bubble.addEventListener("mouseleave", () => scheduleHideBubble(800));
-    bubble.querySelector(".cp-bubble-close")?.addEventListener("click", (event) => {
-      event.stopPropagation();
-      hideBubble();
-    });
-
     card.addEventListener("pointerdown", handleDragStart);
     card.addEventListener("pointermove", handleDragMove);
     card.addEventListener("pointerup", handleDragEnd);
@@ -773,7 +791,24 @@
   }
 
   function buildSnapshot() {
-    return { ...estimateTokens(lastText) };
+    return buildSnapshotFromText(lastText);
+  }
+
+  function buildSnapshotFromText(text) {
+    return { ...estimateTokens(text || "") };
+  }
+
+  function rememberNonEmptySnapshot(text, snapshot) {
+    if (!String(text || "").trim() || !snapshot || snapshot.charCount <= 0) return;
+    lastNonEmptyText = text;
+    lastNonEmptySnapshot = { ...snapshot };
+    lastNonEmptyAt = Date.now();
+  }
+
+  function clearLastNonEmptySnapshot() {
+    lastNonEmptyText = "";
+    lastNonEmptySnapshot = null;
+    lastNonEmptyAt = 0;
   }
 
   function updateOverlay(snapshot) {
@@ -781,63 +816,91 @@
     overlay.host.style.setProperty("--cp-nudge-scale", `${settings.nudgeTextScale / 100}`);
     overlay.host.style.setProperty("--cp-logo-scale", `${settings.floatingLogoScale / 100}`);
     const card = overlay.card;
+    const promptTipVisible = (inlinePromptTip.visible || inlinePromptTip.closing) && Boolean(inlinePromptTip.message);
+    const renderMode = promptTipVisible ? (inlinePromptTip.closing ? "tip-closing" : "tip") : "status";
+    const promptTipKey = promptTipVisible ? inlinePromptTip.key : "";
+
     card.className = "cp-widget variant-tree-status-badge";
-    const isActive = !!(settings.enabled && currentEditor);
-    card.dataset.visible = isActive ? "true" : "false";
+    card.dataset.visible = settings.enabled && currentEditor ? "true" : "false";
     card.dataset.level = snapshot.level;
+    card.dataset.promptTipVisible = promptTipVisible ? "true" : "false";
     card.dataset.dragEnabled = settings.dragEnabled ? "true" : "false";
     card.style.setProperty("--progress", `${snapshot.progress}%`);
-    card.innerHTML = renderTreeStatusBadge(snapshot);
 
-    // 팁 바: 타이핑 중(level이 idle이 아닐 때)에만 표시
-    const tipBar = overlay.tipBar;
-    if (tipBar) {
-      tipBar.innerHTML = renderTipBarContent(snapshot);
-      tipBar.dataset.visible = isActive && snapshot.level !== "idle" ? "true" : "false";
+    const canPatch =
+      card.querySelector(".cp-status-segment") &&
+      lastOverlayRenderMode === renderMode &&
+      lastOverlayPromptTipKey === promptTipKey;
+
+    if (canPatch) {
+      patchStatusSegment(card, snapshot);
+    } else {
+      card.innerHTML = renderTreeStatusBadge(snapshot);
+      lastOverlayRenderMode = renderMode;
+      lastOverlayPromptTipKey = promptTipKey;
+      patchStatusSegment(card, snapshot);
     }
 
     updateOverlayPosition();
   }
 
-  function renderTreeStatusBadge(snapshot) {
-    return `<div class="cp-tree-wrap">${characterIcon(snapshot.level)}</div>`;
+  function patchStatusSegment(card, snapshot) {
+    const level = snapshot.level;
+    const levelLabel = getLevelLabel(level);
+    const count = `${snapshot.estimatedTokens.toLocaleString()} tokens`;
+    const treeWrap = card.querySelector(".cp-tree-wrap");
+    const strong = card.querySelector(".cp-badge-copy strong");
+    const hint = card.querySelector(".cp-badge-copy span");
+
+    if (treeWrap && card.dataset.iconLevel !== level) {
+      treeWrap.innerHTML = characterIcon(level);
+      card.dataset.iconLevel = level;
+    }
+    if (strong) strong.textContent = `${levelLabel} · ${count}`;
+    if (hint) hint.textContent = getBadgeHint(level);
   }
 
-  function renderTipBarContent(snapshot) {
-    const levelLabel = getLevelLabel(snapshot.level);
+  function renderTreeStatusBadge(snapshot) {
+    const level = snapshot.level;
+    const levelLabel = getLevelLabel(level);
     const count = `${snapshot.estimatedTokens.toLocaleString()} tokens`;
-    const impact = getImpactLabel(snapshot.level);
-    return `<strong>${esc(levelLabel)} · ${esc(count)}</strong><span>${esc(impact)}</span>`;
+    const tree = characterIcon(level);
+    const status = `
+      <div class="cp-status-segment" aria-label="현재 입력 상태">
+        <div class="cp-tree-wrap">${tree}</div>
+        <div class="cp-badge-copy">
+          <strong class="text-status">${esc(levelLabel)} · ${esc(count)}</strong>
+          <span class="text-body-m">${esc(getBadgeHint(level))}</span>
+        </div>
+      </div>
+    `;
+
+    if ((!inlinePromptTip.visible && !inlinePromptTip.closing) || !inlinePromptTip.message) return status;
+
+    return `
+      <div class="cp-prompt-tip-inline" data-state="${inlinePromptTip.closing ? "closing" : "opening"}" aria-live="polite">
+        <strong class="text-status">${esc(inlinePromptTip.title || "프롬프트 팁")}</strong>
+        <span class="text-body-l">${esc(inlinePromptTip.message)}</span>
+      </div>
+      <div class="cp-inline-divider" aria-hidden="true"></div>
+      ${status}
+    `;
   }
 
   function updateOverlayPosition() {
     if (!overlay || !currentEditor) return;
     const card = overlay.card;
     const bubble = overlay.bubble;
-    const tipBar = overlay.tipBar;
 
     const cardPlacement = chooseCardPlacement(card);
     applyPlacement(card, cardPlacement);
     card.dataset.placement = cardPlacement.name;
+    card.style.setProperty("--cp-tip-width", `${getPromptTipDrawerWidth(cardPlacement)}px`);
 
     if (bubble.dataset.visible === "true") {
       const bubblePlacement = chooseBubblePlacementNearLogo(bubble);
       applyPlacement(bubble, bubblePlacement);
       bubble.dataset.placement = bubblePlacement.name;
-    }
-
-    // 팁 바: 배지 왼쪽에 고정 (right 좌표 기반, max-width로 넘침 방지)
-    if (tipBar) {
-      const cardRect = card.getBoundingClientRect();
-      if (cardRect.width > 0) {
-        const GAP = 8;
-        const rightPx = window.innerWidth - cardRect.left + GAP;
-        const maxW = Math.max(80, cardRect.left - GAP - 8);
-        tipBar.style.right = `${Math.round(rightPx)}px`;
-        tipBar.style.top = `${Math.round(cardRect.top)}px`;
-        tipBar.style.height = `${Math.round(cardRect.height)}px`;
-        tipBar.style.setProperty("--cp-tip-max-w", `${Math.round(maxW)}px`);
-      }
     }
   }
 
@@ -875,6 +938,14 @@
     return { name: "top-center-forced", left: windowFallback.left, top: windowFallback.top };
   }
 
+  function getPromptTipDrawerWidth(cardPlacement) {
+    const margin = 12;
+    const leftSpace = Math.max(0, Math.floor((cardPlacement?.left || margin) - margin));
+    const viewportFallback = Math.max(260, Math.floor(window.innerWidth - 240));
+    const available = leftSpace || viewportFallback;
+    return clamp(available, 260, 560);
+  }
+
   function calculateLogoPlacementRect(placement, anchor, width, height, margin) {
     const aboveY = anchor.top - height - 12;
     switch (placement) {
@@ -899,13 +970,13 @@
           width,
           height
         );
-      case "top-right": {
-        const left = clamp(anchor.right - width, margin, window.innerWidth - width - margin);
-        const rect = makeRect(left, aboveY, width, height);
-        // 배지 아이콘이 오른쪽 고정되어야 팁 바가 왼쪽으로 슬라이드될 때 아이콘이 안 밀림
-        rect.rightEdge = window.innerWidth - rect.right;
-        return rect;
-      }
+      case "top-right":
+        return makeRect(
+          clamp(anchor.right - width, margin, window.innerWidth - width - margin),
+          aboveY,
+          width,
+          height
+        );
       case "chat-right":
         return makeRect(
           anchor.right + 16,
@@ -932,8 +1003,8 @@
   function chooseBubblePlacementNearLogo(element) {
     const margin = 12;
     const cardRect = overlay?.card?.getBoundingClientRect();
-    const width = Math.ceil(Math.min(Math.max(element.offsetWidth || 240, 190), 252));
-    const height = Math.ceil(Math.max(element.offsetHeight || 72, 56));
+    const width = Math.ceil(Math.min(Math.max(element.offsetWidth || 150, 132), 168));
+    const height = Math.ceil(Math.max(element.offsetHeight || 62, 48));
 
     if (!cardRect || !isUsefulRect(cardRect)) {
       const fallback = centeredAboveWindowRect(width, height, margin);
@@ -989,7 +1060,7 @@
     );
 
     const placement = overlay?.card?.dataset.placement || settings.floatingLogoPlacement;
-    if (placement === "chat-left" || placement === "custom-drag") {
+    if (placement.includes("left") || placement === "chat-left" || placement === "custom-drag") {
       return [
         { name: "right-of-logo", rect: rightOfLogo },
         { name: "above-logo", rect: aboveLogo },
@@ -997,7 +1068,7 @@
         { name: "left-of-logo", rect: leftOfLogo }
       ];
     }
-    if (placement === "chat-right") {
+    if (placement.includes("right") || placement === "chat-right") {
       return [
         { name: "left-of-logo", rect: leftOfLogo },
         { name: "above-logo", rect: aboveLogo },
@@ -1005,7 +1076,6 @@
         { name: "right-of-logo", rect: rightOfLogo }
       ];
     }
-    // top-left, top-center, top-right: 뱃지 바로 위 우선
     return [
       { name: "above-logo", rect: aboveLogo },
       { name: "right-of-logo", rect: rightOfLogo },
@@ -1065,13 +1135,7 @@
   }
 
   function applyPlacement(element, placement) {
-    if (placement.rightEdge !== undefined) {
-      element.style.right = `${Math.round(placement.rightEdge)}px`;
-      element.style.removeProperty("left");
-    } else {
-      element.style.left = `${Math.round(placement.left)}px`;
-      element.style.removeProperty("right");
-    }
+    element.style.left = `${Math.round(placement.left)}px`;
     element.style.top = `${Math.round(placement.top)}px`;
     if (placement.hidden) element.dataset.visible = "false";
   }
@@ -1079,9 +1143,6 @@
   function handleDragStart(event) {
     if (!settings.dragEnabled || event.button !== 0 || !overlay?.card) return;
     const rect = overlay.card.getBoundingClientRect();
-    // right-anchor → left-anchor로 전환 (드래그 중 left 좌표 기반)
-    overlay.card.style.left = `${Math.round(rect.left)}px`;
-    overlay.card.style.removeProperty("right");
     dragState = {
       active: true,
       pointerId: event.pointerId,
@@ -1159,6 +1220,7 @@
   }
 
   function scheduleHideBubble(delay = 900) {
+    if (onboardingGuideActive && overlay?.bubble?.dataset.kind === "guide") return;
     clearTimeout(overlayTimer);
     overlayTimer = window.setTimeout(hideBubble, delay);
   }
@@ -1167,49 +1229,276 @@
     const trimmed = String(text || "").trim();
     if (!trimmed || !PROMPT_TIP_BANK.length) return false;
 
+    const now = Date.now();
+    if (inlinePromptTip.visible || inlinePromptTip.closing) return false;
+    if (now - lastInlinePromptTipHiddenAt < PROMPT_TIP_INLINE_COOLDOWN_MS) return false;
+
     const contextual = pickContextualPromptTip(trimmed, snapshot);
     if (!contextual) return false;
 
     const key = `${contextual.id || contextual.caseId}:${snapshot.level}`;
-    const now = Date.now();
-    if (key === lastAutoPromptTipKey && now - lastAutoPromptTipAt < 15000) return false;
-    if (now - lastAutoPromptTipAt < 5200) return false;
+    if (key === lastAutoPromptTipKey && now - lastAutoPromptTipAt < PROMPT_TIP_INLINE_REPEAT_GUARD_MS) return false;
+    if (now - lastAutoPromptTipAt < PROMPT_TIP_AUTO_DURATION_MS) return false;
+    if (badgeHoverActive) return false;
 
     rememberPromptTip(contextual);
     lastAutoPromptTipKey = key;
     lastAutoPromptTipAt = now;
-    showBubble(snapshot, {
-      title: getPromptTipTitle(contextual),
-      message: contextual.text,
-      duration: 3600,
-      kind: "prompt-tip"
-    });
+    showInlinePromptTip(snapshot, contextual, key);
     return true;
   }
 
+  function showInlinePromptTip(snapshot, tip, key, options = {}) {
+    const title = tip?.title || getPromptTipTitle(tip);
+    const message = tip?.text || "";
+    if (!message) return;
+
+    inlinePromptTip = {
+      visible: true,
+      closing: false,
+      title,
+      message,
+      key: key || tip?.id || ""
+    };
+    clearTimeout(inlinePromptTipTimer);
+    clearTimeout(inlinePromptTipCloseTimer);
+    updateOverlay(snapshot);
+    inlinePromptTipTimer = window.setTimeout(
+      () => hideInlinePromptTip(),
+      Number(options.duration) || PROMPT_TIP_AUTO_DURATION_MS
+    );
+  }
+
+  function hideInlinePromptTip() {
+    if (!inlinePromptTip.visible && !inlinePromptTip.closing) return;
+    if (inlinePromptTip.visible) {
+      inlinePromptTip = { ...inlinePromptTip, visible: false, closing: true };
+      lastInlinePromptTipHiddenAt = Date.now();
+      clearTimeout(inlinePromptTipTimer);
+      if (settings.enabled && currentEditor) updateOverlay(buildSnapshot());
+      clearTimeout(inlinePromptTipCloseTimer);
+      inlinePromptTipCloseTimer = window.setTimeout(() => {
+        inlinePromptTip = { visible: false, closing: false, title: "", message: "", key: "" };
+        if (settings.enabled && currentEditor) updateOverlay(buildSnapshot());
+      }, PROMPT_TIP_INLINE_ANIMATION_MS);
+      return;
+    }
+    inlinePromptTip = { visible: false, closing: false, title: "", message: "", key: "" };
+    clearTimeout(inlinePromptTipTimer);
+    clearTimeout(inlinePromptTipCloseTimer);
+    if (settings.enabled && currentEditor) updateOverlay(buildSnapshot());
+  }
+
   function showOnboardingGuide() {
-    if (!settings.enabled || !currentEditor || settings.onboardingGuideShown) return;
+    if (document.getElementById(ONBOARDING_ROOT_ID)) return;
+    if (!settings.enabled || !currentEditor || settings.onboardingGuideShown || onboardingGuideActive) return;
     const snapshot = buildSnapshot();
+    onboardingGuideActive = true;
     showBubble(snapshot, {
       title: "사용 가이드",
-      message: "오른쪽 위 배지는 입력 길이를 보여줍니다. 프롬프팅 팁은 자동으로 뜨고, 환경 넛지는 나무 배지에 마우스를 올리면 볼 수 있어요.",
-      duration: 7600,
+      message: "오른쪽 위 배지는 입력 길이를 보여줍니다. 프롬프팅 팁은 자동으로 뜨고, 환경 넛지는 나무 배지에 마우스를 올렸을 때만 작게 표시됩니다.",
+      manual: true,
+      forceVisible: true,
       kind: "guide"
     });
+  }
+
+  function dismissOnboardingGuide() {
+    if (!onboardingGuideActive) return;
+    onboardingGuideActive = false;
+    hideBubble();
     settings = sanitizeSettings({ ...settings, onboardingGuideShown: true });
     storageSet({ [STORAGE_KEYS.SETTINGS]: settings });
   }
 
-  function toLogEvent(type, snapshot) {
+  function createPromptSession() {
+    return {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      platform: PLATFORM.id || "unknown",
+      startedAt: Date.now(),
+      initialChars: 0,
+      initialTokens: 0,
+      maxChars: 0,
+      maxTokens: 0,
+      maxUpdatedAt: 0,
+      levelAtMax: "idle",
+      currentChars: 0,
+      currentTokens: 0,
+      currentLevel: "idle",
+      trimEventCount: 0,
+      totalTrimmedDuringDraft: 0,
+      largestDropChars: 0
+    };
+  }
+
+  function levelRank(level) {
+    return { idle: 0, low: 1, medium: 2, high: 3 }[level] || 0;
+  }
+
+  function updatePromptSession(snapshot) {
+    if (!snapshot || snapshot.charCount <= 0) return;
+    if (!promptSession) promptSession = createPromptSession();
+
+    const previousChars = Math.max(0, Number(promptSession.currentChars) || 0);
+    const currentChars = Math.max(0, Math.round(Number(snapshot.charCount) || 0));
+    const currentTokens = Math.max(0, Math.round(Number(snapshot.estimatedTokens) || 0));
+
+    if (
+      promptSession.initialChars === 0 &&
+      currentChars >= REPORT_MIN_MEANINGFUL_CHARS
+    ) {
+      promptSession.initialChars = currentChars;
+      promptSession.initialTokens = currentTokens;
+    }
+
+    if (previousChars > currentChars) {
+      const droppedChars = previousChars - currentChars;
+      if (droppedChars >= REPORT_MIN_MEANINGFUL_CHARS) {
+        promptSession.trimEventCount += 1;
+        promptSession.totalTrimmedDuringDraft += droppedChars;
+        promptSession.largestDropChars = Math.max(promptSession.largestDropChars || 0, droppedChars);
+      }
+    }
+
+    if (currentChars > (promptSession.maxChars || 0)) {
+      promptSession.maxChars = currentChars;
+      promptSession.maxUpdatedAt = Date.now();
+    }
+
+    if (currentTokens > (promptSession.maxTokens || 0)) {
+      promptSession.maxTokens = currentTokens;
+    }
+
+    if (levelRank(snapshot.level) > levelRank(promptSession.levelAtMax)) {
+      promptSession.levelAtMax = snapshot.level;
+    }
+
+    promptSession.currentChars = currentChars;
+    promptSession.currentTokens = currentTokens;
+    promptSession.currentLevel = snapshot.level;
+  }
+
+  function buildPromptSessionPayload(snapshot, flags = {}) {
+    const session = promptSession || createPromptSession();
+    const finalChars = Math.max(0, Math.round(Number(snapshot?.charCount) || 0));
+    const finalTokens = Math.max(0, Math.round(Number(snapshot?.estimatedTokens) || 0));
+    const maxChars = Math.max(session.maxChars || 0, finalChars);
+    const maxTokens = Math.max(session.maxTokens || 0, finalTokens);
+    const initialChars = session.initialChars || finalChars;
+    const initialTokens = session.initialTokens || finalTokens;
+    const sentAt = Date.now();
+
+    return {
+      id: session.id,
+      platform: session.platform || PLATFORM.id || "unknown",
+      startedAt: session.startedAt || sentAt,
+      sentAt,
+      durationMs: Math.max(0, sentAt - (session.startedAt || sentAt)),
+      initialChars,
+      initialTokens,
+      maxChars,
+      maxTokens,
+      finalChars,
+      finalTokens,
+      levelAtMax: session.levelAtMax || snapshot?.level || "idle",
+      levelAtSend: flags.wasDiscarded ? "idle" : (snapshot?.level || "idle"),
+      reducedChars: Math.max(0, maxChars - finalChars),
+      reducedTokens: Math.max(0, maxTokens - finalTokens),
+      trimEventCount: Math.max(0, Math.round(Number(session.trimEventCount) || 0)),
+      totalTrimmedDuringDraft: Math.max(0, Math.round(Number(session.totalTrimmedDuringDraft) || 0)),
+      largestDropChars: Math.max(0, Math.round(Number(session.largestDropChars) || 0)),
+      wasDraft: Boolean(flags.wasDraft),
+      wasSent: Boolean(flags.wasSent),
+      wasDiscarded: Boolean(flags.wasDiscarded)
+    };
+  }
+
+  function resetPromptSession() {
+    promptSession = null;
+    resetDraftLogGuard();
+  }
+
+  function discardPromptSessionIfNeeded(snapshot) {
+    if (!promptSession) return;
+    if ((promptSession.maxChars || 0) < REPORT_MIN_MEANINGFUL_CHARS) {
+      resetPromptSession();
+      clearLastNonEmptySnapshot();
+      return;
+    }
+
+    sendLog(toLogEvent("discard", snapshot, {
+      session: buildPromptSessionPayload(snapshot, { wasDiscarded: true })
+    }));
+    resetPromptSession();
+    clearLastNonEmptySnapshot();
+  }
+
+  function maybeLogDraftUpdate(snapshot, reason = "typing") {
+    logDraftUpdate(snapshot, reason, false);
+  }
+
+  function forceLogDraftUpdate(snapshot, reason = "force") {
+    logDraftUpdate(snapshot, reason, true);
+  }
+
+  function logDraftUpdate(snapshot, reason = "typing", force = false) {
+    if (!snapshot || snapshot.charCount <= 0 || !promptSession) return;
+
+    const now = Date.now();
+    const charDelta = Math.abs(snapshot.charCount - lastDraftLogChars);
+    const levelChanged = snapshot.level !== lastDraftLogLevel;
+    const enoughTimePassed = now - lastDraftLogAt >= DRAFT_UPDATE_MIN_INTERVAL_MS;
+    const enoughChange = lastDraftLogChars < 0 || charDelta >= DRAFT_UPDATE_MIN_CHAR_DELTA || levelChanged;
+
+    if (!force && (!enoughTimePassed || !enoughChange)) return;
+
+    sendLog(toLogEvent("draft_update", snapshot, {
+      draftReason: reason,
+      session: buildPromptSessionPayload(snapshot, { wasDraft: true })
+    }));
+
+    lastDraftLogAt = now;
+    lastDraftLogChars = snapshot.charCount;
+    lastDraftLogLevel = snapshot.level;
+  }
+
+  function forceLogCurrentDraft(reason = "force") {
+    if (!settings.enabled || !currentEditor) return;
+    const liveText = getEditorText(currentEditor);
+    const now = Date.now();
+    const canUseFallback = lastNonEmptyText && now - lastNonEmptyAt <= SUBMIT_FALLBACK_WINDOW_MS;
+    const text = String(liveText || "").trim() ? liveText : (canUseFallback ? lastNonEmptyText : "");
+    if (!String(text || "").trim()) return;
+
+    lastText = text;
+    const snapshot = buildSnapshotFromText(text);
+    updatePromptSession(snapshot);
+    rememberNonEmptySnapshot(text, snapshot);
+    forceLogDraftUpdate(snapshot, reason);
+  }
+
+  function resetDraftLogGuard() {
+    lastDraftLogAt = 0;
+    lastDraftLogChars = -1;
+    lastDraftLogLevel = "idle";
+  }
+
+  function toLogEvent(type, snapshot, extra = {}) {
     return {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       timestamp: Date.now(),
       designVariant: FIXED_DESIGN_VARIANT,
+      platform: PLATFORM.id || "unknown",
       type,
-      estimatedTokens: snapshot.estimatedTokens,
-      charCount: snapshot.charCount,
-      level: snapshot.level,
-      languageMix: { hangul: snapshot.hangulCount, cjk: snapshot.cjkCount, other: snapshot.otherCount }
+      estimatedTokens: Math.max(0, Math.round(Number(snapshot?.estimatedTokens) || 0)),
+      charCount: Math.max(0, Math.round(Number(snapshot?.charCount) || 0)),
+      level: snapshot?.level || "idle",
+      languageMix: {
+        hangul: Math.max(0, Math.round(Number(snapshot?.hangulCount) || 0)),
+        cjk: Math.max(0, Math.round(Number(snapshot?.cjkCount) || 0)),
+        other: Math.max(0, Math.round(Number(snapshot?.otherCount) || 0))
+      },
+      ...extra
     };
   }
 
@@ -1220,6 +1509,7 @@
     }
 
     const text = getEditorText(currentEditor);
+    if (String(text || "").trim()) dismissOnboardingGuide();
     lastText = text;
     const snapshot = buildSnapshot();
     const previousTokens = lastTokenCount;
@@ -1230,13 +1520,19 @@
     updateOverlay(snapshot);
 
     if (!text.trim()) {
+      discardPromptSessionIfNeeded(snapshot);
       entryShown = { medium: false, high: false };
       lastLevel = "idle";
       lastTokenCount = 0;
       lastLoggedLevel = "idle";
       if (overlay?.bubble?.dataset.kind !== "guide") hideBubble();
+      hideInlinePromptTip();
       return;
     }
+
+    updatePromptSession(snapshot);
+    rememberNonEmptySnapshot(text, snapshot);
+    maybeLogDraftUpdate(snapshot);
 
     if (levelChanged && snapshot.level !== "idle" && snapshot.level !== lastLoggedLevel) {
       sendLog(toLogEvent("level_change", snapshot));
@@ -1256,11 +1552,11 @@
     if (snapshot.level === "high" && !entryShown.high) {
       entryShown.high = true;
       const message = pickNudge("entry", "high") || "나눠서 물어보면 각각 더 정확한 답변을 받을 수 있어요";
-      showBubble(snapshot, { title: "높음 구간 진입", message, duration: 7000, kind: "level" });
+      showInlinePromptTip(snapshot, { title: "높음 구간 진입", text: message }, "entry:high", { duration: PROMPT_TIP_AUTO_DURATION_MS });
     } else if (snapshot.level === "medium" && !entryShown.medium) {
       entryShown.medium = true;
       const message = pickNudge("entry", "medium") || "핵심만 남기면 더 빠르고 정확한 답변을 받을 수 있어요";
-      showBubble(snapshot, { title: "중간 구간 진입", message, duration: 6200, kind: "level" });
+      showInlinePromptTip(snapshot, { title: "중간 구간 진입", text: message }, "entry:medium", { duration: PROMPT_TIP_AUTO_DURATION_MS });
     } else if (maybeShowAutoPromptTip(snapshot, text)) {
       // 프롬프팅 팁은 hover가 아니라 입력 맥락에 따라 자동 노출한다.
     } else if (snapshot.level === "low" && levelChanged) {
@@ -1271,16 +1567,47 @@
     lastTokenCount = snapshot.estimatedTokens;
   }
 
-  function handleSubmitSignal() {
+  function getBestSubmitCapture(options = {}) {
+    const liveText = typeof options.text === "string"
+      ? options.text
+      : (currentEditor ? getEditorText(currentEditor) : lastText);
+
     const now = Date.now();
-    if (now - lastSubmitAt < 1200) return;
-    const text = currentEditor ? getEditorText(currentEditor) : lastText;
-    if (!text.trim()) return;
+    const canUseFallback = lastNonEmptyText && now - lastNonEmptyAt <= SUBMIT_FALLBACK_WINDOW_MS;
+    const text = String(liveText || "").trim() ? liveText : (canUseFallback ? lastNonEmptyText : "");
+    if (!String(text || "").trim()) return null;
+
+    const snapshot = String(liveText || "").trim() && options.snapshot?.charCount > 0
+      ? options.snapshot
+      : buildSnapshotFromText(text);
+
+    return { text, snapshot };
+  }
+
+  function handleSubmitSignal(options = {}) {
+    if (options && options.target) options = {};
+
+    const now = Date.now();
+    if (now - lastSubmitAt < 900) return;
+
+    const capture = getBestSubmitCapture(options);
+    if (!capture || !capture.snapshot || capture.snapshot.charCount <= 0) return;
+
+    const { text, snapshot } = capture;
     lastText = text;
     lastSubmitAt = now;
 
-    const snapshot = buildSnapshot();
-    sendLog(toLogEvent("submit", snapshot));
+    updatePromptSession(snapshot);
+    rememberNonEmptySnapshot(text, snapshot);
+    forceLogDraftUpdate(snapshot, `submit_flush:${options.source || "unknown"}`);
+
+    const sessionPayload = buildPromptSessionPayload(snapshot, { wasSent: true });
+    sendLog(toLogEvent("submit", snapshot, {
+      submitSource: options.source || "unknown",
+      session: sessionPayload
+    }));
+    resetPromptSession();
+    clearLastNonEmptySnapshot();
 
     if (snapshot.level === "high") {
       lastHighSubmitAt = now;
@@ -1294,10 +1621,23 @@
     }, 700);
   }
 
+  function captureSubmitFromCurrentEditor(source = "button") {
+    const text = currentEditor ? getEditorText(currentEditor) : lastText;
+    const snapshot = String(text || "").trim() ? buildSnapshotFromText(text) : null;
+    handleSubmitSignal({ text, snapshot, source });
+  }
+
+  function isSendButtonLike(button) {
+    if (!button) return false;
+    if (button.disabled || button.getAttribute("aria-disabled") === "true") return false;
+    const text = `${button.getAttribute("aria-label") || ""} ${button.getAttribute("data-testid") || ""} ${button.getAttribute("data-test-id") || ""} ${button.textContent || ""}`;
+    return /send|submit|전송|보내기|제출/i.test(text);
+  }
+
   function handleEditorKeydown(event) {
     if (event.defaultPrevented || event.isComposing) return;
     if (event.key !== "Enter" || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return;
-    window.setTimeout(handleSubmitSignal, 80);
+    captureSubmitFromCurrentEditor("enter");
   }
 
   function bindEditor(editor) {
@@ -1327,7 +1667,9 @@
       for (const selector of SELECTORS.sendButton) {
         try {
           for (const button of querySelectorAllDeep(selector, currentComposer)) {
-            button.addEventListener("click", handleSubmitSignal, true);
+            button.addEventListener("pointerdown", () => captureSubmitFromCurrentEditor("button_pointerdown"), true);
+            button.addEventListener("mousedown", () => captureSubmitFromCurrentEditor("button_mousedown"), true);
+            button.addEventListener("click", () => captureSubmitFromCurrentEditor("button_click"), true);
           }
         } catch {
           // 서비스별 DOM 실험으로 selector가 실패해도 전역 click fallback이 처리한다.
@@ -1342,12 +1684,28 @@
   }
 
   function delayedHandleTextChange() {
-    window.setTimeout(handleTextChange, 0);
+    window.setTimeout(() => {
+      handleTextChange();
+      forceLogCurrentDraft("paste");
+    }, 0);
   }
 
   function scanAndBind() {
     const editor = findEditor();
     if (editor) bindEditor(editor);
+  }
+
+  function handleGlobalPointerDown(event) {
+    dismissOnboardingGuide();
+    if (!overlay) return;
+    const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+    const insideCard = path.includes(overlay.card);
+
+    if (!insideCard) {
+      if (overlay.bubble?.dataset.visible === "true") hideBubble();
+      // 프롬프팅 팁 바는 외부 클릭으로 즉시 닫지 않는다.
+      // 노출 시간이 끝날 때 hideInlinePromptTip()의 접힘 애니메이션으로만 사라지게 한다.
+    }
   }
 
   function observePage() {
@@ -1358,28 +1716,42 @@
     pageObserver.observe(document.documentElement, { childList: true, subtree: true });
     window.addEventListener("resize", () => updateOverlayPosition(), { passive: true });
     window.addEventListener("scroll", () => updateOverlayPosition(), { passive: true });
-    document.addEventListener("click", (event) => {
+    const handleGlobalSendButtonSignal = (event) => {
       const button = event.target?.closest?.("button, [role='button']");
       if (!button || !currentComposer || !currentComposer.contains(button)) return;
-      const text = `${button.getAttribute("aria-label") || ""} ${button.getAttribute("data-testid") || ""} ${button.getAttribute("data-test-id") || ""} ${button.textContent || ""}`;
-      if (/send|submit|전송|보내기|제출/i.test(text)) window.setTimeout(handleSubmitSignal, 40);
+      if (isSendButtonLike(button)) captureSubmitFromCurrentEditor(`global_${event.type}`);
+    };
+    const handleGlobalSubmitKeydown = (event) => {
+      dismissOnboardingGuide();
+      if (event.defaultPrevented || event.isComposing || event.keyCode === 229) return;
+      if (event.key !== "Enter" || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return;
+      const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+      const targetInsideEditor = currentEditor && (event.target === currentEditor || currentEditor.contains?.(event.target) || path.includes(currentEditor));
+      const targetInsideComposer = currentComposer && (event.target === currentComposer || currentComposer.contains?.(event.target) || path.includes(currentComposer));
+      if (!targetInsideEditor && !targetInsideComposer) return;
+      captureSubmitFromCurrentEditor("enter_global");
+    };
+    document.addEventListener("pointerdown", handleGlobalSendButtonSignal, true);
+    document.addEventListener("click", handleGlobalSendButtonSignal, true);
+    document.addEventListener("pointerdown", handleGlobalPointerDown, true);
+    document.addEventListener("keydown", handleGlobalSubmitKeydown, true);
+    window.addEventListener("blur", () => forceLogCurrentDraft("blur"), { passive: true });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") forceLogCurrentDraft("visibility_hidden");
     }, true);
 
     document.addEventListener("mousemove", (event) => {
       if (!overlay || !settings.enabled || !currentEditor) return;
       const cardRect = overlay.card?.getBoundingClientRect();
-      const bubbleRect = overlay.bubble?.getBoundingClientRect();
       const insideCard = pointInRect(event.clientX, event.clientY, cardRect);
-      const insideBubble = overlay.bubble?.dataset.visible === "true" && pointInRect(event.clientX, event.clientY, bubbleRect);
 
       if (insideCard) {
-        const now = Date.now();
-        if (!hoverSession.active && now - lastHoverAt > 260) {
-          lastHoverAt = now;
+        if (!badgeHoverActive) {
+          badgeHoverActive = true;
           triggerHoverBubble();
         }
-      } else if (!insideBubble && overlay.bubble?.dataset.visible === "true") {
-        scheduleHideBubble(900);
+      } else if (badgeHoverActive) {
+        handleBadgePointerLeave();
       }
     }, true);
   }
@@ -1405,14 +1777,14 @@
       {
         imgLevel: "low",
         title: "푸리 상태로 입력 길이를 확인해요",
-        htmlBody: `<div class="level-row"><img src="${puriLowUrl}" width="32" height="32" alt="낮음" /><span>낮음 — 딱 좋은 길이예요</span></div><div class="level-row"><img src="${puriMedUrl}" width="32" height="32" alt="중간" /><span>중간 — 핵심만 남기면 더 빠른 답변을 받을 수 있어요</span></div><div class="level-row"><img src="${puriHighUrl}" width="32" height="32" alt="높음" /><span>높음 — 나눠서 물어보면 더 정확한 답변을 얻을 수 있어요</span></div>`,
+        htmlBody: `<div class="level-row"><img src="${puriLowUrl}" width="32" height="32" alt="낮음" /><span class="text-body-l"><strong class="text-status">낮음</strong> — 딱 좋은 길이예요</span></div><div class="level-row"><img src="${puriMedUrl}" width="32" height="32" alt="중간" /><span class="text-body-l"><strong class="text-status">중간</strong> — 핵심만 남기면 더 빠른 답변을 받을 수 있어요</span></div><div class="level-row"><img src="${puriHighUrl}" width="32" height="32" alt="높음" /><span class="text-body-l"><strong class="text-status">높음</strong> — 나눠서 물어보면 더 정확한 답변을 얻을 수 있어요</span></div>`,
         note: "채팅을 입력하면 푸리가 프롬프트를 더 잘 쓰는 팁을 알려줘요"
       },
       {
         imgUrl: puzzleUrl,
         title: "설정은 여기서 바꿀 수 있어요",
-        htmlBody: `<span>브라우저 주소창 오른쪽</span><span>${puzzleImg(16)} 아이콘을 클릭하고</span><span>챗풀을 선택하면 설정을 바꿀 수 있어요</span>`,
-        steps: `① ${puzzleImg(14)} 클릭 &nbsp;→&nbsp; ② 챗풀 선택`,
+        htmlBody: `<span class="text-body-l">브라우저 주소창 오른쪽</span><span class="text-body-l">${puzzleImg(16)} 아이콘을 클릭하고</span><span class="text-body-l">챗풀을 선택하면 설정을 바꿀 수 있어요</span>`,
+        steps: `<span class="text-body-m">① ${puzzleImg(14)} 클릭 &nbsp;→&nbsp; ② 챗풀 선택</span>`,
         note: null
       }
     ];
@@ -1434,7 +1806,7 @@
     card.className = "cp-ob-card";
 
     const skipBtn = document.createElement("button");
-    skipBtn.className = "cp-ob-skip";
+    skipBtn.className = "cp-ob-skip text-body-s";
     skipBtn.textContent = "건너뛰기";
 
     const slideArea = document.createElement("div");
@@ -1444,13 +1816,13 @@
     emojiEl.className = "cp-ob-emoji";
 
     const titleEl = document.createElement("div");
-    titleEl.className = "cp-ob-title";
+    titleEl.className = "cp-ob-title text-h2";
 
     const bodyEl = document.createElement("div");
     bodyEl.className = "cp-ob-body";
 
     const noteEl = document.createElement("div");
-    noteEl.className = "cp-ob-note";
+    noteEl.className = "cp-ob-note text-body-m";
 
     slideArea.append(emojiEl, titleEl, bodyEl, noteEl);
 
@@ -1468,11 +1840,11 @@
     });
 
     const prevBtn = document.createElement("button");
-    prevBtn.className = "cp-ob-prev";
+    prevBtn.className = "cp-ob-prev text-body-l";
     prevBtn.textContent = "← 이전";
 
     const nextBtn = document.createElement("button");
-    nextBtn.className = "cp-ob-next";
+    nextBtn.className = "cp-ob-next text-body-l";
     nextBtn.textContent = "다음";
 
     nav.append(prevBtn, dotsEl, nextBtn);
@@ -1491,7 +1863,7 @@
       if (!bc) return;
       bc.dataset.visible = "true";
       if (bc.dataset.level === "idle") bc.dataset.level = "low";
-      bc.style.boxShadow = "0 0 0 3px rgba(29, 158, 117, 0.4), 0 0 12px rgba(29, 158, 117, 0.2)";
+      bc.style.boxShadow = "0 0 0 3px rgba(209, 214, 0, 0.45), 0 0 12px rgba(209, 214, 0, 0.25)";
       bc.style.transition = "box-shadow 300ms ease, opacity 160ms ease, transform 160ms ease";
     }
 
@@ -1681,7 +2053,7 @@
       } else {
         bodyEl.innerHTML = (slide.body || "").split("\n").map((line) =>
           line
-            ? `<span>${esc(line)}</span>`
+            ? `<span class="text-body-l">${esc(line)}</span>`
             : `<span class="spacer"></span>`
         ).join("");
       }
@@ -1705,7 +2077,7 @@
     // --- Lifecycle ---
     function hideBubbleForOnboarding() {
       if (overlay?.bubble) overlay.bubble.dataset.visible = "false";
-      if (overlay?.tipBar) overlay.tipBar.dataset.visible = "false";
+      hideInlinePromptTip();
     }
 
     function restoreBubbleFromOnboarding() {
@@ -1791,6 +2163,7 @@
     }
 
     // Initial setup — no transition, then fade in
+    hideBubbleForOnboarding();
     renderSlide(0);
     posSlide0(true);
     updateBackdrop(0);
@@ -1801,7 +2174,6 @@
     nextBtn.addEventListener("click", goNext);
     prevBtn.addEventListener("click", goPrev);
   }
-
   function getOnboardingStyleText() {
     return `
       :host {
@@ -1816,12 +2188,41 @@
         overflow: visible !important;
       }
       * { box-sizing: border-box; }
+      .cp-ob-backdrop,
+      .cp-ob-card {
+        --green-50: #f9fac0;
+        --green-100: #f2f47a;
+        --green-200: #e8eb3e;
+        --green-400: #d1d600;
+        --green-600: #a8ac00;
+        --green-800: #7a7d00;
+        --green-900: #4e5000;
+        --gray-50: #f7f7f0;
+        --gray-100: #e5e5d8;
+        --gray-200: #c8c8ba;
+        --gray-400: #919188;
+        --gray-600: #5e5e57;
+        --gray-800: #383833;
+        --gray-900: #1a1a16;
+        --danger: #ef4444;
+        --warning: #f97316;
+        font-family: "SUIT", "Pretendard", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: -0.018em;
+      }
+      .text-display { font-size: 24px; font-weight: 700; line-height: 130%; }
+      .text-h1 { font-size: 20px; font-weight: 700; line-height: 130%; }
+      .text-h2 { font-size: 17px; font-weight: 600; line-height: 130%; }
+      .text-h3 { font-size: 15px; font-weight: 600; line-height: 130%; }
+      .text-status { font-size: 14px; font-weight: 700; line-height: 130%; }
+      .text-body-l { font-size: 12px; font-weight: 500; line-height: 130%; }
+      .text-body-m { font-size: 11px; font-weight: 400; line-height: 130%; }
+      .text-body-s { font-size: 10px; font-weight: 500; line-height: 130%; }
       .cp-ob-backdrop {
         position: fixed;
         inset: 0;
         width: 100vw;
         height: 100vh;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(26, 26, 22, 0.5);
         z-index: 2147483645;
         pointer-events: none;
         opacity: 0;
@@ -1835,12 +2236,12 @@
         position: fixed;
         z-index: 2147483646;
         background: #ffffff;
+        border: 1px solid rgba(26, 26, 22, 0.08);
         border-radius: 20px;
         padding: 28px 28px 24px;
         width: calc(100vw - 32px);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14);
-        font-family: "SUIT", "Pretendard", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        letter-spacing: -0.018em;
+        box-shadow: 0 12px 40px rgba(78, 80, 0, 0.12);
+        color: var(--gray-900);
         pointer-events: auto;
         opacity: 0;
         transition: top 300ms ease, left 300ms ease, max-width 300ms ease, opacity 240ms ease;
@@ -1892,13 +2293,12 @@
         background: none;
         border: none;
         cursor: pointer;
-        font-size: 12px;
-        color: #999999;
+        color: var(--gray-400);
         font-family: inherit;
         letter-spacing: inherit;
         padding: 4px 0;
       }
-      .cp-ob-skip:hover { color: #666666; }
+      .cp-ob-skip:hover { color: var(--gray-600); }
       .cp-ob-slide-area {
         transition: opacity 150ms ease, transform 150ms ease;
       }
@@ -1926,31 +2326,31 @@
       .cp-ob-emoji-img { font-size: 0; }
       .cp-ob-emoji-img .cp-character { width: 48px; height: 48px; }
       .cp-ob-title {
-        font-size: 18px;
-        font-weight: 800;
-        color: #000000;
+        color: var(--gray-900);
         margin-bottom: 12px;
-        line-height: 1.3;
       }
       .cp-ob-body {
-        font-size: 13px;
-        color: #333333;
-        line-height: 1.7;
+        color: var(--gray-800);
         margin-bottom: 12px;
         display: flex;
         flex-direction: column;
         gap: 0;
       }
       .cp-ob-body .spacer { display: block; height: 8px; }
-      .cp-ob-body .level-row { display: flex; align-items: center; gap: 10px; margin: 5px 0; }
+      .cp-ob-body .level-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 5px 0;
+      }
       .cp-ob-body .level-row img { flex-shrink: 0; width: 32px; height: 32px; }
+      .cp-ob-body .level-row .text-status { color: var(--green-900); }
       .cp-ob-note {
-        font-size: 11px;
-        color: #666666;
-        background: #EAF3DE;
+        color: var(--gray-600);
+        background: var(--green-50);
+        border: 1px solid rgba(209, 214, 0, 0.35);
         border-radius: 8px;
         padding: 8px 10px;
-        line-height: 1.5;
         margin-bottom: 0;
       }
       .cp-ob-nav {
@@ -1968,42 +2368,56 @@
         width: 6px;
         height: 6px;
         border-radius: 50%;
-        background: #DDDDDD;
+        background: var(--gray-200);
         transition: background 200ms ease, width 200ms ease, border-radius 200ms ease;
       }
       .cp-ob-dot.active {
-        background: #1D9E75;
+        background: var(--green-400);
         width: 18px;
         border-radius: 3px;
       }
       .cp-ob-next {
-        background: #1D9E75;
+        background: var(--green-900);
         color: #ffffff;
         border: none;
         border-radius: 10px;
         padding: 10px 20px;
-        font-size: 13px;
-        font-weight: 700;
+        font-weight: 600;
         cursor: pointer;
         font-family: inherit;
         letter-spacing: inherit;
-        transition: background 160ms ease;
+        transition: background 160ms ease, filter 160ms ease;
       }
-      .cp-ob-next:hover { background: #178763; }
+      .cp-ob-next:hover { filter: brightness(1.08); }
       .cp-ob-prev {
         background: none;
         border: none;
         cursor: pointer;
-        font-size: 13px;
-        color: #888888;
+        color: var(--gray-400);
         font-family: inherit;
         letter-spacing: inherit;
         padding: 10px 4px;
         transition: color 160ms ease;
       }
-      .cp-ob-prev:hover { color: #333333; }
+      .cp-ob-prev:hover { color: var(--gray-800); }
     `;
   }
+
+  function characterIcon(level) {
+    const map = {
+      idle: chrome.runtime.getURL("assets/푸리_대기.svg"),
+      low: chrome.runtime.getURL("assets/푸리_낮음.svg"),
+      medium: chrome.runtime.getURL("assets/푸리_중간.svg"),
+      high: chrome.runtime.getURL("assets/푸리_높음.svg")
+    };
+    const src = map[level] || map.idle;
+    return `<img src="${src}" class="cp-character" alt="${esc(level)}" draggable="false" />`;
+  }
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message?.type === "CHATPOOL_SHOW_ONBOARDING") {
+      showOnboarding();
+    }
+  });
 
   async function boot() {
     await loadSettings();
@@ -2033,15 +2447,20 @@
       .replace(/'/g, "&#039;");
   }
 
-  function characterIcon(level) {
-    const map = {
-      idle: chrome.runtime.getURL("assets/푸리_대기.svg"),
-      low: chrome.runtime.getURL("assets/푸리_낮음.svg"),
-      medium: chrome.runtime.getURL("assets/푸리_중간.svg"),
-      high: chrome.runtime.getURL("assets/푸리_높음.svg")
-    };
-    const src = map[level] || map.idle;
-    return `<img src="${src}" class="cp-character" alt="${esc(level)}" draggable="false" />`;
+  function leafIcon() {
+    return `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 4C12.5 4.4 7 8.5 6.3 15.4C10.7 14.9 15.5 12.4 20 4Z" fill="currentColor" opacity="0.82"/><path d="M4 20C7.5 14.2 11.2 10.4 17 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+  }
+
+  function treeIcon(level, state = "current") {
+    const className = `cp-tree cp-tree-${esc(state)}`;
+    if (level === "idle") return `<span class="${className}">${leafIcon()}</span>`;
+    if (level === "high") {
+      return `<svg class="${className}" viewBox="0 0 72 72" fill="none" aria-hidden="true"><ellipse cx="36" cy="64" rx="15" ry="6" fill="#D7CABA"/><path d="M36 63V42M36 42L18 25M36 42L54 24M36 51L20 50M36 51L54 50M36 34L25 18M36 34L47 17" stroke="#76523A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    }
+    if (level === "medium") {
+      return `<svg class="${className}" viewBox="0 0 72 72" fill="none" aria-hidden="true"><ellipse cx="36" cy="64" rx="15" ry="6" fill="#D7CABA"/><rect x="31" y="38" width="10" height="26" rx="5" fill="#76523A"/><circle cx="36" cy="33" r="23" fill="#82A456"/><ellipse cx="36" cy="22" rx="19" ry="14" fill="#B2D371"/></svg>`;
+    }
+    return `<svg class="${className}" viewBox="0 0 72 72" fill="none" aria-hidden="true"><ellipse cx="36" cy="64" rx="15" ry="6" fill="#D7CABA"/><rect x="31" y="38" width="10" height="26" rx="5" fill="#76523A"/><circle cx="36" cy="33" r="23" fill="#58A27E"/><ellipse cx="36" cy="23" rx="19" ry="15" fill="#9EE3C9"/></svg>`;
   }
 
   function getStyleText() {
@@ -2059,38 +2478,117 @@
       }
       * { box-sizing: border-box; }
       .cp-widget, .cp-bubble {
+        --green-50: #f9fac0;
+        --green-100: #f2f47a;
+        --green-200: #e8eb3e;
+        --green-400: #d1d600;
+        --green-600: #a8ac00;
+        --green-800: #7a7d00;
+        --green-900: #4e5000;
+        --gray-50: #f7f7f0;
+        --gray-100: #e5e5d8;
+        --gray-200: #c8c8ba;
+        --gray-400: #919188;
+        --gray-600: #5e5e57;
+        --gray-800: #383833;
+        --gray-900: #1a1a16;
+        --danger: #ef4444;
+        --warning: #f97316;
+        --black: #000000;
         font-family: "SUIT", "Pretendard", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         letter-spacing: -0.018em;
       }
+      .text-display { font-size: 24px; font-weight: 700; line-height: 130%; }
+      .text-h1 { font-size: 20px; font-weight: 700; line-height: 130%; }
+      .text-h2 { font-size: 17px; font-weight: 600; line-height: 130%; }
+      .text-h3 { font-size: 15px; font-weight: 600; line-height: 130%; }
+      .text-status { font-size: 14px; font-weight: 700; line-height: 130%; }
+      .text-body-l { font-size: 12px; font-weight: 500; line-height: 130%; }
+      .text-body-m { font-size: 11px; font-weight: 400; line-height: 130%; }
+      .text-body-s { font-size: 10px; font-weight: 500; line-height: 130%; }
       .cp-widget {
-        --cp-green-1: #A7E6CC;
-        --cp-green-2: #65CFA0;
-        --cp-green-3: #58A27E;
-        --cp-green-4: #3D7B61;
-        --cp-green-5: #153C2D;
-        --cp-gray-2: #B5B5B5;
         position: fixed;
         z-index: 2147483647;
-        color: #000000;
-        background: rgba(255, 255, 255, 0.94);
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
-        backdrop-filter: blur(14px);
+        color: var(--gray-900);
+        background: #ffffff;
+        border: 1px solid rgba(26, 26, 22, 0.08);
+        box-shadow: none;
+        filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.12));
+        backdrop-filter: none;
         pointer-events: auto;
         opacity: 0;
         transform: scale(var(--cp-logo-scale, 0.8)) translateY(8px);
         transform-origin: top left;
-        transition: opacity 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+        transition: opacity 160ms ease, transform 160ms ease, filter 160ms ease;
         user-select: none;
       }
       .cp-widget[data-visible="true"] { opacity: 1; transform: scale(var(--cp-logo-scale, 0.8)) translateY(0); }
-      .cp-widget:hover { box-shadow: 0 15px 40px rgba(0, 0, 0, 0.14); }
+      .cp-widget:hover { filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.12)); }
       .cp-widget[data-drag-enabled="true"] { cursor: grab; }
       .cp-widget[data-dragging="true"] { cursor: grabbing; transition: none; }
-      .cp-widget[data-level="low"] { --level-color: #65CFA0; --level-deep: #58A27E; }
-      .cp-widget[data-level="medium"] { --level-color: #B2D371; --level-deep: #82A456; }
-      .cp-widget[data-level="high"] { --level-color: #76523A; --level-deep: #153C2D; }
-      .cp-widget[data-level="idle"] { --level-color: #B5B5B5; --level-deep: #333333; }
+      .cp-widget[data-level="low"] { --level-color: var(--green-400); --level-deep: var(--green-900); }
+      .cp-widget[data-level="medium"] { --level-color: var(--warning); --level-deep: var(--gray-800); }
+      .cp-widget[data-level="high"] { --level-color: var(--danger); --level-deep: var(--gray-900); }
+      .cp-widget[data-level="idle"] { --level-color: var(--gray-200); --level-deep: var(--gray-600); }
+      .cp-tree { display: block; width: 40px; height: 40px; }
+      .cp-bubble {
+        position: fixed;
+        z-index: 2147483647;
+        width: max-content;
+        max-width: 158px;
+        padding: 5px 7px 6px 7px;
+        border-radius: 10px;
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        color: #000000;
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
+        opacity: 0;
+        transform: translateY(5px);
+        pointer-events: none;
+        transition: opacity 160ms ease, transform 160ms ease;
+      }
+      .cp-bubble[data-visible="true"] { opacity: 1; transform: translateY(0); pointer-events: auto; }
+      .cp-bubble strong {
+        display: block;
+        margin: 0 0 2px;
+        color: var(--level-deep, var(--green-900));
+      }
+      .cp-bubble strong.text-status {
+        font-size: calc(14px * var(--cp-nudge-scale, 0.8));
+        font-weight: 700;
+        line-height: 130%;
+      }
+      .cp-bubble span {
+        display: block;
+        color: var(--gray-800);
+        font-size: calc(11px * var(--cp-nudge-scale, 0.8));
+        font-weight: 400;
+        line-height: 130%;
+      }
+      .variant-tree-status-badge {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        min-width: 170px;
+        max-width: 188px;
+        padding: 8px 11px 8px 10px;
+        border-radius: 999px;
+        overflow: visible;
+      }
+      .variant-tree-status-badge[data-prompt-tip-visible="true"] {
+        border-radius: 999px;
+      }
+      .cp-status-segment {
+        position: relative;
+        z-index: 2;
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 152px;
+      }
+      .cp-tree-wrap { flex: 0 0 auto; display: grid; place-items: center; width: 42px; height: 42px; }
       .cp-character {
         width: 36px;
         height: 36px;
@@ -2118,74 +2616,81 @@
         0%, 100% { transform: translateX(-2px) rotate(-3deg); }
         50% { transform: translateX(2px) rotate(3deg); }
       }
-      .cp-bubble {
-        position: fixed;
-        z-index: 2147483647;
-        width: max-content;
-        max-width: 252px;
-        padding: 12px 34px 12px 14px;
-        border-radius: 18px;
+      .cp-badge-copy { min-width: 0; display: grid; gap: 3px; }
+      .cp-badge-copy strong.text-status { white-space: nowrap; color: var(--level-deep, var(--green-900)); }
+      .cp-badge-copy span.text-body-m { white-space: nowrap; color: var(--gray-600); }
+      .cp-prompt-tip-inline {
+        position: absolute;
+        right: calc(100% - 28px);
+        top: -1px;
+        bottom: -1px;
+        width: var(--cp-tip-width, 480px);
+        min-height: 0;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        column-gap: 10px;
+        row-gap: 2px;
+        padding: 0 42px 0 16px;
+        border-radius: 999px 0 0 999px;
         background: #ffffff;
         border: 1px solid rgba(0, 0, 0, 0.08);
-        color: #000000;
-        box-shadow: 0 16px 38px rgba(0, 0, 0, 0.13);
-        font-size: calc(13px * var(--cp-nudge-scale, 0.8));
-        line-height: 1.45;
-        opacity: 0;
-        transform: translateY(5px);
-        pointer-events: none;
-        transition: opacity 160ms ease, transform 160ms ease;
-      }
-      .cp-bubble[data-visible="true"] { opacity: 1; transform: translateY(0); pointer-events: auto; }
-      .cp-bubble strong { display: block; margin: 0 0 4px; font-size: calc(12px * var(--cp-nudge-scale, 0.8)); font-weight: 800; color: var(--level-deep, #153C2D); }
-      .cp-bubble span { color: #333333; }
-      .variant-tree-status-badge {
-        display: flex; align-items: center; padding: 9px; border-radius: 999px;
-      }
-      .cp-tree-wrap { flex: 0 0 auto; display: grid; place-items: center; width: 46px; height: 46px; }
-      .cp-tip-bar {
-        position: fixed;
-        z-index: 2147483647;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 3px;
-        background: rgba(255, 255, 255, 0.94);
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
-        backdrop-filter: blur(14px);
-        border-radius: 999px;
-        padding: 0 14px;
-        font-family: "SUIT", "Pretendard", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        letter-spacing: -0.018em;
-        white-space: nowrap;
+        border-right: 0;
+        box-shadow: none;
+        backdrop-filter: none;
+        white-space: normal;
         overflow: hidden;
-        max-width: 0;
-        opacity: 0;
-        pointer-events: none;
-        transition: max-width 1.5s ease, opacity 0.3s ease;
+        transform: none;
+        transform-origin: right center;
+        z-index: 1;
+        animation: cp-tip-unfold-left 1500ms cubic-bezier(0.16, 1, 0.3, 1) both;
       }
-      .cp-tip-bar[data-visible="true"] {
-        max-width: var(--cp-tip-max-w, 300px);
-        opacity: 1;
+      .cp-prompt-tip-inline[data-state="closing"] {
+        animation: cp-tip-fold-left 1500ms cubic-bezier(0.7, 0, 0.84, 0) both;
       }
-      .cp-tip-bar strong { display: block; font-size: 13px; font-weight: 800; color: #153C2D; }
-      .cp-tip-bar span { display: block; font-size: 11px; color: #777; }
-      .cp-bubble-close {
-        position: absolute;
-        top: 7px;
-        right: 9px;
-        width: 20px;
-        height: 20px;
-        border: 0;
-        border-radius: 999px;
-        background: rgba(0, 0, 0, 0.05);
-        color: #555;
-        font: 700 14px/20px "SUIT", "Pretendard", sans-serif;
-        cursor: pointer;
-        padding: 0;
+      .cp-prompt-tip-inline strong.text-status {
+        white-space: nowrap;
+        color: var(--level-deep, var(--green-900));
       }
-      .cp-bubble-close:hover { background: rgba(0, 0, 0, 0.1); color: #000; }
+      .cp-prompt-tip-inline span.text-body-l {
+        min-width: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        white-space: normal;
+        text-overflow: ellipsis;
+        color: var(--gray-800);
+      }
+      @keyframes cp-tip-unfold-left {
+        from {
+          opacity: 1;
+          width: 28px;
+          padding-left: 0;
+          padding-right: 0;
+        }
+        to {
+          opacity: 1;
+          width: var(--cp-tip-width, 480px);
+          padding-left: 16px;
+          padding-right: 42px;
+        }
+      }
+      @keyframes cp-tip-fold-left {
+        from {
+          opacity: 1;
+          width: var(--cp-tip-width, 480px);
+          padding-left: 16px;
+          padding-right: 42px;
+        }
+        to {
+          opacity: 1;
+          width: 28px;
+          padding-left: 0;
+          padding-right: 0;
+        }
+      }
+      .cp-inline-divider { display: none; }
     `;
   }
 
