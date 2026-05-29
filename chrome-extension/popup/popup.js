@@ -49,10 +49,10 @@ const CATEGORY_ORDER = [
 ];
 
 const PURI_ASSETS = {
-  idle: "../assets/푸리_대기.svg",
-  high: "../assets/푸리_높음.svg",
-  medium: "../assets/푸리_중간.svg",
-  low: "../assets/푸리_낮음.svg"
+  idle: "../assets/puri_idle.svg",
+  low: "../assets/puri_low.svg",
+  medium: "../assets/puri_medium.svg",
+  high: "../assets/puri_high.svg"
 };
 
 const $ = (selector) => document.querySelector(selector);

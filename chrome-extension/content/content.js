@@ -1762,9 +1762,9 @@
     const puzzleUrl = chrome.runtime.getURL("assets/extension-puzzle-outline.svg");
     const puzzleImg = (size) => `<img src="${puzzleUrl}" width="${size}" height="${size}" style="vertical-align:middle;margin:0 2px;" alt="🧩" />`;
 
-    const puriLowUrl = chrome.runtime.getURL("assets/푸리_낮음.svg");
-    const puriMedUrl = chrome.runtime.getURL("assets/푸리_중간.svg");
-    const puriHighUrl = chrome.runtime.getURL("assets/푸리_높음.svg");
+    const puriLowUrl = chrome.runtime.getURL("assets/puri_low.svg");
+    const puriMedUrl = chrome.runtime.getURL("assets/puri_medium.svg");
+    const puriHighUrl = chrome.runtime.getURL("assets/puri_high.svg");
 
     const SLIDES = [
       {
@@ -2405,10 +2405,10 @@
 
   function characterIcon(level) {
     const map = {
-      idle: chrome.runtime.getURL("assets/푸리_대기.svg"),
-      low: chrome.runtime.getURL("assets/푸리_낮음.svg"),
-      medium: chrome.runtime.getURL("assets/푸리_중간.svg"),
-      high: chrome.runtime.getURL("assets/푸리_높음.svg")
+      idle: chrome.runtime.getURL("assets/puri_idle.svg"),
+      low: chrome.runtime.getURL("assets/puri_low.svg"),
+      medium: chrome.runtime.getURL("assets/puri_medium.svg"),
+      high: chrome.runtime.getURL("assets/puri_high.svg")
     };
     const src = map[level] || map.idle;
     return `<img src="${src}" class="cp-character" alt="${esc(level)}" draggable="false" />`;
