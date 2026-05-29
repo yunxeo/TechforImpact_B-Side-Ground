@@ -188,6 +188,9 @@
   let onboardingGuideActive = false;
   let lastOverlayRenderMode = "";
   let lastOverlayPromptTipKey = "";
+  let lastTipBarWidthKey = "";
+  let tipBarAnimState = "hidden";
+  let badgeResizeObserver = null;
   let promptSession = null;
   let lastNonEmptyText = "";
   let lastNonEmptySnapshot = null;
@@ -895,7 +898,7 @@
     overlay.host.style.setProperty("--cp-logo-scale", `${settings.floatingLogoScale / 100}`);
     const card = overlay.card;
     const promptTipVisible = (inlinePromptTip.visible || inlinePromptTip.closing) && Boolean(inlinePromptTip.message);
-    const renderMode = promptTipVisible ? (inlinePromptTip.closing ? "tip-closing" : "tip") : "status";
+    const renderMode = promptTipVisible ? "tip" : "status";
     const promptTipKey = promptTipVisible ? inlinePromptTip.key : "";
 
     card.className = "cp-widget variant-tree-status-badge";
@@ -919,7 +922,109 @@
       patchStatusSegment(card, snapshot);
     }
 
+    const tipBar = card.querySelector(".cp-tip-bar");
+    if (inlinePromptTip.visible) {
+      if (promptTipKey !== lastTipBarWidthKey) {
+        lastTipBarWidthKey = promptTipKey;
+        tipBarAnimState = "hidden";
+        resetTipBarVisualState(tipBar);
+      }
+      syncTipBarVisibleClass();
+    } else if (inlinePromptTip.closing) {
+      syncTipBarVisibleClass();
+    } else {
+      lastTipBarWidthKey = "";
+      tipBarAnimState = "hidden";
+      resetTipBarVisualState(tipBar);
+    }
+
     updateOverlayPosition();
+  }
+
+  function getTipBarWidthCap() {
+    return Math.min(640, Math.max(240, window.innerWidth - 80));
+  }
+
+  function measureTipBarTargetWidth(tipBar) {
+    const cap = getTipBarWidthCap();
+    if (!tipBar) return cap;
+
+    const prevTransition = tipBar.style.transition;
+    const prevMaxWidth = tipBar.style.maxWidth;
+    tipBar.style.transition = "none";
+    tipBar.style.maxWidth = `${cap}px`;
+    const measured = Math.min(Math.ceil(tipBar.scrollWidth) + 16, cap);
+    if (prevMaxWidth) tipBar.style.maxWidth = prevMaxWidth;
+    else tipBar.style.removeProperty("max-width");
+    if (prevTransition) tipBar.style.transition = prevTransition;
+    else tipBar.style.removeProperty("transition");
+    return Math.max(measured, 220);
+  }
+
+  function resetTipBarVisualState(tipBar) {
+    if (!tipBar) return;
+    tipBar.classList.remove("visible", "closing");
+    tipBar.style.removeProperty("max-width");
+    tipBar.style.removeProperty("opacity");
+    tipBar.style.removeProperty("padding-left");
+    tipBar.style.removeProperty("padding-right");
+    tipBar.style.removeProperty("transition");
+    tipBar.style.removeProperty("--cp-tip-target-width");
+  }
+
+  function openTipBarAnimated(tipBar) {
+    if (!tipBar) return;
+    const width = measureTipBarTargetWidth(tipBar);
+    tipBarAnimState = "opening";
+    tipBar.classList.remove("closing");
+
+    tipBar.style.transition = "none";
+    tipBar.style.maxWidth = "0px";
+    tipBar.style.opacity = "0";
+    tipBar.style.paddingLeft = "0px";
+    tipBar.style.paddingRight = "0px";
+    void tipBar.offsetWidth;
+
+    tipBar.style.transition = "";
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        tipBar.style.maxWidth = `${width}px`;
+        tipBar.style.opacity = "1";
+        tipBar.style.paddingLeft = "12px";
+        tipBar.style.paddingRight = "8px";
+        tipBar.classList.add("visible");
+        tipBarAnimState = "open";
+        updateOverlayPosition();
+      });
+    });
+  }
+
+  function closeTipBarAnimated(tipBar) {
+    if (!tipBar) return;
+    tipBarAnimState = "closing";
+    tipBar.classList.remove("visible");
+    tipBar.classList.add("closing");
+    tipBar.style.transition = "";
+    tipBar.style.maxWidth = "0px";
+    tipBar.style.opacity = "0";
+    tipBar.style.paddingLeft = "0px";
+    tipBar.style.paddingRight = "0px";
+  }
+
+  function syncTipBarVisibleClass() {
+    const tipBar = overlay?.card?.querySelector(".cp-tip-bar");
+    if (!tipBar) return;
+
+    if (inlinePromptTip.visible) {
+      if (tipBarAnimState === "open" || tipBarAnimState === "opening") return;
+      openTipBarAnimated(tipBar);
+      return;
+    }
+
+    if (inlinePromptTip.closing) {
+      if (tipBarAnimState === "closing" || tipBarAnimState === "hidden") return;
+      closeTipBarAnimated(tipBar);
+    }
   }
 
   function patchStatusSegment(card, snapshot) {
@@ -958,13 +1063,40 @@
     if ((!inlinePromptTip.visible && !inlinePromptTip.closing) || !inlinePromptTip.message) return status;
 
     return `
-      <div class="cp-prompt-tip-inline" data-state="${inlinePromptTip.closing ? "closing" : "opening"}" aria-live="polite">
+      <div class="cp-tip-bar" aria-live="polite">
         <strong class="text-status">${esc(inlinePromptTip.title || "프롬프트 팁")}</strong>
-        <span class="text-body-l">${esc(inlinePromptTip.message)}</span>
+        <span class="cp-tip-bar-text text-body-l">${esc(inlinePromptTip.message)}</span>
       </div>
-      <div class="cp-inline-divider" aria-hidden="true"></div>
       ${status}
     `;
+  }
+
+  function applyBadgePlacementRightAnchored(card) {
+    const margin = 12;
+    const anchor = getComposerRect() || currentEditor?.getBoundingClientRect();
+    if (!anchor || !isUsefulRect(anchor)) return false;
+
+    const scale = settings.floatingLogoScale / 100;
+    const layoutWidth = card.offsetWidth || 188;
+    const layoutHeight = card.offsetHeight || 70;
+    const width = Math.ceil(layoutWidth * scale);
+    const height = Math.ceil(layoutHeight * scale);
+    const forbidden = getForbiddenRects("card");
+    const primary = calculateLogoPlacementRect(settings.floatingLogoPlacement, anchor, width, height, margin);
+
+    if (
+      settings.floatingLogoPlacement !== "top-right" ||
+      !primary ||
+      !isSafeRect(primary, forbidden, margin)
+    ) {
+      return false;
+    }
+
+    card.style.left = "auto";
+    card.style.right = `${Math.round(window.innerWidth - anchor.right)}px`;
+    card.style.top = `${Math.round(primary.top)}px`;
+    card.dataset.placement = settings.floatingLogoPlacement;
+    return true;
   }
 
   function updateOverlayPosition() {
@@ -972,11 +1104,14 @@
     const card = overlay.card;
     const bubble = overlay.bubble;
 
-    const cardPlacement = chooseCardPlacement(card);
-    applyPlacement(card, cardPlacement);
-    card.dataset.placement = cardPlacement.name;
-    card.style.setProperty("--cp-tip-width", `${getPromptTipDrawerWidth(cardPlacement)}px`);
+    if (!applyBadgePlacementRightAnchored(card)) {
+      card.style.right = "auto";
+      const cardPlacement = chooseCardPlacement(card);
+      applyPlacement(card, cardPlacement);
+      card.dataset.placement = cardPlacement.name;
+    }
 
+    ensureBadgeResizeObserver();
     if (bubble.dataset.visible === "true") {
       const bubblePlacement = chooseBubblePlacementNearLogo(bubble);
       applyPlacement(bubble, bubblePlacement);
@@ -1215,9 +1350,20 @@
   }
 
   function applyPlacement(element, placement) {
+    element.style.right = "auto";
     element.style.left = `${Math.round(placement.left)}px`;
     element.style.top = `${Math.round(placement.top)}px`;
     if (placement.hidden) element.dataset.visible = "false";
+  }
+
+  function ensureBadgeResizeObserver() {
+    if (!overlay?.card || badgeResizeObserver) return;
+    badgeResizeObserver = new ResizeObserver(() => {
+      if (!overlay?.card || dragState.active) return;
+      if (settings.dragEnabled && settings.customPosition) return;
+      applyBadgePlacementRightAnchored(overlay.card);
+    });
+    badgeResizeObserver.observe(overlay.card);
   }
 
   function handleDragStart(event) {
@@ -1343,11 +1489,13 @@
     rememberPromptTip(contextual);
     lastAutoPromptTipKey = key;
     lastAutoPromptTipAt = now;
-    showInlinePromptTip(snapshot, contextual, key);
+    showTipBar(snapshot, contextual, key);
     return true;
   }
 
-  function showInlinePromptTip(snapshot, tip, key, options = {}) {
+  function showTipBar(snapshot, tip, key, options = {}) {
+    if (inlinePromptTip.visible || inlinePromptTip.closing) return;
+
     const title = tip?.title || getPromptTipTitle(tip);
     const message = tip?.text || "";
     if (!message) return;
@@ -1362,19 +1510,22 @@
     clearTimeout(inlinePromptTipTimer);
     clearTimeout(inlinePromptTipCloseTimer);
     updateOverlay(snapshot);
+
     inlinePromptTipTimer = window.setTimeout(
-      () => hideInlinePromptTip(),
+      () => hideTipBar(),
       Number(options.duration) || PROMPT_TIP_AUTO_DURATION_MS
     );
   }
 
-  function hideInlinePromptTip() {
+  function hideTipBar() {
     if (!inlinePromptTip.visible && !inlinePromptTip.closing) return;
+
     if (inlinePromptTip.visible) {
       inlinePromptTip = { ...inlinePromptTip, visible: false, closing: true };
       lastInlinePromptTipHiddenAt = Date.now();
       clearTimeout(inlinePromptTipTimer);
       if (settings.enabled && currentEditor) updateOverlay(buildSnapshot());
+
       clearTimeout(inlinePromptTipCloseTimer);
       inlinePromptTipCloseTimer = window.setTimeout(() => {
         inlinePromptTip = { visible: false, closing: false, title: "", message: "", key: "" };
@@ -1382,10 +1533,19 @@
       }, PROMPT_TIP_INLINE_ANIMATION_MS);
       return;
     }
+
     inlinePromptTip = { visible: false, closing: false, title: "", message: "", key: "" };
     clearTimeout(inlinePromptTipTimer);
     clearTimeout(inlinePromptTipCloseTimer);
     if (settings.enabled && currentEditor) updateOverlay(buildSnapshot());
+  }
+
+  function showInlinePromptTip(snapshot, tip, key, options = {}) {
+    showTipBar(snapshot, tip, key, options);
+  }
+
+  function hideInlinePromptTip() {
+    hideTipBar();
   }
 
   function showOnboardingGuide() {
@@ -1651,11 +1811,11 @@
     if (snapshot.level === "high" && !entryShown.high) {
       entryShown.high = true;
       const message = pickNudge("entry", "high") || "나눠서 물어보면 각각 더 정확한 답변을 받을 수 있어요";
-      showInlinePromptTip(snapshot, { title: "높음 구간 진입", text: message }, "entry:high", { duration: PROMPT_TIP_AUTO_DURATION_MS });
+      showTipBar(snapshot, { title: "높음 구간 진입", text: message }, "entry:high", { duration: PROMPT_TIP_AUTO_DURATION_MS });
     } else if (snapshot.level === "medium" && !entryShown.medium) {
       entryShown.medium = true;
       const message = pickNudge("entry", "medium") || "핵심만 남기면 더 빠르고 정확한 답변을 받을 수 있어요";
-      showInlinePromptTip(snapshot, { title: "중간 구간 진입", text: message }, "entry:medium", { duration: PROMPT_TIP_AUTO_DURATION_MS });
+      showTipBar(snapshot, { title: "중간 구간 진입", text: message }, "entry:medium", { duration: PROMPT_TIP_AUTO_DURATION_MS });
     } else if (maybeShowAutoPromptTip(snapshot, text)) {
       // 프롬프팅 팁은 hover가 아니라 입력 맥락에 따라 자동 노출한다.
     } else if (snapshot.level === "low" && levelChanged) {
@@ -2621,12 +2781,21 @@
         pointer-events: auto;
         opacity: 0;
         transform: scale(var(--cp-logo-scale, 0.8)) translateY(8px);
-        transform-origin: top left;
+        transform-origin: top right;
         transition: opacity 160ms ease, transform 160ms ease, filter 160ms ease;
         user-select: none;
-        overflow: hidden;
+        display: flex;
+        flex-direction: row;
         align-items: center;
-        max-width: 280px;
+        width: fit-content;
+        height: 70px;
+        min-height: 70px;
+        max-height: 70px;
+        box-sizing: border-box;
+        padding: 14px 26px 12px 20px;
+        gap: 0;
+        overflow-x: hidden;
+        overflow-y: hidden;
       }
       .cp-widget[data-visible="true"] { opacity: 1; transform: scale(var(--cp-logo-scale, 0.8)) translateY(0); }
       .cp-widget:hover { filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.12)); }
@@ -2675,49 +2844,84 @@
         display: flex;
         align-items: center;
         justify-content: flex-end;
-        gap: 10px;
         min-width: 0;
-        padding: 8px 11px 8px 10px;
+        padding: 0;
         border-radius: 999px;
-        overflow: hidden;
+        overflow: visible;
       }
-      .variant-tree-status-badge[data-prompt-tip-visible="true"] {
-        border-radius: 999px;
-      }
-      .cp-status-segment {
-        position: relative;
-        z-index: 2;
-        flex: 1 1 auto;
-        min-width: 0;
-        max-width: 100%;
+      .cp-tip-bar {
         display: flex;
         align-items: center;
+        gap: 8px;
+        max-width: 0;
+        overflow: hidden;
+        opacity: 0;
+        white-space: nowrap;
+        flex-shrink: 0;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 0;
+        transition:
+          max-width 1.5s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.4s ease,
+          padding 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .cp-tip-bar.visible {
+        opacity: 1;
+      }
+      .cp-tip-bar.closing {
+        max-width: 0;
+        opacity: 0;
+        padding-left: 0;
+        padding-right: 0;
+      }
+      .cp-tip-bar strong.text-status {
+        flex-shrink: 0;
+        white-space: nowrap;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 130%;
+        color: var(--level-deep, var(--green-900));
+      }
+      .cp-tip-bar-text {
+        flex: 0 0 auto;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 140%;
+        color: #1a1a16;
+        white-space: nowrap;
+      }
+      .cp-status-segment {
+        flex: 0 0 auto;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        padding: 0 8px 0 4px;
+        min-width: 152px;
       }
       .cp-badge-icon {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 12px;
         flex-shrink: 0;
         min-width: 0;
-        max-width: 100%;
-        overflow: hidden;
       }
       .cp-tree-wrap {
         flex: 0 0 auto;
         display: grid;
         place-items: center;
-        width: 32px;
-        height: 32px;
-        overflow: hidden;
+        width: 38px;
+        height: 42px;
+        overflow: visible;
+        padding-top: 4px;
+        box-sizing: border-box;
       }
       .cp-character {
-        width: 32px;
-        height: 32px;
+        width: 30px;
+        height: 30px;
         flex-shrink: 0;
-        display: block;
         object-fit: contain;
-        transition: all 300ms ease;
-        pointer-events: none;
+        transform-origin: center bottom;
       }
       .cp-widget[data-level="idle"] .cp-character { animation: puri-idle 3s ease-in-out infinite; }
       .cp-widget[data-level="low"] .cp-character { animation: puri-bounce 1.5s ease-in-out infinite; }
@@ -2725,11 +2929,11 @@
       .cp-widget[data-level="high"] .cp-character { animation: puri-panic 0.4s ease-in-out infinite; }
       @keyframes puri-idle {
         0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-4px); }
+        50% { transform: translateY(-3px); }
       }
       @keyframes puri-bounce {
         0%, 100% { transform: translateY(0px) scale(1); }
-        50% { transform: translateY(-6px) scale(1.05); }
+        50% { transform: translateY(-4px) scale(1.03); }
       }
       @keyframes puri-shake {
         0%, 100% { transform: rotate(-5deg); }
@@ -2743,89 +2947,15 @@
         min-width: 0;
         flex: 1 1 auto;
         display: grid;
-        gap: 3px;
-        overflow: hidden;
+        gap: 5px;
+        padding-right: 4px;
       }
       .cp-badge-copy strong.text-status,
       .cp-badge-copy span.text-body-m {
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
       }
       .cp-badge-copy strong.text-status { color: var(--level-deep, var(--green-900)); }
       .cp-badge-copy span.text-body-m { color: var(--gray-600); }
-      .cp-prompt-tip-inline {
-        position: absolute;
-        right: calc(100% - 28px);
-        top: -1px;
-        bottom: -1px;
-        width: var(--cp-tip-width, 480px);
-        min-height: 0;
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr);
-        align-items: center;
-        column-gap: 10px;
-        row-gap: 2px;
-        padding: 0 42px 0 16px;
-        border-radius: 999px 0 0 999px;
-        background: #ffffff;
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        border-right: 0;
-        box-shadow: none;
-        backdrop-filter: none;
-        white-space: normal;
-        overflow: hidden;
-        transform: none;
-        transform-origin: right center;
-        z-index: 1;
-        animation: cp-tip-unfold-left 1500ms cubic-bezier(0.16, 1, 0.3, 1) both;
-      }
-      .cp-prompt-tip-inline[data-state="closing"] {
-        animation: cp-tip-fold-left 1500ms cubic-bezier(0.7, 0, 0.84, 0) both;
-      }
-      .cp-prompt-tip-inline strong.text-status {
-        white-space: nowrap;
-        color: var(--level-deep, var(--green-900));
-      }
-      .cp-prompt-tip-inline span.text-body-l {
-        min-width: 0;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        white-space: normal;
-        text-overflow: ellipsis;
-        color: var(--gray-800);
-      }
-      @keyframes cp-tip-unfold-left {
-        from {
-          opacity: 1;
-          width: 28px;
-          padding-left: 0;
-          padding-right: 0;
-        }
-        to {
-          opacity: 1;
-          width: var(--cp-tip-width, 480px);
-          padding-left: 16px;
-          padding-right: 42px;
-        }
-      }
-      @keyframes cp-tip-fold-left {
-        from {
-          opacity: 1;
-          width: var(--cp-tip-width, 480px);
-          padding-left: 16px;
-          padding-right: 42px;
-        }
-        to {
-          opacity: 1;
-          width: 28px;
-          padding-left: 0;
-          padding-right: 0;
-        }
-      }
-      .cp-inline-divider { display: none; }
     `;
   }
 
