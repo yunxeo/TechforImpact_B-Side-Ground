@@ -3,7 +3,8 @@
 const STORAGE_KEYS = {
   SETTINGS: "chatpool.settings",
   DAILY: "chatpool.daily",
-  ONBOARDED: "chatpool.onboarded"
+  ONBOARDED: "chatpool.onboarded",
+  CUSTOM_CHARACTER: "chatpool.customCharacter"
 };
 
 const DEFAULT_SETTINGS = {
@@ -63,17 +64,24 @@ let latestDaily = {};
 
 const nodes = {
   enabled: $("#enabled"),
+  prevDay: $("#prevDay"),
+  nextDay: $("#nextDay"),
   reportDate: $("#reportDate"),
   refreshReport: $("#refreshReport"),
   reportStatus: $("#reportStatus"),
   puriReportImg: $("#puriReportImg"),
+  puriImgWrap: $("#puriImgWrap"),
+  puriUploadInput: $("#puriUploadInput"),
+  puriCustomBadge: $("#puriCustomBadge"),
+  puriResetBtn: $("#puriResetBtn"),
   puriReportMsg: $("#puriReportMsg"),
   reportInsights: $("#reportInsights"),
   lowRatio: $("#lowRatio"),
   mediumRatio: $("#mediumRatio"),
   highRatio: $("#highRatio"),
   levelMixNote: $("#levelMixNote"),
-  weekDays: $("#weekDays"),
+  weekBars: $("#weekBars"),
+  weekDaysLabel: $("#weekDaysLabel"),
   openGuide: $("#openGuide"),
   tipTotal: $("#tipTotal"),
   openTips: $("#openTips"),
@@ -84,12 +92,18 @@ const nodes = {
   tipList: $("#tipList")
 };
 
+let customCharacterUrl = null;
+let reportOffset = 0;
+
 boot();
 
 async function boot() {
   const state = await getState();
+  const stored = await storageGet([STORAGE_KEYS.CUSTOM_CHARACTER]);
+  customCharacterUrl = stored[STORAGE_KEYS.CUSTOM_CHARACTER] || null;
   render(state);
   bindEvents(state.settings);
+  bindCharacterUpload();
   await loadAndRenderReport();
 }
 
@@ -133,6 +147,20 @@ function formatDateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
+function getDateKey(offset = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() + offset);
+  return formatDateKey(date);
+}
+
+function getDateLabel(offset) {
+  if (offset === 0) return "오늘";
+  if (offset === -1) return "어제";
+  const date = new Date();
+  date.setDate(date.getDate() + offset);
+  return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+}
+
 function render(state) {
   nodes.enabled.checked = Boolean(state.settings.enabled);
   nodes.tipTotal.textContent = `${tips.length}`;
@@ -145,6 +173,21 @@ function bindEvents(settings) {
   nodes.openGuide.addEventListener("click", openOnboardingOnActiveTab);
   nodes.openTips.addEventListener("click", toggleTipLibrary);
 
+  nodes.prevDay.addEventListener("click", () => {
+    reportOffset--;
+    nodes.nextDay.disabled = false;
+    nodes.reportDate.textContent = getDateLabel(reportOffset);
+    loadAndRenderReportForOffset(reportOffset);
+  });
+
+  nodes.nextDay.addEventListener("click", () => {
+    if (reportOffset >= 0) return;
+    reportOffset++;
+    if (reportOffset === 0) nodes.nextDay.disabled = true;
+    nodes.reportDate.textContent = getDateLabel(reportOffset);
+    loadAndRenderReportForOffset(reportOffset);
+  });
+
   async function updateSetting(patch) {
     const next = sanitizeSettings(merge(settings, patch));
     Object.assign(settings, next);
@@ -153,14 +196,61 @@ function bindEvents(settings) {
   }
 }
 
+function bindCharacterUpload() {
+  nodes.puriImgWrap.addEventListener("click", () => nodes.puriUploadInput.click());
+
+  nodes.puriUploadInput.addEventListener("change", async () => {
+    const file = nodes.puriUploadInput.files?.[0];
+    if (!file) return;
+    nodes.puriUploadInput.value = "";
+    try {
+      const dataUrl = await resizeImageToDataUrl(file, 200);
+      customCharacterUrl = dataUrl;
+      await storageSet({ [STORAGE_KEYS.CUSTOM_CHARACTER]: dataUrl });
+      nodes.puriReportImg.src = dataUrl;
+      nodes.puriCustomBadge.hidden = false;
+    } catch {
+      // 업로드 실패 시 무시
+    }
+  });
+
+  nodes.puriResetBtn.addEventListener("click", async () => {
+    customCharacterUrl = null;
+    await storageSet({ [STORAGE_KEYS.CUSTOM_CHARACTER]: null });
+    nodes.puriCustomBadge.hidden = true;
+    await loadAndRenderReport();
+  });
+}
+
+function resizeImageToDataUrl(file, maxSize) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 async function openOnboardingOnActiveTab() {
-  await chrome.storage.local.remove(STORAGE_KEYS.ONBOARDED);
+  await chrome.storage.local.set({ [STORAGE_KEYS.ONBOARDED]: false });
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (tab?.id) {
     try {
       await chrome.tabs.sendMessage(tab.id, { type: "CHATPOOL_SHOW_ONBOARDING" });
     } catch {
-      // content script may not be loaded on this tab
+      // content script may not be loaded on this tab — 새로고침 후 다시 시도
+      await chrome.tabs.reload(tab.id);
     }
   }
   window.close();
@@ -215,8 +305,26 @@ function renderActiveTips() {
   }).join("") || '<article class="tip-item"><p>표시할 팁이 없습니다.</p></article>';
 }
 
+async function loadAndRenderReportForOffset(offset) {
+  try {
+    const reportResponse = await sendRuntimeMessage({
+      type: "CHATPOOL_GET_DAILY_REPORT",
+      dateKey: getDateKey(offset)
+    });
+    if (!reportResponse?.ok) throw new Error(reportResponse?.error || "리포트를 불러오지 못했습니다.");
+    renderReport(reportResponse.report || null);
+    nodes.reportStatus.hidden = true;
+  } catch (error) {
+    setReportStatus(`리포트를 불러오지 못했어요. ${String(error?.message || error)}`);
+    renderReport(null);
+  }
+}
+
 async function loadAndRenderReport() {
   setReportStatus("리포트를 불러오는 중이에요…");
+  reportOffset = 0;
+  nodes.nextDay.disabled = true;
+  nodes.reportDate.textContent = "오늘";
   try {
     const [reportResponse, dailyResult] = await Promise.all([
       sendRuntimeMessage({ type: "CHATPOOL_GET_DAILY_REPORT" }),
@@ -237,9 +345,6 @@ function sendRuntimeMessage(message) {
 }
 
 function renderReport(report) {
-  const today = report?.dateKey || todayKey();
-  nodes.reportDate.textContent = `${today} 기준`;
-
   const stat = {
     submitCount: report?.totalSent || 0,
     highCount: report?.highCount || 0,
@@ -249,12 +354,14 @@ function renderReport(report) {
     avgReducedChars: Math.round(Number(report?.avgReducedChars) || 0),
     lowRatioPct: report?.lowRatioPct || 0,
     mediumRatioPct: report?.mediumRatioPct || 0,
-    highRatioPct: report?.highRatioPct || 0
+    highRatioPct: report?.highRatioPct || 0,
+    platformCounts: report?.platformCounts || {}
   };
 
   const puri = getPuriComment(stat);
-  nodes.puriReportImg.src = PURI_ASSETS[puri.imgKey] || PURI_ASSETS.idle;
+  nodes.puriReportImg.src = customCharacterUrl || PURI_ASSETS[puri.imgKey] || PURI_ASSETS.idle;
   nodes.puriReportImg.alt = "푸리";
+  nodes.puriCustomBadge.hidden = !customCharacterUrl;
   nodes.puriReportMsg.textContent = getDailyReportNudge(stat) || puri.msg;
 
   nodes.reportInsights.innerHTML = buildInsightItems(stat).join("");
@@ -270,13 +377,27 @@ function renderReport(report) {
 function buildInsightItems(stat) {
   if (!stat.submitCount) {
     return [
-      insightHtml("오늘은 아직 전송 기록이 없어요. 첫 프롬프트를 내면 여기에 요약이 쌓여요."),
+      insightHtml("아직 오늘 AI를 사용하지 않았어요."),
       insightHtml("평균 글자 수와 다듬은 양은 전송 후에 볼 수 있어요.")
     ];
   }
 
+  const pc = stat.platformCounts || {};
+  const chatgptCount = pc.chatgpt || 0;
+  const geminiCount = pc.gemini || 0;
+  const claudeCount = pc.claude || 0;
+
+  const platforms = [];
+  if (chatgptCount > 0) platforms.push(`ChatGPT에 <strong class="text-display">${formatNumber(chatgptCount)}번</strong>`);
+  if (claudeCount > 0) platforms.push(`Claude에 <strong class="text-display">${formatNumber(claudeCount)}번</strong>`);
+  if (geminiCount > 0) platforms.push(`Gemini에 <strong class="text-display">${formatNumber(geminiCount)}번</strong>`);
+
+  const platformLine = platforms.length > 0
+    ? `오늘 ${platforms.join(", ")} 보냈어요.`
+    : `오늘 <strong class="text-display">${formatNumber(stat.submitCount)}번</strong> AI에 보냈어요.`;
+
   const items = [
-    insightHtml(`오늘 <strong class="text-display">${formatNumber(stat.submitCount)}번</strong> ChatGPT/Gemini에 보냈어요.`),
+    insightHtml(platformLine),
     insightHtml(`한 번 보낼 때 평균 <strong class="text-display">${formatNumber(stat.avgFinalChars)}자</strong> 정도 썼어요.`)
   ];
 
@@ -365,41 +486,41 @@ function getPuriComment(stat) {
 }
 
 function renderWeekCalendar(daily) {
-  const days = buildWeekDays(daily);
-  nodes.weekDays.innerHTML = days.map((day) => {
-    const level = getWeekDotLevel(day.stat.submitCount || 0);
-    const todayClass = day.isToday ? " today" : "";
-    return `
-      <div class="week-day">
-        <div class="week-dot level-${level}${todayClass}" title="${escapeHtml(day.key)} · ${day.stat.submitCount || 0}회"></div>
-        <span class="week-day-label text-body-s">${escapeHtml(day.dayLabel)}</span>
-      </div>
-    `;
-  }).join("");
-}
+  if (!nodes.weekBars || !nodes.weekDaysLabel) return;
 
-function buildWeekDays(daily) {
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const date = new Date();
     date.setDate(date.getDate() - i);
     const key = formatDateKey(date);
-    const stat = daily[key] || { submitCount: 0 };
+    const count = (daily[key] || {}).submitCount || 0;
     days.push({
       key,
-      stat,
+      count,
       isToday: i === 0,
       dayLabel: ["일", "월", "화", "수", "목", "금", "토"][date.getDay()]
     });
   }
-  return days;
-}
 
-function getWeekDotLevel(submitCount) {
-  if (submitCount <= 0) return 0;
-  if (submitCount <= 3) return 1;
-  if (submitCount <= 7) return 2;
-  return 3;
+  const maxCount = Math.max(...days.map((d) => d.count), 1);
+
+  nodes.weekBars.innerHTML = days.map((day) => {
+    const heightPct = day.count > 0 ? Math.max((day.count / maxCount) * 100, 10) : 0;
+    const todayClass = day.isToday ? " today" : "";
+    return `
+      <div class="week-bar-wrap">
+        <div class="week-bar-bg">
+          <div class="week-bar-fill${todayClass}" style="height:${heightPct}%"></div>
+        </div>
+        <div class="week-bar-count">${day.count}</div>
+      </div>
+    `;
+  }).join("");
+
+  nodes.weekDaysLabel.innerHTML = days.map((day) => {
+    const todayClass = day.isToday ? " today" : "";
+    return `<div class="week-day-label${todayClass}">${escapeHtml(day.dayLabel)}</div>`;
+  }).join("");
 }
 
 function setReportStatus(message) {

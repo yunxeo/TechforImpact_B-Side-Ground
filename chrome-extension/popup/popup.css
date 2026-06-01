@@ -157,13 +157,33 @@ button.secondary {
 .report-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 4px;
 }
 
 .report-date {
+  flex: 1;
+  font-weight: 700;
   color: var(--color-text-sub);
+}
+
+.date-nav {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 14px;
+  color: #777;
+  cursor: pointer;
+  flex: none;
+  line-height: 1;
+}
+
+.date-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .report-refresh {
@@ -194,11 +214,58 @@ button.secondary {
   margin: 10px 0;
 }
 
-.puri-img {
+.puri-img-wrap {
+  position: relative;
   width: 44px;
   height: 44px;
   flex-shrink: 0;
-  object-fit: contain;
+  cursor: pointer;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.puri-img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  display: block;
+  border-radius: 8px;
+}
+
+.puri-upload-hint {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.55);
+  border-radius: 50%;
+  opacity: 1;
+  pointer-events: none;
+}
+
+.puri-custom-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--green-100);
+  margin-top: -4px;
+  margin-bottom: 4px;
+}
+
+.puri-reset-btn {
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--green-900);
+  border: 1px solid var(--green-600);
+  cursor: pointer;
 }
 
 .puri-bubble {
@@ -284,47 +351,72 @@ button.secondary {
 .week-calendar { margin-top: 12px; }
 
 .week-label {
-  margin-bottom: 6px;
-  color: var(--color-text-sub);
+  font-size: 11px;
+  font-weight: 700;
+  color: #777;
+  margin-bottom: 8px;
 }
 
-.week-days {
+.week-bars {
   display: flex;
-  justify-content: space-between;
+  align-items: flex-end;
+  gap: 4px;
+  height: 48px;
 }
 
-.week-day {
+.week-bar-wrap {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 2px;
+  height: 100%;
+}
+
+.week-bar-bg {
+  width: 100%;
+  height: 40px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.week-bar-fill {
+  width: 100%;
+  background: #d1d600;
+  border-radius: 4px;
+  transition: height 0.3s ease;
+  min-height: 0;
+}
+
+.week-bar-fill.today {
+  background: #4e5000;
+}
+
+.week-bar-count {
+  font-size: 9px;
+  color: #777;
+  text-align: center;
+}
+
+.week-days-label {
+  display: flex;
   gap: 4px;
+  margin-top: 4px;
 }
 
 .week-day-label {
-  color: var(--gray-400);
+  flex: 1;
+  font-size: 10px;
+  color: #aaa;
+  text-align: center;
 }
 
-.week-dot {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 1.5px solid var(--gray-200);
-  box-sizing: border-box;
-}
-
-.week-dot.today { border-color: var(--green-400); }
-.week-dot.level-0 { background: transparent; }
-.week-dot.level-1 {
-  background: color-mix(in srgb, var(--green-400) 30%, transparent);
-  border-color: var(--green-400);
-}
-.week-dot.level-2 {
-  background: color-mix(in srgb, var(--green-400) 60%, transparent);
-  border-color: var(--green-400);
-}
-.week-dot.level-3 {
-  background: var(--green-400);
-  border-color: var(--green-400);
+.week-day-label.today {
+  color: #4e5000;
+  font-weight: 700;
 }
 
 /* Tips */

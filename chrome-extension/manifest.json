@@ -11,7 +11,8 @@
     "https://chatgpt.com/*",
     "https://chat.openai.com/*",
     "https://gemini.google.com/*",
-    "https://bard.google.com/*"
+    "https://bard.google.com/*",
+    "https://claude.ai/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js"
@@ -22,7 +23,8 @@
         "https://chatgpt.com/*",
         "https://chat.openai.com/*",
         "https://gemini.google.com/*",
-        "https://bard.google.com/*"
+        "https://bard.google.com/*",
+        "https://claude.ai/*"
       ],
       "js": [
         "content/nudge-texts.js",
@@ -52,7 +54,8 @@
       "https://chatgpt.com/*",
       "https://chat.openai.com/*",
       "https://gemini.google.com/*",
-      "https://bard.google.com/*"
+      "https://bard.google.com/*",
+      "https://claude.ai/*"
     ]
   }]
 }

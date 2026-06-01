@@ -26,7 +26,7 @@
     }
   };
 
-  const PROMPT_TIP_AUTO_DURATION_MS = 5000;
+  const PROMPT_TIP_AUTO_DURATION_MS = 6000;
   const PROMPT_TIP_INLINE_REPEAT_GUARD_MS = 45000;
   const PROMPT_TIP_INLINE_COOLDOWN_MS = 5000;
   const PROMPT_TIP_INLINE_ANIMATION_MS = 1500;
@@ -50,6 +50,12 @@
       "rich-textarea [contenteditable='true']",
       "[data-test-id*='input' i] [contenteditable='true']",
       "[data-testid*='input' i] [contenteditable='true']",
+      "[contenteditable='true'][aria-label*='Write your prompt' i]",
+      "[contenteditable='true'].ProseMirror",
+      "div[contenteditable='true'].ProseMirror",
+      "div[contenteditable='true'][data-placeholder]",
+      "fieldset div[contenteditable='true']",
+      "div[contenteditable='true'][translate='no']",
       "[contenteditable='true'][aria-label*='Gemini' i]",
       "[contenteditable='true'][aria-label*='prompt' i]",
       "[contenteditable='true'][aria-label*='message' i]",
@@ -64,6 +70,8 @@
       "button[data-testid='send-button']",
       "button[data-test-id*='send' i]",
       "button[data-testid*='send' i]",
+      "button[aria-label*='Send message' i]",
+      "button[aria-label*='Send' i][type='button']",
       "button[aria-label*='Send' i]",
       "button[aria-label*='Submit' i]",
       "button[aria-label*='전송' i]",
@@ -190,6 +198,8 @@
   let lastOverlayPromptTipKey = "";
   let lastTipBarWidthKey = "";
   let tipBarAnimState = "hidden";
+  let lastShownTip = null;
+  let tipShownByHover = false;
   let badgeResizeObserver = null;
   let promptSession = null;
   let lastNonEmptyText = "";
@@ -258,7 +268,7 @@
 
   async function maybeShowDailyReportNudge(snapshot, options = {}) {
     if (reportNudgeShownThisPage && !options.allowRepeat) return;
-    if (onboardingGuideActive || document.getElementById(ONBOARDING_ROOT_ID)) return;
+    if (onboardingGuideActive || isOnboardingOpen()) return;
 
     const response = await sendRuntimeMessage({ type: "CHATPOOL_GET_DAILY_REPORT" });
     if (!response?.ok || !response.report) return;
@@ -273,7 +283,7 @@
     const delay = Number(options.delay) || 0;
     window.setTimeout(() => {
       if (!settings.enabled || !currentEditor) return;
-      if (onboardingGuideActive || document.getElementById(ONBOARDING_ROOT_ID)) return;
+      if (onboardingGuideActive || isOnboardingOpen()) return;
       reportNudgeShownThisPage = true;
       showBubble(buildSnapshot(), {
         title: "오늘의 리포트",
@@ -287,12 +297,30 @@
   async function tryShowPageLoadReportNudge() {
     if (reportNudgeShownThisPage) return;
     if (!settings.enabled || !currentEditor) return;
-    if (onboardingGuideActive || document.getElementById(ONBOARDING_ROOT_ID)) return;
+    if (onboardingGuideActive || isOnboardingOpen()) return;
 
     const onboarded = await storageGet(ONBOARDING_KEY);
     if (onboarded !== true) return;
 
-    await maybeShowDailyReportNudge(buildSnapshot(), { delay: 600 });
+    const VARIATIONS = [
+      "캐릭터를 클릭하면 오늘 AI 사용 기록을 확인할 수 있어요",
+      "오늘 몇 번 보냈는지 궁금하지 않아요? 캐릭터를 눌러보세요!",
+      "어제보다 간결하게 썼는지 확인해볼까요? 캐릭터를 클릭해보세요",
+      "오늘 AI에 보낸 기록들, 한눈에 확인해봐요! 캐릭터 클릭 👇"
+    ];
+    const message = VARIATIONS[Math.floor(Math.random() * VARIATIONS.length)];
+
+    window.setTimeout(() => {
+      if (!settings.enabled || !currentEditor) return;
+      if (onboardingGuideActive || isOnboardingOpen()) return;
+      reportNudgeShownThisPage = true;
+      showBubble(buildSnapshot(), {
+        title: "오늘의 리포트",
+        message,
+        duration: 5200,
+        kind: "report"
+      });
+    }, 600);
   }
 
   async function loadSettings() {
@@ -353,6 +381,9 @@
     }
     if (host.includes("chatgpt.com") || host.includes("chat.openai.com")) {
       return { id: "chatgpt", label: "ChatGPT", homeUrl: "https://chatgpt.com/" };
+    }
+    if (host.includes("claude.ai")) {
+      return { id: "claude", label: "Claude", homeUrl: "https://claude.ai/" };
     }
     return { id: "ai-chat", label: "AI 채팅", homeUrl: "https://chatgpt.com/" };
   }
@@ -438,6 +469,13 @@
 
   function findComposer(editor = currentEditor) {
     if (!editor) return null;
+
+    // claude.ai는 fieldset이 입력 컨테이너 역할을 함
+    if (PLATFORM.id === "claude") {
+      const fieldset = editor.closest("fieldset");
+      if (fieldset && isComposerRect(fieldset.getBoundingClientRect())) return fieldset;
+    }
+
     const direct = editor.closest("form");
     if (direct && isUsefulRect(direct.getBoundingClientRect())) return direct;
 
@@ -456,6 +494,11 @@
     }
 
     return direct || editor.parentElement || editor;
+  }
+
+  function isComposerRect(rect) {
+    // claude.ai 입력창은 높이 범위가 ChatGPT와 달라 더 넓은 범위를 허용
+    return rect && rect.width > 120 && rect.height >= 36 && rect.height <= 600 && rect.bottom > 0 && rect.top < window.innerHeight;
   }
 
   function isUsefulRect(rect) {
@@ -539,7 +582,7 @@
   }
 
   function triggerHoverBubble() {
-    if (onboardingGuideActive || document.getElementById(ONBOARDING_ROOT_ID)) return;
+    if (onboardingGuideActive || isOnboardingOpen()) return;
     const snapshot = buildSnapshot();
     if (!snapshot) return;
 
@@ -577,6 +620,11 @@
   function handleBadgePointerEnter() {
     badgeHoverActive = true;
     triggerHoverBubble();
+    if (!inlinePromptTip.visible && !inlinePromptTip.closing && lastShownTip) {
+      const { tip, key } = lastShownTip;
+      showTipBar(buildSnapshot(), tip, key, { isHover: true, duration: PROMPT_TIP_AUTO_DURATION_MS });
+      tipShownByHover = true;
+    }
   }
 
   function pickHoverContent(snapshot) {
@@ -810,6 +858,10 @@
     hoverSession = { active: false, key: "", title: "", message: "" };
   }
 
+  function isOnboardingOpen() {
+    return Boolean(document.getElementById(ONBOARDING_ROOT_ID));
+  }
+
   function ensureOverlay() {
     const existing = document.getElementById(ROOT_ID);
     if (existing) {
@@ -1032,14 +1084,16 @@
     const levelLabel = getLevelLabel(level);
     const count = formatBadgeCount(snapshot);
     const treeWrap = card.querySelector(".cp-tree-wrap");
-    const strong = card.querySelector(".cp-badge-copy strong");
-    const hint = card.querySelector(".cp-badge-copy span");
+    const levelLabelEl = card.querySelector(".cp-level-label");
+    const charCountEl = card.querySelector(".cp-char-count");
+    const hint = card.querySelector(".cp-badge-copy span.text-body-m");
 
     if (treeWrap && card.dataset.iconLevel !== level) {
       treeWrap.innerHTML = characterIcon(level);
       card.dataset.iconLevel = level;
     }
-    if (strong) strong.textContent = `${levelLabel} · ${count}`;
+    if (levelLabelEl) levelLabelEl.textContent = levelLabel;
+    if (charCountEl) charCountEl.textContent = count;
     if (hint) hint.textContent = getBadgeHint(level);
   }
 
@@ -1053,7 +1107,7 @@
         <div class="cp-badge-icon">
           <div class="cp-tree-wrap">${tree}</div>
           <div class="cp-badge-copy">
-            <strong class="text-status">${esc(levelLabel)} · ${esc(count)}</strong>
+            <strong class="text-status"><span class="cp-level-label">${esc(levelLabel)}</span> · <span class="cp-char-count">${esc(count)}</span></strong>
             <span class="text-body-m">${esc(getBadgeHint(level))}</span>
           </div>
         </div>
@@ -1082,7 +1136,8 @@
     const width = Math.ceil(layoutWidth * scale);
     const height = Math.ceil(layoutHeight * scale);
     const forbidden = getForbiddenRects("card");
-    const primary = calculateLogoPlacementRect(settings.floatingLogoPlacement, anchor, width, height, margin);
+    const badgeGap = 12 + (PLATFORM.id === "claude" ? 20 : 0);
+    const primary = calculateLogoPlacementRect(settings.floatingLogoPlacement, anchor, width, height, margin, badgeGap);
 
     if (
       settings.floatingLogoPlacement !== "top-right" ||
@@ -1138,11 +1193,12 @@
     }
 
     const forbidden = getForbiddenRects("card");
-    const primary = calculateLogoPlacementRect(settings.floatingLogoPlacement, anchor, width, height, margin);
+    const badgeGap = 12 + (PLATFORM.id === "claude" ? 20 : 0);
+    const primary = calculateLogoPlacementRect(settings.floatingLogoPlacement, anchor, width, height, margin, badgeGap);
     if (primary && isSafeRect(primary, forbidden, margin)) return { name: settings.floatingLogoPlacement, left: primary.left, top: primary.top };
 
     // 기본 위치는 채팅창 오른쪽 위다. 공간이 부족한 경우에만 중앙 위로 자동 전환한다.
-    const centerFallback = calculateLogoPlacementRect("top-center", anchor, width, height, margin);
+    const centerFallback = calculateLogoPlacementRect("top-center", anchor, width, height, margin, badgeGap);
     if (centerFallback && isSafeRect(centerFallback, forbidden, margin)) {
       return { name: "top-center-auto", left: centerFallback.left, top: centerFallback.top };
     }
@@ -1161,8 +1217,8 @@
     return clamp(available, 260, 560);
   }
 
-  function calculateLogoPlacementRect(placement, anchor, width, height, margin) {
-    const aboveY = anchor.top - height - 12;
+  function calculateLogoPlacementRect(placement, anchor, width, height, margin, gap = 12) {
+    const aboveY = anchor.top - height - gap;
     switch (placement) {
       case "chat-left":
         return makeRect(
@@ -1494,11 +1550,15 @@
   }
 
   function showTipBar(snapshot, tip, key, options = {}) {
-    if (inlinePromptTip.visible || inlinePromptTip.closing) return;
+    if (isOnboardingOpen()) return;
+    if (!options.isHover && (inlinePromptTip.visible || inlinePromptTip.closing)) return;
+    if (options.isHover && inlinePromptTip.visible) return;
 
     const title = tip?.title || getPromptTipTitle(tip);
     const message = tip?.text || "";
     if (!message) return;
+
+    if (!options.isHover) lastShownTip = { snapshot, tip, key };
 
     inlinePromptTip = {
       visible: true,
@@ -1549,7 +1609,7 @@
   }
 
   function showOnboardingGuide() {
-    if (document.getElementById(ONBOARDING_ROOT_ID)) return;
+    if (isOnboardingOpen()) return;
     if (!settings.enabled || !currentEditor || settings.onboardingGuideShown || onboardingGuideActive) return;
     const snapshot = buildSnapshot();
     onboardingGuideActive = true;
@@ -1918,6 +1978,12 @@
     currentComposer = findComposer(editor);
     lastText = getEditorText(currentEditor);
 
+    if (PLATFORM.id === "claude") {
+      console.log("[chatpull] platform:", PLATFORM);
+      console.log("[chatpull] composerRect:", getComposerRect());
+      console.log("[chatpull] editorRect:", editor.getBoundingClientRect());
+    }
+
     editor.addEventListener("input", handleTextChange, true);
     editor.addEventListener("keyup", handleTextChange, true);
     editor.addEventListener("keydown", handleEditorKeydown, true);
@@ -2020,7 +2086,7 @@
   }
 
   function showOnboarding() {
-    if (document.getElementById(ONBOARDING_ROOT_ID)) return;
+    document.getElementById(ONBOARDING_ROOT_ID)?.remove();
 
     const puzzleUrl = chrome.runtime.getURL("assets/extension-puzzle-outline.svg");
     const puzzleImg = (size) => `<img src="${puzzleUrl}" width="${size}" height="${size}" style="vertical-align:middle;margin:0 2px;" alt="🧩" />`;
@@ -2028,26 +2094,32 @@
     const puriLowUrl = chrome.runtime.getURL("assets/puri_low.svg");
     const puriMedUrl = chrome.runtime.getURL("assets/puri_medium.svg");
     const puriHighUrl = chrome.runtime.getURL("assets/puri_high.svg");
+    const badgeImgUrl = chrome.runtime.getURL("assets/badge.png");
 
     const SLIDES = [
       {
         imgUrl: puriLowUrl,
         imgSize: 80,
         title: "챗풀에 오신 걸 환영해요",
-        body: "ChatGPT에 입력할 때마다\n푸리가 입력 길이를 알려드려요\n\n길게 쓸수록 푸리가 힘들어하고\n간결하게 쓸수록 푸리가 건강해져요",
-        note: null
+        body: "ChatGPT · Gemini · Claude 등 대화형 AI에 입력할 때마다\n푸리가 입력 길이를 알려드려요\n\n길게 쓸수록 푸리가 힘들어하고\n간결하게 쓸수록 푸리가 건강해져요\n\n현재 ChatGPT · Gemini · Claude 지원",
+        note: "💡 대화형 AI 응답 1회에 생수 한 병 분량의 냉각수가 소비돼요"
       },
       {
         imgLevel: "low",
         title: "푸리 상태로 입력 길이를 확인해요",
         htmlBody: `<div class="level-row"><img src="${puriLowUrl}" width="32" height="32" alt="낮음" /><span class="text-body-l"><strong class="text-status">낮음</strong> — 딱 좋은 길이예요</span></div><div class="level-row"><img src="${puriMedUrl}" width="32" height="32" alt="중간" /><span class="text-body-l"><strong class="text-status">중간</strong> — 핵심만 남기면 더 빠른 답변을 받을 수 있어요</span></div><div class="level-row"><img src="${puriHighUrl}" width="32" height="32" alt="높음" /><span class="text-body-l"><strong class="text-status">높음</strong> — 나눠서 물어보면 더 정확한 답변을 얻을 수 있어요</span></div>`,
-        note: "채팅을 입력하면 푸리가 프롬프트를 더 잘 쓰는 팁을 알려줘요"
+        htmlNote: `<span class="text-body-m">채팅을 입력하면 캐릭터가 프롬프트를 더 잘 쓰는 팁을 알려줘요</span><br><span class="text-body-m">팁이 너무 빨리 사라져서 못 읽었다면 캐릭터 위에 마우스를 올려보세요. 최근 팁을 다시 볼 수 있어요</span>`
       },
       {
-        imgUrl: puzzleUrl,
+        emoji: "📊",
         title: "설정은 여기서 바꿀 수 있어요",
-        htmlBody: `<span class="text-body-l">브라우저 주소창 오른쪽</span><span class="text-body-l">${puzzleImg(16)} 아이콘을 클릭하고</span><span class="text-body-l">챗풀을 선택하면 설정을 바꿀 수 있어요</span><span class="text-body-l">오늘의 프롬프팅 리포트도 여기서 확인할 수 있어요 📊</span>`,
-        steps: `<span class="text-body-m">① ${puzzleImg(14)} 클릭 &nbsp;→&nbsp; ② 챗풀 선택</span>`,
+        htmlBody: `<div class="slide3-badge-hint"><img src="${badgeImgUrl}" class="badge-preview" alt="챗풀 뱃지" /><span>이 뱃지를 클릭하면 바로 설정을 열 수 있어요</span></div><span class="text-body-l" style="color:#919188">(또는 브라우저 우측 상단 ${puzzleImg(14)} 퍼즐 아이콘 클릭)</span><span class="text-body-l">📊 오늘 AI를 얼마나 썼는지 리포트 확인</span><span class="text-body-l">🎨 원하는 캐릭터 이미지 업로드</span><span class="text-body-l">⚙️ 챗풀 ON/OFF 설정</span>`,
+        note: null
+      },
+      {
+        emoji: "🎨",
+        title: "푸리를 내 스타일로 바꿀 수 있어요",
+        body: "설정에서 푸리를 클릭하고 원하는 캐릭터 이미지를 업로드하면\n나만의 챗풀을 만들 수 있어요",
         note: null
       }
     ];
@@ -2324,6 +2396,9 @@
       if (slide.steps) {
         noteEl.innerHTML = slide.steps;
         noteEl.style.display = "block";
+      } else if (slide.htmlNote) {
+        noteEl.innerHTML = slide.htmlNote;
+        noteEl.style.display = "block";
       } else if (slide.note) {
         noteEl.textContent = slide.note;
         noteEl.style.display = "block";
@@ -2436,6 +2511,9 @@
     skipBtn.addEventListener("click", closeOnboarding);
     nextBtn.addEventListener("click", goNext);
     prevBtn.addEventListener("click", goPrev);
+
+    // 배지 오버레이보다 항상 위에 오도록 DOM 순서를 맨 뒤로 보낸다.
+    document.documentElement.appendChild(host);
   }
   function getOnboardingStyleText() {
     return `
@@ -2663,10 +2741,35 @@
         transition: color 160ms ease;
       }
       .cp-ob-prev:hover { color: var(--gray-800); }
+      .slide3-badge-hint {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #f4f7e0;
+        border-radius: 10px;
+        padding: 8px 12px;
+        margin-bottom: 10px;
+      }
+      .badge-preview {
+        height: 32px;
+        width: auto;
+        flex-shrink: 0;
+      }
+      .slide3-badge-hint span {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--gray-900);
+        line-height: 130%;
+      }
     `;
   }
 
+  let customCharacterUrl = null;
+
   function characterIcon(level) {
+    if (customCharacterUrl) {
+      return `<img src="${customCharacterUrl}" class="cp-character" alt="${esc(level)}" draggable="false" />`;
+    }
     const map = {
       idle: chrome.runtime.getURL("assets/puri_idle.svg"),
       low: chrome.runtime.getURL("assets/puri_low.svg"),
@@ -2679,15 +2782,17 @@
   chrome.runtime.onMessage.addListener((message) => {
     if (message?.type === "CHATPOOL_SHOW_ONBOARDING") {
       showOnboarding();
+      return;
     }
   });
 
   async function boot() {
     await loadSettings();
+    customCharacterUrl = (await storageGet("chatpool.customCharacter")) || null;
     const onboarded = await storageGet(ONBOARDING_KEY);
-    if (onboarded !== true) showOnboarding();
     observePage();
     scanAndBind();
+    if (onboarded !== true) showOnboarding();
     window.setInterval(scanAndBind, 1500);
     chrome?.storage?.onChanged?.addListener((changes, areaName) => {
       if (areaName !== "local") return;
@@ -2695,9 +2800,22 @@
         settings = sanitizeSettings(deepMerge(settings, changes[STORAGE_KEYS.SETTINGS].newValue || {}));
         handleTextChange();
       }
-      if (changes[ONBOARDING_KEY]?.newValue === false) {
+      if (ONBOARDING_KEY in changes && changes[ONBOARDING_KEY].newValue !== true) {
         showOnboarding();
       }
+      if ("chatpool.customCharacter" in changes) {
+        customCharacterUrl = changes["chatpool.customCharacter"].newValue || null;
+        refreshAllCharacterIcons();
+      }
+    });
+  }
+
+  function refreshAllCharacterIcons() {
+    document.querySelectorAll(".cp-tree-wrap").forEach((wrap) => {
+      const card = wrap.closest("[data-level]");
+      const level = card?.dataset?.level || card?.dataset?.iconLevel || "idle";
+      wrap.innerHTML = characterIcon(level);
+      if (card) card.dataset.iconLevel = "";
     });
   }
 
@@ -2954,8 +3072,14 @@
       .cp-badge-copy span.text-body-m {
         white-space: nowrap;
       }
-      .cp-badge-copy strong.text-status { color: var(--level-deep, var(--green-900)); }
+      .cp-badge-copy strong.text-status { color: inherit; }
       .cp-badge-copy span.text-body-m { color: var(--gray-600); }
+      .cp-char-count { color: #5e5e57; }
+      .cp-level-label { transition: color 300ms ease; }
+      .cp-widget[data-level="idle"] .cp-level-label { color: #919188; }
+      .cp-widget[data-level="low"] .cp-level-label { color: #4e5000; }
+      .cp-widget[data-level="medium"] .cp-level-label { color: #9a6200; }
+      .cp-widget[data-level="high"] .cp-level-label { color: #ef4444; }
     `;
   }
 

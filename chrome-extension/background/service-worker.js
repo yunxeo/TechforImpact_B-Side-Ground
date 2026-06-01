@@ -257,7 +257,7 @@ function sanitizeEvent(event) {
 }
 
 function sanitizePlatform(platform) {
-  return ["chatgpt", "gemini", "unknown"].includes(platform) ? platform : "unknown";
+  return ["chatgpt", "gemini", "claude", "unknown"].includes(platform) ? platform : "unknown";
 }
 
 function sanitizeLevel(level) {
@@ -416,16 +416,19 @@ function createEmptyDailyStat(dateKey) {
     platformCounts: {
       chatgpt: 0,
       gemini: 0,
+      claude: 0,
       unknown: 0
     },
     discardPlatformCounts: {
       chatgpt: 0,
       gemini: 0,
+      claude: 0,
       unknown: 0
     },
     draftPlatformCounts: {
       chatgpt: 0,
       gemini: 0,
+      claude: 0,
       unknown: 0
     }
   };
@@ -638,6 +641,7 @@ function normalizePlatformCounts(value) {
   return {
     chatgpt: toNonNegativeInt(value?.chatgpt),
     gemini: toNonNegativeInt(value?.gemini),
+    claude: toNonNegativeInt(value?.claude),
     unknown: toNonNegativeInt(value?.unknown)
   };
 }
