@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>챗풀Chatpull — 더 나은 질문, 더 가벼운 AI</title>
+  <meta name="description" content="챗풀은 AI 사용 과정에서 불필요한 토큰 소비를 줄일 수 있도록 돕는 프롬프트 가이드 서비스입니다." />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green-50:  #f9fac0;
+      --green-100: #f2f47a;
+      --green-200: #e8eb3e;
+      --green-400: #d1d600;
+      --green-600: #a8ac00;
+      --green-800: #7a7d00;
+      --green-900: #4e5000;
+      --gray-50:  #f7f7f0;
+      --gray-100: #e5e5d8;
+      --gray-200: #c8c8ba;
+      --gray-400: #919188;
+      --gray-600: #5e5e57;
+      --gray-800: #383833;
+      --gray-900: #1a1a16;
+      --white: #ffffff;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: "Pretendard", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--gray-900);
+      background: var(--white);
+      letter-spacing: -0.02em;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Nav ── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 48px;
+      height: 64px;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(26,26,22,0.07);
+    }
+
+    .nav-logo {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--gray-900);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-600);
+      text-decoration: none;
+      transition: color 150ms;
+    }
+
+    .nav-links a:hover { color: var(--gray-900); }
+
+    .btn-download {
+      padding: 9px 20px;
+      border-radius: 999px;
+      background: var(--gray-900);
+      color: var(--white);
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      letter-spacing: -0.01em;
+      transition: background 150ms, transform 120ms;
+      text-decoration: none;
+    }
+
+    .btn-download:hover { background: var(--green-900); transform: translateY(-1px); }
+
+    /* ── Hero ── */
+    .hero {
+      background: var(--green-50);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 80px 24px 100px;
+      min-height: 600px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero-inner { position: relative; z-index: 1; max-width: 640px; }
+
+    .hero-character {
+      width: 180px;
+      height: 180px;
+      margin: 0 auto 32px;
+      filter: drop-shadow(0 20px 40px rgba(78,80,0,0.18));
+      animation: hero-float 4s ease-in-out infinite;
+    }
+
+    @keyframes hero-float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-10px); }
+    }
+
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 44px);
+      font-weight: 800;
+      line-height: 1.25;
+      color: var(--gray-900);
+      margin-bottom: 24px;
+      word-break: keep-all;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: var(--green-900);
+    }
+
+    .hero p {
+      font-size: 15px;
+      font-weight: 400;
+      line-height: 1.75;
+      color: var(--gray-600);
+      word-break: keep-all;
+    }
+
+    /* ── Problem ── */
+    .problem {
+      background: var(--gray-900);
+      padding: 96px 48px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 60px;
+      align-items: center;
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    .problem-wrap {
+      background: var(--gray-900);
+      padding: 0;
+    }
+
+    .problem-content { max-width: 520px; }
+
+    .problem h2 {
+      font-size: clamp(22px, 3.5vw, 34px);
+      font-weight: 800;
+      line-height: 1.3;
+      color: var(--white);
+      margin-bottom: 28px;
+      word-break: keep-all;
+    }
+
+    .problem-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 7px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.25);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-200);
+      background: rgba(255,255,255,0.06);
+    }
+
+    .problem p {
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--gray-400);
+      word-break: keep-all;
+    }
+
+    .problem p + p { margin-top: 12px; }
+
+    .problem-character {
+      width: 200px;
+      height: 200px;
+      flex-shrink: 0;
+      filter: drop-shadow(0 16px 32px rgba(0,0,0,0.3));
+      animation: hero-float 3.5s ease-in-out infinite;
+    }
+
+    /* ── Value Prop ── */
+    .value-prop {
+      background: var(--green-400);
+      text-align: center;
+      padding: 80px 24px;
+    }
+
+    .value-prop h2 {
+      font-size: clamp(22px, 4vw, 36px);
+      font-weight: 800;
+      color: var(--gray-900);
+      margin-bottom: 20px;
+      word-break: keep-all;
+    }
+
+    .value-prop p {
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--green-900);
+      line-height: 1.7;
+      max-width: 520px;
+      margin: 0 auto;
+      word-break: keep-all;
+    }
+
+    /* ── Solution ── */
+    .solution {
+      padding: 96px 48px;
+      text-align: center;
+      background: var(--white);
+    }
+
+    .solution-header h2 {
+      font-size: clamp(24px, 3.5vw, 36px);
+      font-weight: 800;
+      color: var(--gray-900);
+      margin-bottom: 12px;
+    }
+
+    .solution-header p {
+      font-size: 14px;
+      color: var(--gray-400);
+      margin-bottom: 56px;
+    }
+
+    .solution-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      max-width: 940px;
+      margin: 0 auto;
+      text-align: left;
+    }
+
+    .solution-card {
+      padding: 28px 24px;
+      border-radius: 20px;
+      border: 1px solid var(--gray-100);
+      background: var(--gray-50);
+      transition: box-shadow 200ms, transform 200ms;
+    }
+
+    .solution-card:hover {
+      box-shadow: 0 12px 32px rgba(78,80,0,0.10);
+      transform: translateY(-3px);
+    }
+
+    .solution-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--green-400);
+      display: grid;
+      place-items: center;
+      margin-bottom: 18px;
+    }
+
+    .solution-card-icon svg { width: 20px; height: 20px; }
+
+    .solution-card h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 10px;
+    }
+
+    .solution-card p {
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 1.7;
+      color: var(--gray-600);
+      word-break: keep-all;
+    }
+
+    /* ── Puri Feature ── */
+    .puri-feature {
+      padding: 96px 80px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 72px;
+      align-items: center;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .puri-feature-character {
+      width: 200px;
+      height: 200px;
+      filter: drop-shadow(0 16px 32px rgba(78,80,0,0.16));
+      animation: hero-float 4.5s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    .puri-feature-text h2 {
+      font-size: clamp(20px, 3vw, 28px);
+      font-weight: 800;
+      color: var(--gray-900);
+      margin-bottom: 14px;
+      word-break: keep-all;
+    }
+
+    .puri-feature-text p {
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--gray-600);
+      word-break: keep-all;
+    }
+
+    /* ── Team ── */
+    .team {
+      background: var(--green-50);
+      padding: 96px 48px;
+    }
+
+    .team-inner {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 80px;
+      max-width: 940px;
+      margin: 0 auto;
+      align-items: start;
+    }
+
+    .team-intro h2 {
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 800;
+      line-height: 1.25;
+      color: var(--gray-900);
+      margin-bottom: 20px;
+      word-break: keep-all;
+    }
+
+    .team-intro p {
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--gray-600);
+      word-break: keep-all;
+    }
+
+    .team-members {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .member {
+      padding: 16px 20px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.6);
+      border: 1px solid rgba(209,214,0,0.25);
+      transition: background 160ms;
+    }
+
+    .member:hover { background: rgba(255,255,255,0.9); }
+
+    .member-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--green-900);
+      margin-bottom: 4px;
+    }
+
+    .member-desc {
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.6;
+      color: var(--gray-600);
+    }
+
+    /* ── CTA ── */
+    .cta {
+      background: var(--green-50);
+      border-top: 1px solid rgba(209,214,0,0.3);
+      text-align: center;
+      padding: 96px 24px;
+    }
+
+    .cta h2 {
+      font-size: clamp(22px, 4vw, 36px);
+      font-weight: 800;
+      color: var(--gray-900);
+      margin-bottom: 32px;
+      word-break: keep-all;
+    }
+
+    .btn-cta {
+      display: inline-block;
+      padding: 14px 32px;
+      border-radius: 999px;
+      background: var(--gray-900);
+      color: var(--white);
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      letter-spacing: -0.01em;
+      transition: background 150ms, transform 120ms;
+    }
+
+    .btn-cta:hover { background: var(--green-900); transform: translateY(-2px); }
+
+    /* ── Footer ── */
+    .footer {
+      background: var(--gray-900);
+      padding: 32px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-logo {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--gray-400);
+    }
+
+    .footer-icons {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .footer-icons a {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--gray-400);
+      text-decoration: none;
+      transition: color 150ms, border-color 150ms;
+    }
+
+    .footer-icons a:hover { color: var(--white); border-color: rgba(255,255,255,0.35); }
+
+    .footer-icons svg { width: 14px; height: 14px; }
+
+    /* ── Full-width wrappers ── */
+    .problem-outer { background: var(--gray-900); }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .nav { padding: 0 20px; }
+      .nav-links { display: none; }
+
+      .problem { grid-template-columns: 1fr; padding: 64px 24px; }
+      .problem-character { width: 140px; height: 140px; margin: 0 auto; }
+
+      .solution { padding: 64px 20px; }
+      .solution-cards { grid-template-columns: 1fr; }
+
+      .puri-feature { grid-template-columns: 1fr; padding: 64px 24px; gap: 40px; text-align: center; }
+      .puri-feature-character { margin: 0 auto; }
+
+      .team-inner { grid-template-columns: 1fr; gap: 40px; }
+      .team { padding: 64px 20px; }
+
+      .footer { padding: 24px 20px; }
+    }
+
+    @media (max-width: 480px) {
+      .hero { padding: 60px 20px 80px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Nav ── -->
+  <header>
+    <nav class="nav">
+      <a href="#" class="nav-logo">CHATPULL</a>
+      <ul class="nav-links">
+        <li><a href="#about">About</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#team">Connect</a></li>
+      </ul>
+      <a href="https://chromewebstore.google.com" class="btn-download" target="_blank" rel="noopener">Download</a>
+    </nav>
+  </header>
+
+  <!-- ── Hero ── -->
+  <section class="hero" id="about">
+    <div class="hero-inner">
+      <img
+        class="hero-character"
+        src="../chrome-extension/assets/puri_low.svg"
+        alt="챗풀 마스코트 푸리"
+        width="180" height="180"
+      />
+      <h1>더 나은 질문, 더 가벼운 AI.<br><em>푸르게</em> AI를 사용하는<br>새로운 방식으로</h1>
+      <p>
+        챗풀은 AI 사용 과정에서 발생하는 불필요한 토큰 소비를 줄일 수 있도록 돕는 프롬프트 가이드 서비스입니다.<br>
+        실시간 토큰 시각화와 친환경 넛지를 통해 더 효율적인 AI 사용 습관을 만들어 보세요.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Problem ── -->
+  <div class="problem-outer" id="services">
+    <div class="problem">
+      <div class="problem-content">
+        <h2>우리가 AI를 사용하는 방식,<br>얼마나 효율적일까요?</h2>
+        <div class="problem-tags">
+          <span class="tag">불필요하게 긴 질문</span>
+          <span class="tag">모든 내용을 한 번에 넣은 요청</span>
+          <span class="tag">반복되는 대화</span>
+        </div>
+        <p>AI는 편리하지만, 우리가 입력하는 모든 프롬프트는<br>연산 자원을 소비합니다.</p>
+        <p>하지만 대부분의 사용자는 자신이 얼마나 많은 토큰을<br>사용하는지 잘 모릅니다.</p>
+      </div>
+      <img
+        class="problem-character"
+        src="../chrome-extension/assets/puri_medium.svg"
+        alt="고민하는 푸리"
+        width="200" height="200"
+      />
+    </div>
+  </div>
+
+  <!-- ── Value Prop ── -->
+  <section class="value-prop">
+    <h2>덜 사용하는 것이 아니라, 더 잘 사용하는 것</h2>
+    <p>챗풀은 AI 사용량을 줄이기 위한 서비스가 아닙니다.<br>더 적은 입력으로 더 좋은 결과를 얻을 수 있도록 돕습니다.</p>
+  </section>
+
+  <!-- ── Solution ── -->
+  <section class="solution">
+    <div class="solution-header">
+      <h2>챗풀은 이렇게 해결합니다</h2>
+      <p>좋은 질문은 더 작은 자에서 시작됩니다.</p>
+    </div>
+    <div class="solution-cards">
+      <div class="solution-card">
+        <div class="solution-card-icon">
+          <!-- token icon -->
+          <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="10" cy="10" r="7" stroke="#4e5000" stroke-width="1.8"/>
+            <path d="M10 6v4l2.5 2.5" stroke="#4e5000" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3>실시간 토큰 시각화</h3>
+        <p>입력 중인 프롬프트에 예상 토큰 사용량을 직관적으로 표시해 불필요한 연산 자원을 절약할 수 있습니다.</p>
+      </div>
+      <div class="solution-card">
+        <div class="solution-card-icon">
+          <!-- guide icon -->
+          <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 5h12M4 9h8M4 13h10" stroke="#4e5000" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3>AI 사용 가이드</h3>
+        <p>비효율 입력을 감지하여 더 나은 프롬프트 작성을 위한 맞춤형 가이드를 제공합니다.</p>
+      </div>
+      <div class="solution-card">
+        <div class="solution-card-icon">
+          <!-- habit icon -->
+          <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 10l3.5 3.5L15 7" stroke="#4e5000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3>더 나은 사용 습관</h3>
+        <p>직접 연결된 프롬프트를 더 잘 쓰는 방법을 알려드리고, 불필요한 반복을 줄이는 이야기를 제공합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Puri Feature ── -->
+  <section>
+    <div class="puri-feature">
+      <img
+        class="puri-feature-character"
+        src="../chrome-extension/assets/puri_low.svg"
+        alt="행복한 푸리"
+        width="200" height="200"
+      />
+      <div class="puri-feature-text">
+        <h2>푸리와 함께하는 작은 변화</h2>
+        <p>여러분의 AI 환경과 함께 성장하는 챗풀의 마스코트,<br>푸리가 효율적인 AI 사용 습관 형성을 응원합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Team ── -->
+  <section class="team" id="team">
+    <div class="team-inner">
+      <div class="team-intro">
+        <h2>챗풀을 만들다,<br>B개발구역</h2>
+        <p>챗풀은 AI 시대의 지속가능한 AI 사용 문화를 고민하여 시작된 프로젝트입니다. 우리는 사용 제안이 아닌 행동 변화를 통해 새로운 가능성을 제안합니다.</p>
+      </div>
+      <div class="team-members">
+        <div class="member">
+          <div class="member-name">채준하</div>
+          <div class="member-desc">AI 사용자 경험과 서비스 기획을 담당하며, 더 직관적인 챗풀을 만들어갑니다.</div>
+        </div>
+        <div class="member">
+          <div class="member-name">이유서</div>
+          <div class="member-desc">사용자 리서치와 데이터 기반 의사결정으로 챗풀의 방향을 잡아갑니다.</div>
+        </div>
+        <div class="member">
+          <div class="member-name">송지호</div>
+          <div class="member-desc">프론트엔드 개발을 담당하며 챗풀의 인터랙션과 시각화를 구현합니다.</div>
+        </div>
+        <div class="member">
+          <div class="member-name">이재원</div>
+          <div class="member-desc">익스텐션 아키텍처 설계와 토큰 분석 로직 개발을 이끌고 있습니다.</div>
+        </div>
+        <div class="member">
+          <div class="member-name">장윤진</div>
+          <div class="member-desc">디자인 시스템과 브랜딩을 담당하며 챗풀의 시각적 정체성을 만들어갑니다.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA ── -->
+  <section class="cta">
+    <h2>좋은 질문은 더 적은 토큰에서 시작됩니다.</h2>
+    <a href="https://chromewebstore.google.com" class="btn-cta" target="_blank" rel="noopener">챗풀 체험하기</a>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer class="footer">
+    <span class="footer-logo">CHATPULL</span>
+    <div class="footer-icons">
+      <!-- Email -->
+      <a href="mailto:chatpull@gmail.com" aria-label="이메일">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M3 7l9 6 9-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </a>
+      <!-- GitHub -->
+      <a href="https://github.com" aria-label="GitHub" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+        </svg>
+      </a>
+      <!-- Instagram -->
+      <a href="https://instagram.com" aria-label="Instagram" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.8"/>
+          <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/>
+          <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+        </svg>
+      </a>
+    </div>
+  </footer>
+
+</body>
+</html>
