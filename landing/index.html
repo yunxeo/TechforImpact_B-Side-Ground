@@ -30,7 +30,7 @@
       --danger:    #ef4444;
       --warning:   #f97316;
 
-      /* ── Semantic aliases ── */
+      /* Aliases */
       --lime:        var(--green-400);
       --lime-50:     var(--green-50);
       --lime-deep:   var(--green-900);
@@ -45,7 +45,6 @@
       --white:       #ffffff;
       --warn:        var(--warning);
 
-      /* ── Radii / Shadows ── */
       --radius-sm:   10px;
       --radius-md:   16px;
       --radius-lg:   24px;
@@ -60,22 +59,17 @@
 
     body {
       font-family: 'SUIT', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg);
-      color: var(--dark);
-      letter-spacing: -.02em;
-      -webkit-font-smoothing: antialiased;
+      background: var(--bg); color: var(--dark);
+      letter-spacing: -.02em; -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
     }
 
     img { display: block; max-width: 100%; }
     a   { text-decoration: none; color: inherit; }
 
-    .container {
-      width: min(1140px, 100% - 48px);
-      margin-inline: auto;
-    }
+    .container { width: min(1140px, 100% - 48px); margin-inline: auto; }
 
-    /* ─── Scroll Fade-Up ─── */
+    /* ─── Fade-Up ─── */
     [data-animate] {
       opacity: 0; transform: translateY(28px);
       transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1);
@@ -84,7 +78,6 @@
     [data-animate][data-delay="1"] { transition-delay: .10s; }
     [data-animate][data-delay="2"] { transition-delay: .20s; }
     [data-animate][data-delay="3"] { transition-delay: .30s; }
-    [data-animate][data-delay="4"] { transition-delay: .40s; }
 
     /* ─── Nav ─── */
     .nav {
@@ -111,12 +104,11 @@
       padding: 9px 18px;
       background: var(--gray-900); color: var(--white);
       border-radius: var(--radius-full); border: none; cursor: pointer;
-      font-size: 13px; font-weight: 600; font-family: inherit;
-      letter-spacing: -.02em;
+      font-size: 13px; font-weight: 600; font-family: inherit; letter-spacing: -.02em;
       transition: background .15s, transform .12s; flex-shrink: 0;
     }
     .nav-cta:hover { background: var(--green-900); transform: translateY(-1px); }
-    .nav-cta svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .nav-cta img { width: 18px; height: 18px; flex-shrink: 0; }
 
     /* ─── Hero ─── */
     .hero { padding-top: 120px; padding-bottom: 100px; background: var(--bg); overflow: hidden; }
@@ -135,24 +127,20 @@
       letter-spacing: -.035em; color: var(--dark); margin-bottom: 20px; word-break: keep-all;
     }
     .hero-heading em { font-style: normal; color: var(--green-900); }
-    .hero-sub {
-      font-size: 16px; font-weight: 400; line-height: 1.75;
-      color: var(--gray-600); max-width: 420px; margin-bottom: 36px; word-break: keep-all;
-    }
+    .hero-sub { font-size: 16px; font-weight: 400; line-height: 1.75; color: var(--gray-600); max-width: 420px; margin-bottom: 36px; word-break: keep-all; }
     .hero-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
     .btn-primary {
       display: inline-flex; align-items: center; gap: 8px;
-      padding: 13px 24px;
-      background: var(--gray-900); color: var(--white); border: none; cursor: pointer;
-      border-radius: var(--radius-full); font-size: 14px; font-weight: 700;
-      font-family: inherit; letter-spacing: -.02em;
+      padding: 13px 24px; background: var(--gray-900); color: var(--white);
+      border: none; cursor: pointer; border-radius: var(--radius-full);
+      font-size: 14px; font-weight: 700; font-family: inherit; letter-spacing: -.02em;
       transition: background .15s, transform .12s, box-shadow .15s;
     }
     .btn-primary:hover { background: var(--green-900); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(78,80,0,.22); }
-    .btn-primary svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .btn-primary img { width: 18px; height: 18px; flex-shrink: 0; }
     .btn-ghost {
       font-size: 14px; font-weight: 600; color: var(--gray-600); padding: 13px 4px;
-      border-bottom: 1px solid transparent; background: none; border-top: none; border-left: none; border-right: none;
+      background: none; border: none; border-bottom: 1px solid transparent;
       cursor: pointer; font-family: inherit; letter-spacing: -.02em;
       transition: color .15s, border-color .15s;
     }
@@ -160,14 +148,8 @@
 
     /* ─── Demo Card ─── */
     .demo-wrap { position: relative; filter: drop-shadow(0 32px 72px rgba(26,26,22,.15)); }
-    .demo-card {
-      background: var(--white); border-radius: var(--radius-xl);
-      border: 1px solid rgba(26,26,22,.07); overflow: hidden; user-select: none;
-    }
-    .demo-bar {
-      display: flex; align-items: center; padding: 12px 16px;
-      border-bottom: 1px solid var(--gray-100); background: #f7f7f5; gap: 8px;
-    }
+    .demo-card { background: var(--white); border-radius: var(--radius-xl); border: 1px solid rgba(26,26,22,.07); overflow: hidden; user-select: none; }
+    .demo-bar { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--gray-100); background: #f7f7f5; gap: 8px; }
     .demo-dots { display: flex; gap: 6px; }
     .demo-dots span { width: 10px; height: 10px; border-radius: 50%; }
     .demo-dots span:nth-child(1) { background: #ff5f57; }
@@ -175,48 +157,14 @@
     .demo-dots span:nth-child(3) { background: #28c840; }
     .demo-bar-title { flex: 1; text-align: center; font-size: 12px; font-weight: 600; color: var(--gray-400); }
     .demo-bar-right { width: 52px; }
-
-    /* Chat messages: padded bottom so badge doesn't overlap content */
-    .demo-messages {
-      padding: 20px 20px 64px;  /* extra bottom clears badge overlap */
-      min-height: 200px;
-      display: flex; flex-direction: column; gap: 10px;
-      overflow: hidden;
-    }
+    .demo-messages { padding: 20px 20px 64px; min-height: 200px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
     .demo-ai-msg { display: flex; align-items: flex-start; gap: 8px; }
-    .demo-ai-icon {
-      width: 26px; height: 26px; border-radius: 50%;
-      background: #10a37f; color: white;
-      display: grid; place-items: center; font-size: 13px; flex-shrink: 0;
-    }
-    .demo-ai-text {
-      background: var(--gray-50); border-radius: var(--radius-sm);
-      padding: 8px 12px; font-size: 13px; color: var(--gray-600); line-height: 1.5;
-    }
-    .demo-user-msg {
-      align-self: flex-end;
-      background: var(--gray-900); color: var(--white);
-      border-radius: var(--radius-sm); padding: 8px 12px;
-      font-size: 13px; line-height: 1.5; max-width: 82%;
-      opacity: 0; transform: translateY(6px);
-      transition: opacity .3s, transform .3s;
-    }
+    .demo-ai-icon { width: 26px; height: 26px; border-radius: 50%; background: #10a37f; color: white; display: grid; place-items: center; font-size: 13px; flex-shrink: 0; }
+    .demo-ai-text { background: var(--gray-50); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; color: var(--gray-600); line-height: 1.5; }
+    .demo-user-msg { align-self: flex-end; background: var(--gray-900); color: var(--white); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; line-height: 1.5; max-width: 82%; opacity: 0; transform: translateY(6px); transition: opacity .3s, transform .3s; }
     .demo-user-msg.show { opacity: 1; transform: none; }
-
-    /* Input section */
     .demo-input-section { position: relative; padding: 0 16px 16px; }
-
-    /* Badge */
-    .cp-badge {
-      position: absolute; top: -44px; right: 16px;
-      display: flex; align-items: center; gap: 6px;
-      padding: 5px 10px 5px 6px;
-      background: var(--white); border: 1.5px solid var(--gray-100);
-      border-radius: var(--radius-full);
-      box-shadow: 0 4px 16px rgba(0,0,0,.10);
-      transition: border-color .35s, box-shadow .35s;
-      white-space: nowrap; z-index: 10;
-    }
+    .cp-badge { position: absolute; top: -44px; right: 16px; display: flex; align-items: center; gap: 6px; padding: 5px 10px 5px 6px; background: var(--white); border: 1.5px solid var(--gray-100); border-radius: var(--radius-full); box-shadow: 0 4px 16px rgba(0,0,0,.10); transition: border-color .35s, box-shadow .35s; white-space: nowrap; z-index: 10; }
     .cp-badge[data-level="low"]    { border-color: var(--green-400); box-shadow: 0 4px 16px rgba(209,214,0,.25); }
     .cp-badge[data-level="medium"] { border-color: var(--warning);   box-shadow: 0 4px 16px rgba(249,115,22,.25); }
     .cp-badge[data-level="high"]   { border-color: var(--danger);    box-shadow: 0 4px 16px rgba(239,68,68,.25); animation: badge-shake .45s ease-in-out infinite; }
@@ -224,64 +172,26 @@
     @keyframes badge-shake {
       0%,100% { transform: translateX(0) rotate(0deg); }
       25%      { transform: translateX(-2px) rotate(-1.5deg); }
-      75%      { transform: translateX(2px)  rotate(1.5deg); }
+      75%      { transform: translateX(2px) rotate(1.5deg); }
     }
     .cp-badge-puri { width: 22px; height: 22px; object-fit: contain; }
     .cp-badge-info { font-size: 11px; font-weight: 600; color: var(--dark); }
     .cp-badge-count { color: var(--gray-600); font-weight: 400; }
-
-    /* Nudge bubble */
-    .nudge-bubble {
-      position: absolute; top: -96px; right: 16px; max-width: 220px;
-      background: var(--gray-900); color: var(--white);
-      border-radius: var(--radius-md); padding: 9px 12px;
-      font-size: 11px; font-weight: 500; line-height: 1.5;
-      box-shadow: 0 8px 24px rgba(0,0,0,.2);
-      opacity: 0; transform: translateY(8px) scale(.95);
-      transition: opacity .3s ease, transform .3s ease;
-      pointer-events: none; z-index: 11;
-    }
+    .nudge-bubble { position: absolute; top: -96px; right: 16px; max-width: 220px; background: var(--gray-900); color: var(--white); border-radius: var(--radius-md); padding: 9px 12px; font-size: 11px; font-weight: 500; line-height: 1.5; box-shadow: 0 8px 24px rgba(0,0,0,.2); opacity: 0; transform: translateY(8px) scale(.95); transition: opacity .3s, transform .3s; pointer-events: none; z-index: 11; }
     .nudge-bubble.show { opacity: 1; transform: none; }
-    .nudge-bubble::after {
-      content: ''; position: absolute; bottom: -6px; right: 28px;
-      width: 0; height: 0;
-      border-left: 6px solid transparent; border-right: 6px solid transparent;
-      border-top: 6px solid var(--gray-900);
-    }
-
-    /* Input row */
-    .demo-input-row {
-      display: flex; align-items: center; gap: 8px;
-      border: 1.5px solid var(--gray-100); border-radius: var(--radius-md);
-      padding: 10px 12px; background: var(--gray-50); transition: border-color .2s;
-    }
+    .nudge-bubble::after { content: ''; position: absolute; bottom: -6px; right: 28px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid var(--gray-900); }
+    .demo-input-row { display: flex; align-items: center; gap: 8px; border: 1.5px solid var(--gray-100); border-radius: var(--radius-md); padding: 10px 12px; background: var(--gray-50); transition: border-color .2s; }
     .demo-input-row.active { border-color: var(--gray-200); }
-    .demo-input-text {
-      flex: 1; font-size: 13px; color: var(--dark);
-      min-height: 20px; max-height: 72px; overflow: hidden;
-      word-break: break-all; line-height: 1.5;
-    }
-    .demo-cursor {
-      display: inline-block; width: 2px; height: 14px;
-      background: var(--dark); margin-left: 1px; vertical-align: middle;
-      animation: blink 1s step-end infinite;
-    }
+    .demo-input-text { flex: 1; font-size: 13px; color: var(--dark); min-height: 20px; max-height: 72px; overflow: hidden; word-break: break-all; line-height: 1.5; }
+    .demo-cursor { display: inline-block; width: 2px; height: 14px; background: var(--dark); margin-left: 1px; vertical-align: middle; animation: blink 1s step-end infinite; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-    .demo-send-btn {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: var(--gray-900); border: none; cursor: pointer;
-      display: grid; place-items: center; flex-shrink: 0;
-      transition: background .15s, transform .15s;
-    }
+    .demo-send-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--gray-900); border: none; cursor: pointer; display: grid; place-items: center; flex-shrink: 0; transition: background .15s, transform .15s; }
     .demo-send-btn:hover, .demo-send-btn.active { background: var(--green-900); transform: scale(1.1); }
     .demo-send-btn svg { width: 14px; height: 14px; color: white; }
 
-    /* ─── Platforms strip ─── */
+    /* ─── Platforms ─── */
     .platforms { padding: 32px 0 40px; text-align: center; }
-    .platforms-label {
-      font-size: 12px; font-weight: 600; letter-spacing: .06em;
-      text-transform: uppercase; color: var(--gray-200); margin-bottom: 20px;
-    }
+    .platforms-label { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--gray-200); margin-bottom: 20px; }
     .platforms-logos { display: flex; justify-content: center; align-items: center; gap: 40px; flex-wrap: wrap; }
     .platforms-logos span { font-size: 14px; font-weight: 600; color: var(--gray-200); letter-spacing: -.01em; }
     .platforms-divider { height: 1px; background: var(--gray-100); width: min(1140px, 100% - 48px); margin-inline: auto; }
@@ -289,49 +199,29 @@
     /* ─── Problem ─── */
     .problem {
       position: relative; overflow: hidden;
-      background:
-        radial-gradient(ellipse 400px 300px at 80% 50%, rgba(209,214,0,.06) 0%, transparent 60%),
-        radial-gradient(ellipse 200px 200px at 20% 30%, rgba(209,214,0,.04) 0%, transparent 50%),
-        var(--gray-900);
+      background: var(--gray-900);
       padding: 100px 0;
     }
-    .problem-drops { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-    .drop {
-      position: absolute;
-      animation: drop-float 8s ease-in-out infinite;
-    }
-    .drop-1 { width: 100px; bottom: -10px; left: 8%;  animation-delay: 0s; }
-    .drop-2 { width:  70px; top: 25%;     right: 12%; animation-delay: 1.5s; }
-    .drop-3 { width:  50px; top: 15%;     left: 42%;  animation-delay: 3s; }
-    @keyframes drop-float {
-      0%,100% { transform: translateY(0) rotate(0deg); }
-      50%      { transform: translateY(-14px) rotate(4deg); }
+    .problem::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: url('https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/pollution.png');
+      background-size: cover;
+      background-position: center;
+      opacity: 0.08;
+      pointer-events: none;
     }
     .problem-inner { display: grid; grid-template-columns: 1fr auto; gap: 80px; align-items: center; position: relative; z-index: 1; }
     .problem-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--green-400); margin-bottom: 20px; }
     .problem h2 { font-size: clamp(28px, 4vw, 42px); font-weight: 800; line-height: 1.2; color: var(--white); margin-bottom: 28px; word-break: keep-all; }
     .problem-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 28px; }
-    .problem-tag {
-      padding: 7px 16px;
-      border: 1px solid rgba(255,255,255,.18); border-radius: var(--radius-full);
-      font-size: 12px; font-weight: 500; color: rgba(255,255,255,.65);
-      background: rgba(255,255,255,.05);
-    }
+    .problem-tag { padding: 7px 16px; border: 1px solid rgba(255,255,255,.18); border-radius: var(--radius-full); font-size: 12px; font-weight: 500; color: rgba(255,255,255,.65); background: rgba(255,255,255,.05); }
     .problem p { font-size: 15px; line-height: 1.8; color: rgba(255,255,255,.45); max-width: 480px; word-break: keep-all; }
     .problem p + p { margin-top: 12px; }
-    .problem-stat {
-      display: inline-flex; align-items: center; gap: 10px; margin-top: 28px;
-      padding: 12px 18px;
-      background: rgba(209,214,0,.10); border: 1px solid rgba(209,214,0,.25);
-      border-radius: var(--radius-md);
-    }
+    .problem-stat { display: inline-flex; align-items: center; gap: 10px; margin-top: 28px; padding: 12px 18px; background: rgba(209,214,0,.10); border: 1px solid rgba(209,214,0,.25); border-radius: var(--radius-md); }
     .problem-stat-icon { font-size: 20px; }
     .problem-stat-text { font-size: 13px; font-weight: 500; color: var(--green-400); line-height: 1.4; }
-    .problem-img {
-      width: 240px; flex-shrink: 0;
-      filter: drop-shadow(0 20px 40px rgba(0,0,0,.4));
-      animation: float 4s ease-in-out infinite;
-    }
+    .problem-img { width: 240px; flex-shrink: 0; filter: drop-shadow(0 20px 40px rgba(0,0,0,.4)); animation: float 4s ease-in-out infinite; }
     @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
 
     /* ─── Slogan ─── */
@@ -346,57 +236,65 @@
     .section-title { font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; line-height: 1.2; color: var(--dark); word-break: keep-all; }
     .section-sub { font-size: 15px; color: var(--gray-600); margin-top: 14px; line-height: 1.7; word-break: keep-all; }
     .feature-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
-    .feature-card {
-      padding: 28px 24px 24px;
-      border-radius: var(--radius-lg); border: 1px solid var(--gray-100);
-      background: var(--gray-50);
-      transition: box-shadow .25s, transform .25s, border-color .25s;
-      display: flex; flex-direction: column;
-    }
+    .feature-card { padding: 28px 24px 24px; border-radius: var(--radius-lg); border: 1px solid var(--gray-100); background: var(--gray-50); transition: box-shadow .25s, transform .25s, border-color .25s; display: flex; flex-direction: column; }
     .feature-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-4px); border-color: var(--green-400); }
     .feature-icon { width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--green-50); display: grid; place-items: center; margin-bottom: 16px; }
     .feature-icon svg { width: 20px; height: 20px; color: var(--green-900); }
     .feature-card h3 { font-size: 15px; font-weight: 700; color: var(--dark); margin-bottom: 8px; }
-    .feature-card > p { font-size: 13px; color: var(--gray-600); line-height: 1.7; word-break: keep-all; margin-bottom: 18px; }
-    .feature-preview { margin-top: auto; }
+    .feature-card > p { font-size: 13px; color: var(--gray-600); line-height: 1.7; word-break: keep-all; margin-bottom: 0; }
+    .feature-preview { margin-top: 16px; }
 
-    /* Mini Badge Preview */
-    .mini-badge-demo { display: flex; flex-direction: column; gap: 8px; }
-    .mini-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 12px 6px 8px;
-      border-radius: var(--radius-full); border: 1.5px solid;
-      background: var(--white); width: fit-content;
-      font-size: 11px; font-weight: 600;
+    /* ─── Browser Mockup ─── */
+    .browser-mockup {
+      background: #f5f5f3; border-radius: 10px; overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,.12);
     }
-    .mini-badge img { width: 20px; height: 20px; object-fit: contain; }
-    .mini-badge.low  { border-color: var(--green-400); color: var(--green-900); }
-    .mini-badge.high { border-color: var(--danger); color: #b91c1c; }
+    .browser-bar { background: #e8e8e6; padding: 7px 12px; display: flex; align-items: center; gap: 5px; }
+    .browser-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .browser-dot:nth-child(1) { background: #ff5f57; }
+    .browser-dot:nth-child(2) { background: #febc2e; }
+    .browser-dot:nth-child(3) { background: #28c840; }
+    .browser-url { flex: 1; text-align: center; font-size: 9px; color: var(--gray-400); background: rgba(255,255,255,.7); border-radius: 4px; padding: 2px 8px; }
+    .browser-content { background: white; padding: 12px; }
 
-    /* Mini Tip Preview */
-    .mini-tip {
-      background: var(--gray-900); color: var(--white);
-      border-radius: var(--radius-md); padding: 10px 14px;
-      font-size: 12px; font-weight: 500; line-height: 1.55;
+    /* Mock chat area */
+    .mock-input-wrap { }
+    .mock-input-wrap + .mock-input-wrap { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--gray-100); }
+    .mock-badge-row { display: flex; justify-content: flex-end; margin-bottom: 5px; }
+    .mock-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px 3px 5px; border-radius: var(--radius-full); border: 1.5px solid;
+      background: white; font-size: 9px; font-weight: 600; white-space: nowrap;
     }
+    .mock-badge img { width: 14px; height: 14px; object-fit: contain; }
+    .mock-low    { border-color: var(--green-400); color: var(--green-900); }
+    .mock-medium { border-color: var(--warning); color: #c05700; }
+    .mock-high   { border-color: var(--danger); color: #b91c1c; }
+    .mock-input {
+      background: var(--gray-50); border: 1px solid var(--gray-100);
+      border-radius: 8px; padding: 7px 10px;
+      font-size: 11px; color: var(--gray-800); line-height: 1.4;
+    }
+    .mock-input-overflow { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mock-cursor { display: inline-block; width: 1.5px; height: 11px; background: var(--dark); margin-left: 1px; vertical-align: middle; animation: blink 1s step-end infinite; }
 
-    /* Mini Report Preview */
-    .mini-report {}
-    .mini-level-bar {
-      height: 8px; border-radius: var(--radius-full); overflow: hidden;
-      background: var(--gray-100); display: flex; margin-bottom: 8px;
-    }
-    .mini-seg.low    { background: var(--green-400); }
-    .mini-seg.medium { background: var(--warning); }
-    .mini-seg.high   { background: var(--danger); }
-    .mini-report-legend { display: flex; gap: 10px; font-size: 11px; font-weight: 600; margin-bottom: 10px; }
-    .legend-low  { color: var(--green-900); }
-    .legend-med  { color: #c05700; }
-    .legend-high { color: #b91c1c; }
-    .mini-puri-msg {
-      font-size: 12px; color: var(--gray-600); background: var(--green-50);
-      border-radius: var(--radius-sm); padding: 7px 10px; line-height: 1.5;
-    }
+    /* Card 2 — tip slide */
+    .mock-tip-row { display: flex; align-items: flex-end; gap: 6px; margin-bottom: 5px; }
+    .mock-tip-bubble { flex: 1; background: var(--gray-900); color: white; border-radius: 8px; padding: 7px 10px; font-size: 9px; font-weight: 500; line-height: 1.5; }
+
+    /* Card 3 — popup */
+    .mock-popup-card { border: 1px solid var(--gray-100); border-radius: 10px; overflow: hidden; }
+    .mock-puri-comment { display: flex; align-items: center; gap: 8px; background: var(--green-50); padding: 8px 10px; font-size: 10px; color: var(--gray-800); line-height: 1.4; }
+    .mock-puri-comment img { flex-shrink: 0; width: 28px; height: 28px; object-fit: contain; }
+    .mock-level-bar { height: 6px; border-radius: var(--radius-full); overflow: hidden; background: var(--gray-100); display: flex; margin: 8px 10px 4px; }
+    .mock-seg { height: 100%; }
+    .mock-seg-low  { background: var(--green-400); }
+    .mock-seg-med  { background: var(--warning); }
+    .mock-seg-high { background: var(--danger); }
+    .mock-legend-row { display: flex; gap: 8px; font-size: 9px; font-weight: 700; padding: 0 10px 8px; }
+    .mock-leg-low  { color: var(--green-900); }
+    .mock-leg-med  { color: #c05700; }
+    .mock-leg-high { color: #b91c1c; }
 
     /* ─── Puri section ─── */
     .puri-section { padding: 100px 0; background: #f3f4e8; }
@@ -433,14 +331,13 @@
     .cta h2 em { font-style: normal; color: var(--green-400); }
     .btn-lime {
       display: inline-flex; align-items: center; gap: 10px;
-      padding: 15px 32px;
-      background: var(--green-400); color: var(--green-900);
+      padding: 15px 32px; background: var(--green-400); color: var(--green-900);
       border-radius: var(--radius-full); border: none; cursor: pointer;
       font-size: 15px; font-weight: 800; font-family: inherit; letter-spacing: -.02em;
       transition: background .15s, transform .12s, box-shadow .15s;
     }
     .btn-lime:hover { background: var(--green-200); transform: translateY(-2px); box-shadow: 0 12px 32px rgba(209,214,0,.35); }
-    .btn-lime svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .btn-lime img { width: 20px; height: 20px; flex-shrink: 0; }
 
     /* ─── Footer ─── */
     .footer { background: var(--dark-2); padding: 28px 0; border-top: 1px solid rgba(255,255,255,.06); }
@@ -448,64 +345,25 @@
     .footer-logo { font-size: 13px; font-weight: 800; letter-spacing: .06em; color: rgba(255,255,255,.4); }
     .footer-copy { font-size: 12px; color: rgba(255,255,255,.25); }
     .footer-icons { display: flex; gap: 12px; }
-    .footer-icons a {
-      width: 34px; height: 34px; border-radius: 50%;
-      border: 1px solid rgba(255,255,255,.12);
-      display: grid; place-items: center; color: rgba(255,255,255,.4);
-      transition: color .15s, border-color .15s;
-    }
+    .footer-icons a { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,.12); display: grid; place-items: center; color: rgba(255,255,255,.4); transition: color .15s, border-color .15s; }
     .footer-icons a:hover { color: var(--white); border-color: rgba(255,255,255,.35); }
     .footer-icons svg { width: 14px; height: 14px; }
 
     /* ─── Install Modal ─── */
-    .modal-overlay {
-      display: none; position: fixed; inset: 0; z-index: 500;
-      align-items: center; justify-content: center; padding: 16px;
-    }
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 500; align-items: center; justify-content: center; padding: 16px; }
     .modal-overlay.open { display: flex; }
-    .modal-backdrop {
-      position: absolute; inset: 0;
-      background: rgba(26,26,22,.65);
-      backdrop-filter: blur(6px);
-    }
-    .modal-card {
-      position: relative; z-index: 1;
-      background: var(--white); border-radius: var(--radius-xl);
-      padding: 32px; width: min(480px, 100%);
-      box-shadow: 0 32px 80px rgba(0,0,0,.24);
-      animation: modal-in .28s cubic-bezier(.16,1,.3,1);
-    }
+    .modal-backdrop { position: absolute; inset: 0; background: rgba(26,26,22,.65); backdrop-filter: blur(6px); }
+    .modal-card { position: relative; z-index: 1; background: var(--white); border-radius: var(--radius-xl); padding: 32px; width: min(480px, 100%); box-shadow: 0 32px 80px rgba(0,0,0,.24); animation: modal-in .28s cubic-bezier(.16,1,.3,1); }
     @keyframes modal-in { from { opacity:0; transform: translateY(16px) scale(.97); } to { opacity:1; transform:none; } }
     .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
     .modal-header h3 { font-size: 18px; font-weight: 800; color: var(--dark); }
-    .modal-close {
-      width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--gray-100);
-      display: grid; place-items: center; cursor: pointer;
-      font-size: 18px; color: var(--gray-600); line-height: 1;
-      transition: background .15s;
-    }
+    .modal-close { width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--gray-100); display: grid; place-items: center; cursor: pointer; font-size: 18px; color: var(--gray-600); transition: background .15s; }
     .modal-close:hover { background: var(--gray-200); }
-    .modal-download-btn {
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      width: 100%; padding: 13px; margin-bottom: 20px;
-      background: var(--green-400); color: var(--green-900);
-      border-radius: var(--radius-md);
-      font-size: 14px; font-weight: 800; text-decoration: none;
-      transition: background .15s;
-    }
+    .modal-download-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; margin-bottom: 20px; background: var(--green-400); color: var(--green-900); border-radius: var(--radius-md); font-size: 14px; font-weight: 800; text-decoration: none; transition: background .15s; }
     .modal-download-btn:hover { background: var(--green-200); }
     .modal-steps { list-style: none; display: flex; flex-direction: column; gap: 4px; }
-    .modal-steps li {
-      display: flex; align-items: flex-start; gap: 12px;
-      padding: 10px 12px; border-radius: var(--radius-sm);
-      background: var(--gray-50); font-size: 13px; color: var(--gray-800); line-height: 1.5;
-    }
-    .step-num {
-      width: 22px; height: 22px; border-radius: 50%;
-      background: var(--gray-900); color: var(--white);
-      display: grid; place-items: center; font-size: 10px; font-weight: 800;
-      flex-shrink: 0; margin-top: 1px;
-    }
+    .modal-steps li { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--gray-50); font-size: 13px; color: var(--gray-800); line-height: 1.5; }
+    .step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--gray-900); color: var(--white); display: grid; place-items: center; font-size: 10px; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
     .modal-note { margin-top: 14px; font-size: 12px; color: var(--gray-400); text-align: center; }
 
     /* ─── Responsive ─── */
@@ -519,21 +377,19 @@
       .puri-img          { margin-inline: auto; }
       .puri-chips        { justify-content: center; }
       .team-inner        { grid-template-columns: 1fr; gap: 40px; }
-      .feature-cards,
-      .impact-cards      { grid-template-columns: 1fr; }
+      .feature-cards, .impact-cards { grid-template-columns: 1fr; }
     }
     @media (max-width: 640px) {
-      .nav-links         { display: none; }
-      .container         { width: calc(100% - 32px); }
-      .hero              { padding-top: 96px; padding-bottom: 64px; }
+      .nav-links   { display: none; }
+      .container   { width: calc(100% - 32px); }
+      .hero        { padding-top: 96px; padding-bottom: 64px; }
       .problem, .features, .puri-section, .impact, .team { padding: 72px 0; }
-      .cta               { padding: 80px 20px; }
-      .footer-copy       { display: none; }
-      .hero-sub          { font-size: 14px; }
+      .cta         { padding: 80px 20px; }
+      .footer-copy { display: none; }
+      .hero-sub    { font-size: 14px; }
     }
     @media (max-width: 480px) {
-      .hero-heading      { font-size: 32px; }
-      .mini-badge        { font-size: 10px; }
+      .hero-heading { font-size: 32px; }
     }
   </style>
 </head>
@@ -549,15 +405,7 @@
       <li><a href="#team">Team</a></li>
     </ul>
     <button class="nav-cta" onclick="openInstallModal()">
-      <!-- Chrome logo -->
-      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" fill="#4285F4"/>
-        <circle cx="12" cy="12" r="6"  fill="white"/>
-        <circle cx="12" cy="12" r="4"  fill="#4285F4"/>
-        <path d="M12 6 L22 12 L17 21 Z" fill="#EA4335"/>
-        <path d="M12 6 L2  12 L7  21 Z" fill="#34A853"/>
-        <path d="M7  21 L17 21 L12 6  Z" fill="#FBBC05"/>
-      </svg>
+      <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/chrome_logo.png" alt="" aria-hidden="true" />
       Chrome에 추가하기
     </button>
   </div>
@@ -566,28 +414,19 @@
 <!-- ══════════ HERO ══════════ -->
 <section class="hero" id="about">
   <div class="container hero-inner">
-    <!-- Left: Copy -->
     <div class="hero-text">
       <div class="hero-pill">Chrome Extension · Free</div>
       <h1 class="hero-heading">더 나은 질문,<br>더 <em>가벼운</em> AI.</h1>
       <p class="hero-sub">챗풀은 ChatGPT·Claude 위에서 실시간으로 작동하는 Chrome 확장 프로그램입니다. 토큰 시각화와 프롬프팅 가이드로 AI 사용 습관을 바꿔보세요.</p>
       <div class="hero-actions">
         <button class="btn-primary" onclick="openInstallModal()">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" fill="#4285F4"/>
-            <circle cx="12" cy="12" r="6"  fill="white"/>
-            <circle cx="12" cy="12" r="4"  fill="#4285F4"/>
-            <path d="M12 6 L22 12 L17 21 Z" fill="#EA4335"/>
-            <path d="M12 6 L2  12 L7  21 Z" fill="#34A853"/>
-            <path d="M7  21 L17 21 L12 6  Z" fill="#FBBC05"/>
-          </svg>
+          <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/chrome_logo.png" alt="" aria-hidden="true" />
           지금 설치하기
         </button>
         <button class="btn-ghost" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">기능 살펴보기 →</button>
       </div>
     </div>
 
-    <!-- Right: Interactive Demo -->
     <div class="demo-wrap">
       <div class="demo-card">
         <div class="demo-bar">
@@ -632,27 +471,13 @@
 <div class="platforms">
   <p class="platforms-label">지원 플랫폼</p>
   <div class="platforms-logos">
-    <span>ChatGPT</span>
-    <span>Claude</span>
-    <span>Gemini</span>
+    <span>ChatGPT</span><span>Claude</span><span>Gemini</span>
   </div>
 </div>
 <div class="platforms-divider"></div>
 
 <!-- ══════════ PROBLEM ══════════ -->
 <section class="problem">
-  <!-- Floating water drops -->
-  <div class="problem-drops" aria-hidden="true">
-    <svg class="drop drop-1" viewBox="0 0 40 52" fill="none">
-      <path d="M20 4 Q37 22 37 34 Q37 48 20 48 Q3 48 3 34 Q3 22 20 4Z" fill="rgba(209,214,0,0.14)"/>
-    </svg>
-    <svg class="drop drop-2" viewBox="0 0 40 52" fill="none">
-      <path d="M20 4 Q37 22 37 34 Q37 48 20 48 Q3 48 3 34 Q3 22 20 4Z" fill="rgba(209,214,0,0.09)"/>
-    </svg>
-    <svg class="drop drop-3" viewBox="0 0 40 52" fill="none">
-      <path d="M20 4 Q37 22 37 34 Q37 48 20 48 Q3 48 3 34 Q3 22 20 4Z" fill="rgba(209,214,0,0.07)"/>
-    </svg>
-  </div>
   <div class="container problem-inner">
     <div>
       <p class="problem-eyebrow" data-animate>· Problem</p>
@@ -670,7 +495,7 @@
       </div>
     </div>
     <img data-animate data-delay="2" class="problem-img"
-      src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high_3d.svg"
+      src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high.svg"
       alt="힘들어하는 푸리" width="240" height="240" />
   </div>
 </section>
@@ -701,14 +526,34 @@
         <h3>실시간 토큰 시각화</h3>
         <p>입력 중인 프롬프트의 예상 토큰 수를 실시간으로 보여줍니다. 낮음·중간·높음 세 단계로 직관적으로 표시합니다.</p>
         <div class="feature-preview">
-          <div class="mini-badge-demo">
-            <div class="mini-badge low">
-              <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low_3d.svg" alt="낮음">
-              <span>낮음 · 32자 · 8 tokens</span>
+          <div class="browser-mockup">
+            <div class="browser-bar">
+              <div class="browser-dot"></div>
+              <div class="browser-dot"></div>
+              <div class="browser-dot"></div>
+              <span class="browser-url">chatgpt.com</span>
             </div>
-            <div class="mini-badge high">
-              <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high_3d.svg" alt="높음">
-              <span>높음 · 520자 · 260 tokens</span>
+            <div class="browser-content">
+              <!-- 낮음 상태 -->
+              <div class="mock-input-wrap">
+                <div class="mock-badge-row">
+                  <div class="mock-badge mock-low">
+                    <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low.svg" alt="">
+                    <span>낮음 · 5자 · 3 tokens</span>
+                  </div>
+                </div>
+                <div class="mock-input">안녕하세요<span class="mock-cursor"></span></div>
+              </div>
+              <!-- 높음 상태 -->
+              <div class="mock-input-wrap">
+                <div class="mock-badge-row">
+                  <div class="mock-badge mock-high">
+                    <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high.svg" alt="">
+                    <span>높음 · 95자 · 48 tokens</span>
+                  </div>
+                </div>
+                <div class="mock-input mock-input-overflow">안녕하세요! 저는 마케팅 보고서를 작성 중인데요, 오늘 발표도 있어서...</div>
+              </div>
             </div>
           </div>
         </div>
@@ -724,8 +569,25 @@
         <h3>프롬프팅 가이드</h3>
         <p>입력 맥락을 분석해 더 나은 프롬프트 작성법을 자동으로 제안합니다. 40여 가지 상황별 팁이 적재적소에 등장합니다.</p>
         <div class="feature-preview">
-          <div class="mini-tip">
-            💡 핵심 위주로 줄이면 더 선명한 답변을 받을 수 있어요
+          <div class="browser-mockup">
+            <div class="browser-bar">
+              <div class="browser-dot"></div>
+              <div class="browser-dot"></div>
+              <div class="browser-dot"></div>
+              <span class="browser-url">claude.ai</span>
+            </div>
+            <div class="browser-content">
+              <div class="mock-input-wrap">
+                <div class="mock-tip-row">
+                  <div class="mock-tip-bubble">💡 핵심 위주로 줄이면 더 선명한 답변을 받을 수 있어요</div>
+                  <div class="mock-badge mock-medium">
+                    <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_medium.svg" alt="">
+                    <span>중간</span>
+                  </div>
+                </div>
+                <div class="mock-input mock-input-overflow">마케팅 보고서 초안 작성 도와줘, 각 섹션 내용...</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -739,18 +601,33 @@
         </div>
         <h3>오늘의 리포트</h3>
         <p>하루 AI 사용 기록을 리포트로 정리합니다. 플랫폼별 전송 횟수, 평균 입력 길이, 패턴 변화를 한눈에 확인하세요.</p>
-        <div class="feature-preview mini-report">
-          <div class="mini-level-bar">
-            <div class="mini-seg low"    style="width:70%"></div>
-            <div class="mini-seg medium" style="width:20%"></div>
-            <div class="mini-seg high"   style="width:10%"></div>
+        <div class="feature-preview">
+          <div class="browser-mockup">
+            <div class="browser-bar">
+              <div class="browser-dot"></div>
+              <div class="browser-dot"></div>
+              <div class="browser-dot"></div>
+              <span class="browser-url">챗풀 리포트</span>
+            </div>
+            <div class="browser-content" style="padding:8px">
+              <div class="mock-popup-card">
+                <div class="mock-puri-comment">
+                  <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low.svg" alt="푸리">
+                  <span>오늘도 간결하게 잘 쓰고 있어요! 🌱</span>
+                </div>
+                <div class="mock-level-bar">
+                  <div class="mock-seg mock-seg-low"  style="width:70%"></div>
+                  <div class="mock-seg mock-seg-med"  style="width:20%"></div>
+                  <div class="mock-seg mock-seg-high" style="width:10%"></div>
+                </div>
+                <div class="mock-legend-row">
+                  <span class="mock-leg-low">낮음 70%</span>
+                  <span class="mock-leg-med">중간 20%</span>
+                  <span class="mock-leg-high">높음 10%</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="mini-report-legend">
-            <span class="legend-low">낮음 70%</span>
-            <span class="legend-med">중간 20%</span>
-            <span class="legend-high">높음 10%</span>
-          </div>
-          <div class="mini-puri-msg">오늘도 간결하게 잘 쓰고 있어요! 🌱</div>
         </div>
       </div>
 
@@ -762,7 +639,7 @@
 <section class="puri-section">
   <div class="container puri-inner">
     <img data-animate class="puri-img"
-      src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low_3d.svg"
+      src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low.svg"
       alt="행복한 푸리" width="220" height="220" />
     <div class="puri-text">
       <h2 data-animate data-delay="1">푸리와 함께하는<br>작은 변화</h2>
@@ -842,14 +719,7 @@
 <section class="cta" id="cta">
   <h2 data-animate>좋은 질문은<br><em>더 적은 토큰</em>에서 시작됩니다.</h2>
   <button class="btn-lime" data-animate data-delay="1" onclick="openInstallModal()">
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" fill="#4285F4"/>
-      <circle cx="12" cy="12" r="6"  fill="white"/>
-      <circle cx="12" cy="12" r="4"  fill="#4285F4"/>
-      <path d="M12 6 L22 12 L17 21 Z" fill="#EA4335"/>
-      <path d="M12 6 L2  12 L7  21 Z" fill="#34A853"/>
-      <path d="M7  21 L17 21 L12 6  Z" fill="#FBBC05"/>
-    </svg>
+    <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/chrome_logo.png" alt="" aria-hidden="true" />
     챗풀 설치하기 — 무료
   </button>
 </section>
@@ -891,45 +761,26 @@
     </div>
     <a class="modal-download-btn"
       href="https://github.com/yunxeo/TechforImpact_B-Side-Ground/raw/main/chatpool_ut_v1.zip"
-      download>
-      ⬇ zip 파일 다운로드
-    </a>
+      download>⬇ zip 파일 다운로드</a>
     <ol class="modal-steps">
-      <li>
-        <span class="step-num">1</span>
-        <span>위 버튼으로 zip 파일을 다운로드한 후 압축을 풀어주세요.</span>
-      </li>
-      <li>
-        <span class="step-num">2</span>
-        <span>Chrome 주소창에 <strong>chrome://extensions</strong> 을 입력하고 이동합니다.</span>
-      </li>
-      <li>
-        <span class="step-num">3</span>
-        <span>우측 상단의 <strong>개발자 모드</strong> 스위치를 켜주세요.</span>
-      </li>
-      <li>
-        <span class="step-num">4</span>
-        <span><strong>압축 해제된 확장 프로그램 로드</strong> 버튼을 클릭합니다.</span>
-      </li>
-      <li>
-        <span class="step-num">5</span>
-        <span>압축을 푼 <strong>chrome-extension</strong> 폴더를 선택하면 설치 완료입니다!</span>
-      </li>
+      <li><span class="step-num">1</span><span>위 버튼으로 zip 파일을 다운로드한 후 압축을 풀어주세요.</span></li>
+      <li><span class="step-num">2</span><span>Chrome 주소창에 <strong>chrome://extensions</strong> 을 입력하고 이동합니다.</span></li>
+      <li><span class="step-num">3</span><span>우측 상단의 <strong>개발자 모드</strong> 스위치를 켜주세요.</span></li>
+      <li><span class="step-num">4</span><span><strong>압축 해제된 확장 프로그램 로드</strong> 버튼을 클릭합니다.</span></li>
+      <li><span class="step-num">5</span><span>압축을 푼 <strong>chrome-extension</strong> 폴더를 선택하면 설치 완료입니다!</span></li>
     </ol>
     <p class="modal-note">설치 후 ChatGPT·Claude·Gemini 접속 시 자동으로 챗풀이 활성화됩니다.</p>
   </div>
 </div>
 
 <script>
-  /* ── Puri URLs ── */
   const PURI = {
     idle:   'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_idle.svg',
-    low:    'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low_3d.svg',
+    low:    'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low.svg',
     medium: 'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_medium.svg',
-    high:   'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high_3d.svg'
+    high:   'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high.svg'
   };
 
-  /* ── Demo animation ── */
   const PHASE1 = '안녕하세요';
   const PHASE2 = '안녕하세요! 저는 마케팅 보고서를 작성 중인데요, 오늘 발표도 있어서요.';
   const PHASE3 = '안녕하세요! 저는 마케팅 보고서를 작성 중인데요, 오늘 발표도 있어서요. 각 섹션 내용 구성, 데이터 시각화 방법, 팀원 역할 분배까지 자세히 알려주세요.';
@@ -943,8 +794,7 @@
   const elSend    = document.getElementById('demoSendBtn');
   const elUserMsg = document.getElementById('demoUserMsg');
   const elRow     = document.getElementById('demoInputRow');
-
-  let animHandle = null;
+  let animHandle  = null;
 
   function getLevelFromChars(n) {
     if (n <= 15) return 'low';
@@ -956,7 +806,7 @@
     const n   = text.length;
     const tok = Math.round(n * 0.5);
     const lvl = getLevelFromChars(n);
-    const labels = { idle: '대기', low: '낮음', medium: '중간', high: '높음' };
+    const labels = { idle:'대기', low:'낮음', medium:'중간', high:'높음' };
     elBadge.dataset.level = n === 0 ? 'idle' : lvl;
     elPuri.src = PURI[n === 0 ? 'idle' : lvl];
     elLevel.textContent = labels[n === 0 ? 'idle' : lvl];
@@ -965,13 +815,13 @@
 
   elPuri.src = PURI.idle;
 
-  function typeSegment(fromText, toText, speed, onDone) {
-    let i = fromText.length;
+  function typeSegment(from, to, speed, onDone) {
+    let i = from.length;
     function step() {
-      if (i > toText.length) { onDone && onDone(); return; }
-      const current = toText.slice(0, i);
-      elText.textContent = current;
-      updateBadge(current);
+      if (i > to.length) { onDone && onDone(); return; }
+      const cur = to.slice(0, i);
+      elText.textContent = cur;
+      updateBadge(cur);
       elRow.classList.add('active');
       i++;
       animHandle = setTimeout(step, speed);
@@ -1022,43 +872,28 @@
 
   setTimeout(runDemoLoop, 800);
 
-  /* ── Nav scroll ── */
+  /* Nav scroll */
   const nav = document.getElementById('nav');
-  window.addEventListener('scroll', () => {
-    nav.classList.toggle('solid', window.scrollY > 20);
-  }, { passive: true });
+  window.addEventListener('scroll', () => nav.classList.toggle('solid', window.scrollY > 20), { passive: true });
   nav.classList.toggle('solid', window.scrollY > 20);
 
-  /* ── Scroll fade-up ── */
+  /* Fade-up */
   const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        observer.unobserve(entry.target);
-      }
-    });
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
   }, { threshold: 0.12 });
   document.querySelectorAll('[data-animate]').forEach(el => observer.observe(el));
 
-  /* ── Install Modal ── */
-  const installModal   = document.getElementById('installModal');
-  const modalBackdrop  = document.getElementById('modalBackdrop');
-  const modalClose     = document.getElementById('modalClose');
+  /* Modal */
+  const installModal  = document.getElementById('installModal');
+  const modalBackdrop = document.getElementById('modalBackdrop');
+  const modalClose    = document.getElementById('modalClose');
 
-  function openInstallModal() {
-    installModal.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeInstallModal() {
-    installModal.classList.remove('open');
-    document.body.style.overflow = '';
-  }
+  function openInstallModal()  { installModal.classList.add('open'); document.body.style.overflow = 'hidden'; }
+  function closeInstallModal() { installModal.classList.remove('open'); document.body.style.overflow = ''; }
 
   modalBackdrop.addEventListener('click', closeInstallModal);
   modalClose.addEventListener('click', closeInstallModal);
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeInstallModal();
-  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeInstallModal(); });
 </script>
 </body>
 </html>
