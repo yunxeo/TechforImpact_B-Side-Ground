@@ -94,8 +94,8 @@
       width: min(1140px, 100% - 48px); margin-inline: auto;
       display: flex; align-items: center; gap: 32px;
     }
-    .nav-logo { font-size: 15px; font-weight: 800; letter-spacing: .06em; color: var(--dark); flex-shrink: 0; }
-    .nav-logo span { color: var(--green-900); }
+    .nav-logo { display: flex; align-items: center; flex-shrink: 0; }
+    .nav-logo img { height: 22px; width: auto; }
     .nav-links { display: flex; gap: 28px; list-style: none; margin-left: auto; }
     .nav-links a { font-size: 13px; font-weight: 500; color: var(--gray-600); transition: color .15s; }
     .nav-links a:hover { color: var(--dark); }
@@ -215,7 +215,17 @@
     .problem-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--green-400); margin-bottom: 20px; }
     .problem h2 { font-size: clamp(28px, 4vw, 42px); font-weight: 800; line-height: 1.2; color: var(--white); margin-bottom: 28px; word-break: keep-all; }
     .problem-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 28px; }
-    .problem-tag { padding: 7px 16px; border: 1px solid rgba(255,255,255,.18); border-radius: var(--radius-full); font-size: 12px; font-weight: 500; color: rgba(255,255,255,.65); background: rgba(255,255,255,.05); }
+    .problem-tag {
+      padding: 8px 18px; border: none; border-radius: 100px;
+      font-size: 14px; font-weight: 600;
+      background: rgba(255,255,255,.95); color: var(--gray-900);
+      opacity: 0; transform: translateY(10px);
+    }
+    .problem-tag.tag-animate { animation: tagFadeIn .5s ease forwards; }
+    .problem-tag.tag-animate:nth-child(1) { animation-delay: .2s; }
+    .problem-tag.tag-animate:nth-child(2) { animation-delay: .5s; }
+    .problem-tag.tag-animate:nth-child(3) { animation-delay: .8s; }
+    @keyframes tagFadeIn { to { opacity: 1; transform: translateY(0); } }
     .problem p { font-size: 15px; line-height: 1.8; color: rgba(255,255,255,.45); max-width: 480px; word-break: keep-all; }
     .problem p + p { margin-top: 12px; }
     .problem-stat { display: inline-flex; align-items: center; gap: 10px; margin-top: 28px; padding: 12px 18px; background: rgba(209,214,0,.10); border: 1px solid rgba(209,214,0,.25); border-radius: var(--radius-md); }
@@ -226,7 +236,8 @@
 
     /* ─── Slogan ─── */
     .slogan { background: var(--green-400); padding: 80px 24px; text-align: center; }
-    .slogan h2 { font-size: clamp(24px, 4vw, 44px); font-weight: 800; line-height: 1.2; color: var(--dark); margin-bottom: 16px; word-break: keep-all; }
+    .slogan h2 { font-size: clamp(24px, 4vw, 44px); font-weight: 800; line-height: 1.2; color: var(--dark); margin-bottom: 16px; word-break: keep-all; min-height: 1.2em; }
+    .slogan-cursor { display: inline-block; width: 3px; height: .85em; background: var(--dark); margin-left: 3px; vertical-align: middle; animation: blink .7s step-end infinite; }
     .slogan p { font-size: 16px; color: var(--green-900); line-height: 1.7; word-break: keep-all; }
 
     /* ─── Features ─── */
@@ -282,19 +293,16 @@
     .mock-tip-row { display: flex; align-items: flex-end; gap: 6px; margin-bottom: 5px; }
     .mock-tip-bubble { flex: 1; background: var(--gray-900); color: white; border-radius: 8px; padding: 7px 10px; font-size: 9px; font-weight: 500; line-height: 1.5; }
 
-    /* Card 3 — popup */
+    /* Card 3 — report popup */
     .mock-popup-card { border: 1px solid var(--gray-100); border-radius: 10px; overflow: hidden; }
-    .mock-puri-comment { display: flex; align-items: center; gap: 8px; background: var(--green-50); padding: 8px 10px; font-size: 10px; color: var(--gray-800); line-height: 1.4; }
-    .mock-puri-comment img { flex-shrink: 0; width: 28px; height: 28px; object-fit: contain; }
-    .mock-level-bar { height: 6px; border-radius: var(--radius-full); overflow: hidden; background: var(--gray-100); display: flex; margin: 8px 10px 4px; }
-    .mock-seg { height: 100%; }
-    .mock-seg-low  { background: var(--green-400); }
-    .mock-seg-med  { background: var(--warning); }
-    .mock-seg-high { background: var(--danger); }
-    .mock-legend-row { display: flex; gap: 8px; font-size: 9px; font-weight: 700; padding: 0 10px 8px; }
-    .mock-leg-low  { color: var(--green-900); }
-    .mock-leg-med  { color: #c05700; }
-    .mock-leg-high { color: #b91c1c; }
+    .mini-puri-row { display: flex; align-items: center; gap: 8px; background: var(--green-50); padding: 8px 10px; font-size: 10px; color: var(--gray-800); line-height: 1.4; }
+    .mini-puri-row img { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
+    .mini-stat-section { padding: 6px 10px 8px; }
+    .mini-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #f4f4f0; }
+    .mini-stat-row:last-child { border-bottom: none; }
+    .mini-stat-row.divider { margin-top: 5px; padding-top: 6px; border-top: 1px solid var(--gray-100); border-bottom: none; }
+    .stat-label { font-size: 10px; color: var(--gray-600); }
+    .stat-value { font-size: 10px; font-weight: 700; color: var(--dark); }
 
     /* ─── Puri section ─── */
     .puri-section { padding: 100px 0; background: #f3f4e8; }
@@ -342,7 +350,8 @@
     /* ─── Footer ─── */
     .footer { background: var(--dark-2); padding: 28px 0; border-top: 1px solid rgba(255,255,255,.06); }
     .footer-inner { display: flex; align-items: center; justify-content: space-between; }
-    .footer-logo { font-size: 13px; font-weight: 800; letter-spacing: .06em; color: rgba(255,255,255,.4); }
+    .footer-logo { display: flex; align-items: center; }
+    .footer-logo img { height: 18px; width: auto; opacity: .45; filter: brightness(0) invert(1); }
     .footer-copy { font-size: 12px; color: rgba(255,255,255,.25); }
     .footer-icons { display: flex; gap: 12px; }
     .footer-icons a { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,.12); display: grid; place-items: center; color: rgba(255,255,255,.4); transition: color .15s, border-color .15s; }
@@ -398,7 +407,9 @@
 <!-- ══════════ NAV ══════════ -->
 <nav class="nav" id="nav">
   <div class="nav-inner">
-    <a href="#" class="nav-logo">CHAT<span>PULL</span></a>
+    <a href="#" class="nav-logo">
+      <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/logo_eng.png" alt="챗풀 Chatpull" />
+    </a>
     <ul class="nav-links">
       <li><a href="#about">About</a></li>
       <li><a href="#features">Features</a></li>
@@ -417,7 +428,7 @@
     <div class="hero-text">
       <div class="hero-pill">Chrome Extension · Free</div>
       <h1 class="hero-heading">더 나은 질문,<br>더 <em>가벼운</em> AI.</h1>
-      <p class="hero-sub">챗풀은 ChatGPT·Claude 위에서 실시간으로 작동하는 Chrome 확장 프로그램입니다. 토큰 시각화와 프롬프팅 가이드로 AI 사용 습관을 바꿔보세요.</p>
+      <p class="hero-sub">챗풀은 ChatGPT·Claude·Gemini 위에서 실시간으로 작동하는 Chrome 확장 프로그램입니다. 토큰 시각화와 프롬프팅 가이드로 AI 사용 습관을 바꿔보세요.</p>
       <div class="hero-actions">
         <button class="btn-primary" onclick="openInstallModal()">
           <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/chrome_logo.png" alt="" aria-hidden="true" />
@@ -482,10 +493,10 @@
     <div>
       <p class="problem-eyebrow" data-animate>· Problem</p>
       <h2 data-animate data-delay="1">우리가 AI를 사용하는 방식,<br>얼마나 효율적일까요?</h2>
-      <div class="problem-tags" data-animate data-delay="2">
+      <div class="problem-tags" id="problemTags">
         <span class="problem-tag">불필요하게 긴 질문</span>
+        <span class="problem-tag">여러 내용을 한 번에 담은 요청</span>
         <span class="problem-tag">반복되는 대화</span>
-        <span class="problem-tag">과도한 토큰 소비</span>
       </div>
       <p data-animate data-delay="2">AI는 편리하지만, 우리가 입력하는 모든 프롬프트는 서버 연산 자원을 소비합니다.</p>
       <p data-animate data-delay="2">하지만 대부분의 사용자는 자신이 얼마나 많은 토큰을 사용하는지, 그것이 어떤 영향을 미치는지 잘 모릅니다.</p>
@@ -495,14 +506,14 @@
       </div>
     </div>
     <img data-animate data-delay="2" class="problem-img"
-      src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high.svg"
+      src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high_3d.png"
       alt="힘들어하는 푸리" width="240" height="240" />
   </div>
 </section>
 
 <!-- ══════════ SLOGAN ══════════ -->
 <section class="slogan">
-  <h2 data-animate>덜 사용하는 것이 아니라,<br>더 잘 사용하는 것</h2>
+  <h2 id="sloganHeading"></h2>
   <p data-animate data-delay="1">챗풀은 AI 사용을 줄이자는 서비스가 아닙니다.<br>더 적은 입력으로 더 좋은 결과를 얻을 수 있도록 돕습니다.</p>
 </section>
 
@@ -611,19 +622,23 @@
             </div>
             <div class="browser-content" style="padding:8px">
               <div class="mock-popup-card">
-                <div class="mock-puri-comment">
-                  <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low.svg" alt="푸리">
+                <div class="mini-puri-row">
+                  <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low_3d.png" alt="푸리">
                   <span>오늘도 간결하게 잘 쓰고 있어요! 🌱</span>
                 </div>
-                <div class="mock-level-bar">
-                  <div class="mock-seg mock-seg-low"  style="width:70%"></div>
-                  <div class="mock-seg mock-seg-med"  style="width:20%"></div>
-                  <div class="mock-seg mock-seg-high" style="width:10%"></div>
-                </div>
-                <div class="mock-legend-row">
-                  <span class="mock-leg-low">낮음 70%</span>
-                  <span class="mock-leg-med">중간 20%</span>
-                  <span class="mock-leg-high">높음 10%</span>
+                <div class="mini-stat-section">
+                  <div class="mini-stat-row">
+                    <span class="stat-label">ChatGPT</span>
+                    <span class="stat-value">4번</span>
+                  </div>
+                  <div class="mini-stat-row">
+                    <span class="stat-label">Claude</span>
+                    <span class="stat-value">2번</span>
+                  </div>
+                  <div class="mini-stat-row divider">
+                    <span class="stat-label">평균 입력 길이</span>
+                    <span class="stat-value">142자</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -639,7 +654,7 @@
 <section class="puri-section">
   <div class="container puri-inner">
     <img data-animate class="puri-img"
-      src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low.svg"
+      src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low_3d.png"
       alt="행복한 푸리" width="220" height="220" />
     <div class="puri-text">
       <h2 data-animate data-delay="1">푸리와 함께하는<br>작은 변화</h2>
@@ -727,7 +742,9 @@
 <!-- ══════════ FOOTER ══════════ -->
 <footer class="footer">
   <div class="container footer-inner">
-    <span class="footer-logo">CHATPULL</span>
+    <span class="footer-logo">
+      <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/logo_eng.png" alt="챗풀" />
+    </span>
     <span class="footer-copy">© 2025 Chatpull. B개발구역.</span>
     <div class="footer-icons">
       <a href="mailto:chatpull@gmail.com" aria-label="이메일">
@@ -774,16 +791,19 @@
 </div>
 
 <script>
+  /* ── Puri 3D image URLs ── */
   const PURI = {
     idle:   'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_idle.svg',
-    low:    'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low.svg',
+    low:    'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low_3d.png',
     medium: 'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_medium.svg',
-    high:   'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high.svg'
+    high:   'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high_3d.png'
   };
 
-  const PHASE1 = '안녕하세요';
-  const PHASE2 = '안녕하세요! 저는 마케팅 보고서를 작성 중인데요, 오늘 발표도 있어서요.';
-  const PHASE3 = '안녕하세요! 저는 마케팅 보고서를 작성 중인데요, 오늘 발표도 있어서요. 각 섹션 내용 구성, 데이터 시각화 방법, 팀원 역할 분배까지 자세히 알려주세요.';
+  /* ── Demo animation texts ── */
+  const PHASE1       = '안녕하세요';
+  const PHASE2       = '안녕하세요! 저는 마케팅 보고서를 작성 중인데요, 오늘 발표도 있어서요.';
+  const PHASE3       = '안녕하세요! 저는 마케팅 보고서를 작성 중인데요, 오늘 발표도 있어서요. 각 섹션 내용 구성, 데이터 시각화 방법, 팀원 역할 분배까지 자세히 알려주세요.';
+  const PHASE_TRIM   = '보고서 핵심만 요약해줘';
 
   const elText    = document.getElementById('demoText');
   const elBadge   = document.getElementById('demoBadge');
@@ -819,11 +839,21 @@
     let i = from.length;
     function step() {
       if (i > to.length) { onDone && onDone(); return; }
-      const cur = to.slice(0, i);
-      elText.textContent = cur;
-      updateBadge(cur);
+      elText.textContent = to.slice(0, i);
+      updateBadge(elText.textContent);
       elRow.classList.add('active');
       i++;
+      animHandle = setTimeout(step, speed);
+    }
+    step();
+  }
+
+  function fastDelete(chunkSize, speed, onDone) {
+    function step() {
+      const cur = elText.textContent;
+      if (!cur.length) { onDone && onDone(); return; }
+      elText.textContent = cur.slice(0, Math.max(0, cur.length - chunkSize));
+      updateBadge(elText.textContent);
       animHandle = setTimeout(step, speed);
     }
     step();
@@ -840,50 +870,109 @@
 
   function runDemoLoop() {
     clearDemo();
+    // Phase 1: type short text → LOW
     animHandle = setTimeout(() => {
-      typeSegment('', PHASE1, 90, () => {
+      typeSegment('', PHASE1, 80, () => {
+        // Phase 2: continue to medium
         animHandle = setTimeout(() => {
-          typeSegment(PHASE1, PHASE2, 45, () => {
+          typeSegment(PHASE1, PHASE2, 38, () => {
+            // Phase 3: continue to high
             animHandle = setTimeout(() => {
-              typeSegment(PHASE2, PHASE3, 32, () => {
+              typeSegment(PHASE2, PHASE3, 26, () => {
+                // HIGH reached → show nudge
                 animHandle = setTimeout(() => {
                   elNudge.classList.add('show');
+                  // Hold 2 seconds
                   animHandle = setTimeout(() => {
-                    elSend.classList.add('active');
+                    elNudge.classList.remove('show');
+                    // Fast delete → badge goes HIGH→MEDIUM→LOW
                     animHandle = setTimeout(() => {
-                      elUserMsg.textContent = PHASE3;
-                      elUserMsg.classList.add('show');
-                      clearDemo();
-                      elUserMsg.classList.add('show');
-                      animHandle = setTimeout(() => {
-                        elUserMsg.classList.remove('show');
-                        animHandle = setTimeout(runDemoLoop, 600);
-                      }, 1800);
-                    }, 600);
-                  }, 1000);
+                      fastDelete(3, 10, () => {
+                        // Type trimmed text → LOW badge
+                        animHandle = setTimeout(() => {
+                          typeSegment('', PHASE_TRIM, 65, () => {
+                            // Send
+                            animHandle = setTimeout(() => {
+                              elSend.classList.add('active');
+                              animHandle = setTimeout(() => {
+                                elUserMsg.textContent = PHASE_TRIM;
+                                clearDemo();
+                                elUserMsg.classList.add('show');
+                                animHandle = setTimeout(() => {
+                                  elUserMsg.classList.remove('show');
+                                  animHandle = setTimeout(runDemoLoop, 700);
+                                }, 1600);
+                              }, 500);
+                            }, 400);
+                          });
+                        }, 120);
+                      });
+                    }, 100);
+                  }, 2000);
                 }, 400);
               });
-            }, 500);
+            }, 300);
           });
-        }, 700);
+        }, 500);
       });
     }, 400);
   }
 
   setTimeout(runDemoLoop, 800);
 
-  /* Nav scroll */
+  /* ── Nav scroll ── */
   const nav = document.getElementById('nav');
   window.addEventListener('scroll', () => nav.classList.toggle('solid', window.scrollY > 20), { passive: true });
   nav.classList.toggle('solid', window.scrollY > 20);
 
-  /* Fade-up */
+  /* ── Fade-up ── */
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
   }, { threshold: 0.12 });
   document.querySelectorAll('[data-animate]').forEach(el => observer.observe(el));
 
-  /* Modal */
+  /* ── Problem tags sequential fade-in ── */
+  const problemTagsEl = document.getElementById('problemTags');
+  if (problemTagsEl) {
+    const tagObs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.querySelectorAll('.problem-tag').forEach(tag => tag.classList.add('tag-animate'));
+          tagObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.5 });
+    tagObs.observe(problemTagsEl);
+  }
+
+  /* ── Slogan typing animation ── */
+  const sloganH2   = document.getElementById('sloganHeading');
+  const sloganFull = '덜 사용하는 것이 아니라, 더 잘 사용하는 것!';
+  if (sloganH2) {
+    const textNode = document.createElement('span');
+    const cursor   = document.createElement('span');
+    cursor.className = 'slogan-cursor';
+    sloganH2.appendChild(textNode);
+    sloganH2.appendChild(cursor);
+
+    let sloganDone = false;
+    const sloganObs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting && !sloganDone) {
+          sloganDone = true;
+          sloganObs.disconnect();
+          let i = 0;
+          const t = setInterval(() => {
+            textNode.textContent += sloganFull[i++];
+            if (i >= sloganFull.length) { clearInterval(t); cursor.style.display = 'none'; }
+          }, 55);
+        }
+      });
+    }, { threshold: 0.6 });
+    sloganObs.observe(sloganH2);
+  }
+
+  /* ── Install Modal ── */
   const installModal  = document.getElementById('installModal');
   const modalBackdrop = document.getElementById('modalBackdrop');
   const modalClose    = document.getElementById('modalClose');
