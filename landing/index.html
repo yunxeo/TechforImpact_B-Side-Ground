@@ -175,6 +175,7 @@
       75%      { transform: translateX(2px) rotate(1.5deg); }
     }
     .cp-badge-puri { width: 22px; height: 22px; object-fit: contain; }
+    .text-selected { background: rgba(209,214,0,.35); border-radius: 2px; }
     .cp-badge-info { font-size: 11px; font-weight: 600; color: var(--dark); }
     .cp-badge-count { color: var(--gray-600); font-weight: 400; }
     .nudge-bubble { position: absolute; top: -96px; right: 16px; max-width: 220px; background: var(--gray-900); color: var(--white); border-radius: var(--radius-md); padding: 9px 12px; font-size: 11px; font-weight: 500; line-height: 1.5; box-shadow: 0 8px 24px rgba(0,0,0,.2); opacity: 0; transform: translateY(8px) scale(.95); transition: opacity .3s, transform .3s; pointer-events: none; z-index: 11; }
@@ -231,7 +232,8 @@
     .problem-stat { display: inline-flex; align-items: center; gap: 10px; margin-top: 28px; padding: 12px 18px; background: rgba(209,214,0,.10); border: 1px solid rgba(209,214,0,.25); border-radius: var(--radius-md); }
     .problem-stat-icon { font-size: 20px; }
     .problem-stat-text { font-size: 13px; font-weight: 500; color: var(--green-400); line-height: 1.4; }
-    .problem-img { width: 240px; flex-shrink: 0; filter: drop-shadow(0 20px 40px rgba(0,0,0,.4)); animation: float 4s ease-in-out infinite; }
+    .problem-puri { flex-shrink: 0; animation: float 4s ease-in-out infinite; }
+    .problem-puri img { width: 100%; max-width: 320px; height: auto; aspect-ratio: 1/1; object-fit: contain; filter: drop-shadow(0 20px 40px rgba(0,0,0,.4)); display: block; }
     @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
 
     /* ─── Slogan ─── */
@@ -295,14 +297,12 @@
 
     /* Card 3 — report popup */
     .mock-popup-card { border: 1px solid var(--gray-100); border-radius: 10px; overflow: hidden; }
-    .mini-puri-row { display: flex; align-items: center; gap: 8px; background: var(--green-50); padding: 8px 10px; font-size: 10px; color: var(--gray-800); line-height: 1.4; }
+    .mini-puri-row { display: flex; align-items: center; gap: 8px; background: var(--green-50); padding: 8px 10px; }
     .mini-puri-row img { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
-    .mini-stat-section { padding: 6px 10px 8px; }
-    .mini-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #f4f4f0; }
-    .mini-stat-row:last-child { border-bottom: none; }
-    .mini-stat-row.divider { margin-top: 5px; padding-top: 6px; border-top: 1px solid var(--gray-100); border-bottom: none; }
-    .stat-label { font-size: 10px; color: var(--gray-600); }
-    .stat-value { font-size: 10px; font-weight: 700; color: var(--dark); }
+    .mini-puri-bubble { font-size: 10px; color: var(--gray-800); line-height: 1.4; }
+    .mini-stat-section { padding: 7px 10px 8px; display: flex; flex-direction: column; gap: 3px; }
+    .mini-stat-sentence { font-size: 10px; color: var(--gray-600); line-height: 1.5; }
+    .mini-stat-sentence strong { color: var(--dark); font-weight: 700; }
 
     /* ─── Puri section ─── */
     .puri-section { padding: 100px 0; background: #f3f4e8; }
@@ -310,8 +310,15 @@
     .puri-img { width: 220px; flex-shrink: 0; filter: drop-shadow(0 16px 40px rgba(78,80,0,.18)); animation: float 5s ease-in-out infinite; }
     .puri-text h2 { font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; line-height: 1.2; color: var(--dark); margin-bottom: 16px; word-break: keep-all; }
     .puri-text p { font-size: 15px; color: var(--gray-600); line-height: 1.8; max-width: 460px; word-break: keep-all; margin-bottom: 12px; }
-    .puri-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
-    .puri-chip { padding: 6px 14px; background: var(--white); border: 1px solid var(--gray-100); border-radius: var(--radius-full); font-size: 12px; font-weight: 600; color: var(--green-900); }
+    .puri-stages { display: flex; align-items: center; gap: 20px; margin-top: 28px; flex-wrap: wrap; }
+    .puri-stage { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+    .puri-stage img { width: 56px; height: 56px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,.12)); }
+    .puri-stage p { font-size: 11px; color: var(--gray-600); margin: 0; }
+    .stage-label { display: inline-block; padding: 2px 10px; border-radius: var(--radius-full); font-size: 10px; font-weight: 700; }
+    .stage-label.low    { background: var(--green-50); color: var(--green-900); }
+    .stage-label.medium { background: rgba(249,115,22,.12); color: #c05700; }
+    .stage-label.high   { background: rgba(239,68,68,.12); color: #b91c1c; }
+    .puri-stage-arrow { font-size: 18px; color: var(--gray-200); padding-bottom: 24px; }
 
     /* ─── Impact ─── */
     .impact { padding: 100px 0; background: var(--white); }
@@ -381,7 +388,7 @@
       .hero-heading      { font-size: 38px; }
       .demo-wrap         { max-width: 480px; margin-inline: auto; }
       .problem-inner     { grid-template-columns: 1fr; }
-      .problem-img       { width: 160px; margin-inline: auto; }
+      .problem-puri      { max-width: 200px; margin-inline: auto; }
       .puri-inner        { grid-template-columns: 1fr; gap: 40px; text-align: center; }
       .puri-img          { margin-inline: auto; }
       .puri-chips        { justify-content: center; }
@@ -453,7 +460,7 @@
           <div class="demo-user-msg" id="demoUserMsg"></div>
         </div>
         <div class="demo-input-section">
-          <div class="nudge-bubble" id="nudgeBubble">나눠서 물어보면 더 정확한 답변을 받을 수 있어요 💡</div>
+          <div class="nudge-bubble" id="nudgeBubble">한 번에 여러 가지를 묻고 있어요. 나눠서 물어보면 더 정확한 답변을 받을 수 있어요 💡</div>
           <div class="cp-badge" id="demoBadge" data-level="idle">
             <img class="cp-badge-puri" id="badgePuri" src="" alt="푸리" />
             <div class="cp-badge-info">
@@ -505,9 +512,11 @@
         <span class="problem-stat-text">ChatGPT 응답 1회 ≈ 생수 500ml 한 병 분량의 냉각수 소비</span>
       </div>
     </div>
-    <img data-animate data-delay="2" class="problem-img"
-      src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high_3d.png"
-      alt="힘들어하는 푸리" width="240" height="240" />
+    <div class="problem-puri" data-animate data-delay="2">
+      <img
+        src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high_3d.png"
+        alt="힘들어하는 푸리" />
+    </div>
   </div>
 </section>
 
@@ -523,7 +532,7 @@
     <div class="section-header">
       <p class="section-eyebrow" data-animate>· Our Solution</p>
       <h2 class="section-title" data-animate data-delay="1">챗풀은 이렇게 해결합니다</h2>
-      <p class="section-sub" data-animate data-delay="2">좋은 질문은 더 작은 자에서 시작됩니다.</p>
+      <p class="section-sub" data-animate data-delay="2">좋은 질문은 더 간결한 곳에서 시작됩니다.</p>
     </div>
     <div class="feature-cards">
 
@@ -590,7 +599,7 @@
             <div class="browser-content">
               <div class="mock-input-wrap">
                 <div class="mock-tip-row">
-                  <div class="mock-tip-bubble">💡 핵심 위주로 줄이면 더 선명한 답변을 받을 수 있어요</div>
+                  <div class="mock-tip-bubble">💡 출처 기준을 먼저 정하면 나중에 '근거 더 줘'라고 다시 묻는 일을 줄일 수 있어요</div>
                   <div class="mock-badge mock-medium">
                     <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_medium.svg" alt="">
                     <span>중간</span>
@@ -623,22 +632,12 @@
             <div class="browser-content" style="padding:8px">
               <div class="mock-popup-card">
                 <div class="mini-puri-row">
-                  <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low_3d.png" alt="푸리">
-                  <span>오늘도 간결하게 잘 쓰고 있어요! 🌱</span>
+                  <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low.svg" alt="푸리">
+                  <div class="mini-puri-bubble">오늘도 간결하게 잘 쓰고 있어요! 🌱</div>
                 </div>
                 <div class="mini-stat-section">
-                  <div class="mini-stat-row">
-                    <span class="stat-label">ChatGPT</span>
-                    <span class="stat-value">4번</span>
-                  </div>
-                  <div class="mini-stat-row">
-                    <span class="stat-label">Claude</span>
-                    <span class="stat-value">2번</span>
-                  </div>
-                  <div class="mini-stat-row divider">
-                    <span class="stat-label">평균 입력 길이</span>
-                    <span class="stat-value">142자</span>
-                  </div>
+                  <p class="mini-stat-sentence">오늘 <strong>ChatGPT에 7번</strong>, <strong>Claude에 1번</strong> 보냈어요.</p>
+                  <p class="mini-stat-sentence">한 번 보낼 때 평균 <strong>1,619자</strong> 정도 썼어요.</p>
                 </div>
               </div>
             </div>
@@ -660,10 +659,24 @@
       <h2 data-animate data-delay="1">푸리와 함께하는<br>작은 변화</h2>
       <p data-animate data-delay="2">챗풀의 마스코트 푸리는 여러분의 AI 입력 길이에 따라 상태가 달라집니다. 간결하게 쓸수록 푸리가 건강해지고, 길어질수록 힘들어해요.</p>
       <p data-animate data-delay="2">단순한 캐릭터가 아닌, AI 사용 습관의 거울입니다.</p>
-      <div class="puri-chips" data-animate data-delay="3">
-        <span class="puri-chip">🟢 낮음 — 딱 좋은 길이</span>
-        <span class="puri-chip">🟡 중간 — 조금 다듬어봐요</span>
-        <span class="puri-chip">🔴 높음 — 나눠서 질문해요</span>
+      <div class="puri-stages" data-animate data-delay="3">
+        <div class="puri-stage">
+          <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low.svg" width="56" height="56" alt="낮음" />
+          <span class="stage-label low">낮음</span>
+          <p>간결한 질문</p>
+        </div>
+        <div class="puri-stage-arrow">→</div>
+        <div class="puri-stage">
+          <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_medium.svg" width="56" height="56" alt="중간" />
+          <span class="stage-label medium">중간</span>
+          <p>조금 길어지는 중</p>
+        </div>
+        <div class="puri-stage-arrow">→</div>
+        <div class="puri-stage">
+          <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high.svg" width="56" height="56" alt="높음" />
+          <span class="stage-label high">높음</span>
+          <p>나눠서 물어봐요</p>
+        </div>
       </div>
     </div>
   </div>
@@ -791,19 +804,18 @@
 </div>
 
 <script>
-  /* ── Puri 3D image URLs ── */
+  /* ── Puri 2D SVG URLs (for badge) ── */
   const PURI = {
     idle:   'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_idle.svg',
-    low:    'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low_3d.png',
+    low:    'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low.svg',
     medium: 'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_medium.svg',
-    high:   'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high_3d.png'
+    high:   'https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high.svg'
   };
 
   /* ── Demo animation texts ── */
-  const PHASE1       = '안녕하세요';
-  const PHASE2       = '안녕하세요! 저는 마케팅 보고서를 작성 중인데요, 오늘 발표도 있어서요.';
-  const PHASE3       = '안녕하세요! 저는 마케팅 보고서를 작성 중인데요, 오늘 발표도 있어서요. 각 섹션 내용 구성, 데이터 시각화 방법, 팀원 역할 분배까지 자세히 알려주세요.';
-  const PHASE_TRIM   = '보고서 핵심만 요약해줘';
+  const PHASE_SHORT = '파이썬 리스트 정렬하는 법 알려줘';
+  const PHASE_EXTRA = '. 그리고 딕셔너리도 정렬하는 법이랑 람다 함수 쓰는 것도 설명해줘. 성능 차이도 비교해줘';
+  const PHASE_LONG  = PHASE_SHORT + PHASE_EXTRA;
 
   const elText    = document.getElementById('demoText');
   const elBadge   = document.getElementById('demoBadge');
@@ -816,31 +828,34 @@
   const elRow     = document.getElementById('demoInputRow');
   let animHandle  = null;
 
+  // Adjusted thresholds so PHASE_SHORT(17 chars) = LOW, PHASE_LONG(67 chars) = HIGH
   function getLevelFromChars(n) {
-    if (n <= 15) return 'low';
-    if (n <= 50) return 'medium';
+    if (n === 0) return 'idle';
+    if (n <= 22) return 'low';
+    if (n <= 55) return 'medium';
     return 'high';
   }
 
-  function updateBadge(text) {
-    const n   = text.length;
+  function updateBadge(n) {
     const tok = Math.round(n * 0.5);
     const lvl = getLevelFromChars(n);
     const labels = { idle:'대기', low:'낮음', medium:'중간', high:'높음' };
-    elBadge.dataset.level = n === 0 ? 'idle' : lvl;
-    elPuri.src = PURI[n === 0 ? 'idle' : lvl];
-    elLevel.textContent = labels[n === 0 ? 'idle' : lvl];
+    elBadge.dataset.level = lvl;
+    elPuri.src = PURI[lvl];
+    elLevel.textContent = labels[lvl];
     elCount.textContent = n === 0 ? ' · 0자 · 0 tokens' : ` · ${n}자 · ${tok} tokens`;
   }
 
   elPuri.src = PURI.idle;
 
+  // Type characters into plain text span
   function typeSegment(from, to, speed, onDone) {
+    elText.innerHTML = '';
     let i = from.length;
     function step() {
       if (i > to.length) { onDone && onDone(); return; }
       elText.textContent = to.slice(0, i);
-      updateBadge(elText.textContent);
+      updateBadge(elText.textContent.length);
       elRow.classList.add('active');
       i++;
       animHandle = setTimeout(step, speed);
@@ -848,20 +863,41 @@
     step();
   }
 
-  function fastDelete(chunkSize, speed, onDone) {
-    function step() {
-      const cur = elText.textContent;
-      if (!cur.length) { onDone && onDone(); return; }
-      elText.textContent = cur.slice(0, Math.max(0, cur.length - chunkSize));
-      updateBadge(elText.textContent);
-      animHandle = setTimeout(step, speed);
-    }
-    step();
+  // Show selection highlight on extraText, then delete it char by char
+  function selectAndDelete(keptText, extraText, onDone) {
+    // Build: keptSpan + selectedSpan
+    elText.innerHTML = '';
+    const kept = document.createElement('span');
+    kept.textContent = keptText;
+    const sel  = document.createElement('span');
+    sel.className = 'text-selected';
+    sel.textContent = extraText;
+    elText.appendChild(kept);
+    elText.appendChild(sel);
+    updateBadge(keptText.length + extraText.length);
+
+    // After 0.8s start deleting the selected part
+    animHandle = setTimeout(() => {
+      let rem = extraText;
+      function del() {
+        if (!rem.length) {
+          elText.textContent = keptText;
+          updateBadge(keptText.length);
+          onDone && onDone();
+          return;
+        }
+        rem = rem.slice(0, -1);
+        sel.textContent = rem;
+        updateBadge(keptText.length + rem.length);
+        animHandle = setTimeout(del, 20);
+      }
+      del();
+    }, 800);
   }
 
   function clearDemo() {
-    elText.textContent = '';
-    updateBadge('');
+    elText.innerHTML = '';
+    updateBadge(0);
     elNudge.classList.remove('show');
     elSend.classList.remove('active');
     elUserMsg.classList.remove('show');
@@ -870,49 +906,50 @@
 
   function runDemoLoop() {
     clearDemo();
-    // Phase 1: type short text → LOW
+    // Step 1: Type short text → LOW
     animHandle = setTimeout(() => {
-      typeSegment('', PHASE1, 80, () => {
-        // Phase 2: continue to medium
+      typeSegment('', PHASE_SHORT, 75, () => {
+        // Step 2: Continue typing extra → HIGH
         animHandle = setTimeout(() => {
-          typeSegment(PHASE1, PHASE2, 38, () => {
-            // Phase 3: continue to high
-            animHandle = setTimeout(() => {
-              typeSegment(PHASE2, PHASE3, 26, () => {
-                // HIGH reached → show nudge
+          let i = 0;
+          function typeExtra() {
+            if (i > PHASE_EXTRA.length) {
+              // HIGH reached → show nudge
+              animHandle = setTimeout(() => {
+                elNudge.classList.add('show');
+                // Step 3: Hold 1.5s then selection-delete
                 animHandle = setTimeout(() => {
-                  elNudge.classList.add('show');
-                  // Hold 2 seconds
+                  elNudge.classList.remove('show');
+                  // Step 4: Highlight + delete
                   animHandle = setTimeout(() => {
-                    elNudge.classList.remove('show');
-                    // Fast delete → badge goes HIGH→MEDIUM→LOW
-                    animHandle = setTimeout(() => {
-                      fastDelete(3, 10, () => {
-                        // Type trimmed text → LOW badge
+                    selectAndDelete(PHASE_SHORT, PHASE_EXTRA, () => {
+                      // Step 5: Badge is LOW → send
+                      animHandle = setTimeout(() => {
+                        elSend.classList.add('active');
                         animHandle = setTimeout(() => {
-                          typeSegment('', PHASE_TRIM, 65, () => {
-                            // Send
-                            animHandle = setTimeout(() => {
-                              elSend.classList.add('active');
-                              animHandle = setTimeout(() => {
-                                elUserMsg.textContent = PHASE_TRIM;
-                                clearDemo();
-                                elUserMsg.classList.add('show');
-                                animHandle = setTimeout(() => {
-                                  elUserMsg.classList.remove('show');
-                                  animHandle = setTimeout(runDemoLoop, 700);
-                                }, 1600);
-                              }, 500);
-                            }, 400);
-                          });
-                        }, 120);
-                      });
-                    }, 100);
-                  }, 2000);
-                }, 400);
-              });
-            }, 300);
-          });
+                          // Step 6: Show user message
+                          elUserMsg.textContent = PHASE_SHORT;
+                          clearDemo();
+                          elUserMsg.classList.add('show');
+                          animHandle = setTimeout(() => {
+                            elUserMsg.classList.remove('show');
+                            animHandle = setTimeout(runDemoLoop, 700);
+                          }, 1600);
+                        }, 500);
+                      }, 500);
+                    });
+                  }, 200);
+                }, 1500);
+              }, 400);
+              return;
+            }
+            const cur = PHASE_SHORT + PHASE_EXTRA.slice(0, i);
+            elText.textContent = cur;
+            updateBadge(cur.length);
+            i++;
+            animHandle = setTimeout(typeExtra, 30);
+          }
+          typeExtra();
         }, 500);
       });
     }, 400);
@@ -947,7 +984,7 @@
 
   /* ── Slogan typing animation ── */
   const sloganH2   = document.getElementById('sloganHeading');
-  const sloganFull = '덜 사용하는 것이 아니라, 더 잘 사용하는 것!';
+  const sloganFull = '대화형 AI, 덜 사용하는 것이 아니라 더 잘 사용하는 것!';
   if (sloganH2) {
     const textNode = document.createElement('span');
     const cursor   = document.createElement('span');
