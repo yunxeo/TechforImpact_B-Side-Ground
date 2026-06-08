@@ -16,8 +16,28 @@ const DEFAULT_SETTINGS = {
   dragEnabled: false,
   customPosition: null,
   onboardingGuideShown: false,
+  focusMode: false,
+  badgeSize: "md",
   thresholds: { lowMax: 100, mediumMax: 400 }
 };
+
+const RECOMMENDED_INSTRUCTIONS = [
+  {
+    title: "정확한 정보 제공",
+    content: "답변할 때 확실하지 않은 정보는 추측이라고 명시해줘. 틀린 정보를 사실인 것처럼 말하지 말고, 모를 때는 모른다고 해줘.",
+    tag: "신뢰성"
+  },
+  {
+    title: "한국어 우선 답변",
+    content: "모든 답변은 한국어로 해줘. 영어 자료를 참고하더라도 답변은 반드시 한국어로 작성해줘.",
+    tag: "언어"
+  },
+  {
+    title: "단계별 설명",
+    content: "복잡한 내용은 단계별로 나눠서 설명해줘. 각 단계를 번호로 구분하고 핵심 포인트를 먼저 말해줘.",
+    tag: "형식"
+  }
+];
 
 const CATEGORY_LABELS = {
   all: "전체",
@@ -64,6 +84,7 @@ let latestDaily = {};
 
 const nodes = {
   enabled: $("#enabled"),
+  focusMode: $("#focusMode"),
   prevDay: $("#prevDay"),
   nextDay: $("#nextDay"),
   reportDate: $("#reportDate"),
@@ -83,13 +104,7 @@ const nodes = {
   weekBars: $("#weekBars"),
   weekDaysLabel: $("#weekDaysLabel"),
   openGuide: $("#openGuide"),
-  tipTotal: $("#tipTotal"),
-  openTips: $("#openTips"),
-  tipLibrary: $("#tipLibrary"),
-  categoryTabs: $("#categoryTabs"),
-  activeCategoryName: $("#activeCategoryName"),
-  activeCategoryCount: $("#activeCategoryCount"),
-  tipList: $("#tipList")
+  instructionsList: $("#instructionsList")
 };
 
 let customCharacterUrl = null;
@@ -124,6 +139,8 @@ async function getState() {
 function sanitizeSettings(value) {
   const next = merge(DEFAULT_SETTINGS, value || {});
   next.enabled = Boolean(next.enabled);
+  next.focusMode = Boolean(next.focusMode);
+  next.badgeSize = ["sm", "md", "lg"].includes(next.badgeSize) ? next.badgeSize : "md";
   return next;
 }
 
@@ -163,15 +180,45 @@ function getDateLabel(offset) {
 
 function render(state) {
   nodes.enabled.checked = Boolean(state.settings.enabled);
-  nodes.tipTotal.textContent = `${tips.length}`;
-  if (libraryOpen) renderTipLibrary();
+  if (nodes.focusMode) nodes.focusMode.checked = Boolean(state.settings.focusMode);
+  renderInstructions();
+}
+
+function renderInstructions() {
+  if (!nodes.instructionsList) return;
+  nodes.instructionsList.innerHTML = RECOMMENDED_INSTRUCTIONS.map((item, idx) => `
+    <article class="instruction-item">
+      <div class="instruction-header">
+        <span class="instruction-tag text-body-s">${escapeHtml(item.tag)}</span>
+        <strong class="text-body-l instruction-title">${escapeHtml(item.title)}</strong>
+      </div>
+      <p class="instruction-content text-body-m">${escapeHtml(item.content)}</p>
+      <button class="instruction-copy text-body-s" data-idx="${idx}" type="button">복사하기</button>
+    </article>
+  `).join("");
+
+  nodes.instructionsList.querySelectorAll(".instruction-copy").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const idx = Number(btn.dataset.idx);
+      const item = RECOMMENDED_INSTRUCTIONS[idx];
+      if (!item) return;
+      try {
+        await navigator.clipboard.writeText(item.content);
+        btn.textContent = "복사됨!";
+        setTimeout(() => { btn.textContent = "복사하기"; }, 1800);
+      } catch {
+        btn.textContent = "복사 실패";
+        setTimeout(() => { btn.textContent = "복사하기"; }, 1800);
+      }
+    });
+  });
 }
 
 function bindEvents(settings) {
   nodes.enabled.addEventListener("change", () => updateSetting({ enabled: nodes.enabled.checked }));
+  if (nodes.focusMode) nodes.focusMode.addEventListener("change", () => updateSetting({ focusMode: nodes.focusMode.checked }));
   nodes.refreshReport.addEventListener("click", loadAndRenderReport);
   nodes.openGuide.addEventListener("click", openOnboardingOnActiveTab);
-  nodes.openTips.addEventListener("click", toggleTipLibrary);
 
   nodes.prevDay.addEventListener("click", () => {
     reportOffset--;

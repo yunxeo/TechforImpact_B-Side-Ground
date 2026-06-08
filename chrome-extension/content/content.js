@@ -20,6 +20,8 @@
     dragEnabled: false,
     customPosition: null,
     onboardingGuideShown: false,
+    focusMode: false,
+    badgeSize: "md",
     thresholds: {
       lowMax: 100,
       mediumMax: 400
@@ -208,6 +210,7 @@
   let lastDraftLogAt = 0;
   let lastDraftLogChars = -1;
   let lastDraftLogLevel = "idle";
+  let focusModePromptShown = false;
 
   function storageGet(key) {
     return new Promise((resolve) => {
@@ -334,11 +337,14 @@
     next.enabled = Boolean(next.enabled);
     next.designVariant = FIXED_DESIGN_VARIANT;
     next.nudgeTextScale = 80;
-    next.floatingLogoScale = 80;
+    const fls = Number(next.floatingLogoScale);
+    next.floatingLogoScale = (Number.isFinite(fls) && fls >= 50 && fls <= 150) ? Math.round(fls) : 80;
     next.floatingLogoPlacement = "top-right";
     next.dragEnabled = Boolean(next.dragEnabled);
     next.customPosition = sanitizeCustomPosition(next.customPosition);
     next.onboardingGuideShown = Boolean(next.onboardingGuideShown);
+    next.focusMode = Boolean(next.focusMode);
+    next.badgeSize = ["sm", "md", "lg"].includes(next.badgeSize) ? next.badgeSize : "md";
     next.thresholds.lowMax = Math.max(20, Math.round(Number(next.thresholds.lowMax) || DEFAULT_SETTINGS.thresholds.lowMax));
     next.thresholds.mediumMax = Math.max(next.thresholds.lowMax + 50, Math.round(Number(next.thresholds.mediumMax) || DEFAULT_SETTINGS.thresholds.mediumMax));
     return next;
@@ -551,6 +557,7 @@
   }
 
   function getBadgeHint(level) {
+    if (settings.focusMode) return "집중 모드 ON";
     return {
       idle: "프롬프팅 팁 준비됨",
       low: "핵심이 잘 보이는 길이",
@@ -583,6 +590,7 @@
 
   function triggerHoverBubble() {
     if (onboardingGuideActive || isOnboardingOpen()) return;
+    if (settings.focusMode) return;
     const snapshot = buildSnapshot();
     if (!snapshot) return;
 
@@ -871,6 +879,7 @@
         storedOverlay.host &&
         storedOverlay.card &&
         storedOverlay.bubble &&
+        storedOverlay.sizeMenu &&
         storedOverlay.host.isConnected
       ) {
         return storedOverlay;
@@ -903,9 +912,60 @@
     bubble.dataset.visible = "false";
     bubble.innerHTML = `<strong class="text-status">대기</strong><span class="text-body-m">${esc(PLATFORM.label)} 입력창에 글을 쓰면 예상 토큰량을 보여드립니다.</span>`;
 
-    shadow.append(style, card, bubble);
-    const result = { host, shadow, card, bubble };
+    const sizeMenu = document.createElement("div");
+    sizeMenu.className = "cp-size-menu";
+    sizeMenu.hidden = true;
+    sizeMenu.innerHTML = `
+      <div class="cp-size-label">
+        <span>뱃지 크기</span>
+        <span class="cp-size-value">${settings.floatingLogoScale}%</span>
+      </div>
+      <input type="range" class="cp-size-slider" min="70" max="120" step="5" value="${Math.max(70, Math.min(120, settings.floatingLogoScale))}" />
+    `;
+
+    shadow.append(style, card, bubble, sizeMenu);
+    const result = { host, shadow, card, bubble, sizeMenu };
     host.__chatpullOverlay = result;
+
+    const sliderEl = sizeMenu.querySelector(".cp-size-slider");
+    const sizeValueEl = sizeMenu.querySelector(".cp-size-value");
+    if (sliderEl) {
+      let isDragging = false;
+
+      function updateSize(val) {
+        if (sizeValueEl) sizeValueEl.textContent = `${val}%`;
+        result.host.style.setProperty("--cp-logo-scale", String(Number(val) / 100));
+        settings.floatingLogoScale = Number(val);
+      }
+
+      sliderEl.addEventListener("pointerdown", (e) => {
+        isDragging = true;
+        e.stopPropagation();
+      });
+
+      sliderEl.addEventListener("pointermove", (e) => {
+        if (!isDragging) return;
+        e.stopPropagation();
+        updateSize(sliderEl.value);
+      });
+
+      sliderEl.addEventListener("pointerup", (e) => {
+        isDragging = false;
+        e.stopPropagation();
+        updateSize(sliderEl.value);
+        storageSet({ [STORAGE_KEYS.SETTINGS]: settings });
+      });
+
+      sliderEl.addEventListener("pointercancel", (e) => {
+        isDragging = false;
+        e.stopPropagation();
+      });
+
+      sliderEl.addEventListener("input", (e) => {
+        e.stopPropagation();
+        updateSize(sliderEl.value);
+      });
+    }
 
     card.addEventListener("mouseenter", handleBadgePointerEnter);
     card.addEventListener("pointerenter", handleBadgePointerEnter);
@@ -914,6 +974,7 @@
     card.addEventListener("pointerleave", handleBadgePointerLeave);
     bubble.addEventListener("mouseenter", () => clearTimeout(overlayTimer));
     bubble.addEventListener("mouseleave", () => scheduleHideBubble(800));
+    bubble.addEventListener("click", handleBubbleActionClick);
     card.addEventListener("pointerdown", handleDragStart);
     card.addEventListener("pointermove", handleDragMove);
     card.addEventListener("pointerup", handleDragEnd);
@@ -958,6 +1019,7 @@
     card.dataset.level = snapshot.level;
     card.dataset.promptTipVisible = promptTipVisible ? "true" : "false";
     card.dataset.dragEnabled = settings.dragEnabled ? "true" : "false";
+    card.dataset.focus = settings.focusMode ? "true" : "false";
     card.style.setProperty("--progress", `${snapshot.progress}%`);
 
     const canPatch =
@@ -972,6 +1034,7 @@
       lastOverlayRenderMode = renderMode;
       lastOverlayPromptTipKey = promptTipKey;
       patchStatusSegment(card, snapshot);
+      bindBadgeActionButtons();
     }
 
     const tipBar = card.querySelector(".cp-tip-bar");
@@ -1104,12 +1167,16 @@
     const tree = characterIcon(level);
     const status = `
       <div class="cp-status-segment" aria-label="현재 입력 상태">
-        <div class="cp-badge-icon">
+        <div class="cp-badge-core">
           <div class="cp-tree-wrap">${tree}</div>
           <div class="cp-badge-copy">
             <strong class="text-status"><span class="cp-level-label">${esc(levelLabel)}</span> · <span class="cp-char-count">${esc(count)}</span></strong>
             <span class="text-body-m">${esc(getBadgeHint(level))}</span>
           </div>
+        </div>
+        <div class="cp-badge-actions">
+          <button class="cp-focus-btn${settings.focusMode ? " active" : ""}" title="집중 모드">⚡</button>
+          <button class="cp-more-btn" title="더보기">⋮</button>
         </div>
       </div>
     `;
@@ -1483,6 +1550,7 @@
       dragState.moved = false;
       return;
     }
+    closeSizeMenu();
     event.preventDefault();
     event.stopPropagation();
     if (chrome?.runtime?.sendMessage) {
@@ -1492,6 +1560,54 @@
     }
   }
 
+  function closeSizeMenu() {
+    if (overlay?.sizeMenu) overlay.sizeMenu.hidden = true;
+  }
+
+  function bindBadgeActionButtons() {
+    if (!overlay?.card) return;
+    const focusBtn = overlay.card.querySelector(".cp-focus-btn");
+    const moreBtn = overlay.card.querySelector(".cp-more-btn");
+    const sizeMenu = overlay.sizeMenu;
+    if (!focusBtn || !moreBtn || !sizeMenu) return;
+
+    // 슬라이더 현재값 동기화
+    const slider = sizeMenu.querySelector(".cp-size-slider");
+    const sizeValue = sizeMenu.querySelector(".cp-size-value");
+    const currentVal = Math.max(70, Math.min(120, settings.floatingLogoScale));
+    if (slider) slider.value = String(currentVal);
+    if (sizeValue) sizeValue.textContent = `${currentVal}%`;
+
+    focusBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      settings.focusMode = !settings.focusMode;
+      focusBtn.classList.toggle("active", settings.focusMode);
+      overlay.card.dataset.focus = String(settings.focusMode);
+      storageSet({ [STORAGE_KEYS.SETTINGS]: settings });
+      const hint = overlay.card.querySelector(".cp-badge-copy span.text-body-m");
+      if (hint) hint.textContent = getBadgeHint(overlay.card.dataset.level || "idle");
+    });
+
+    moreBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!sizeMenu.hidden) {
+        sizeMenu.hidden = true;
+        return;
+      }
+      // 슬라이더 최신값 반영
+      const cur = Math.max(70, Math.min(120, settings.floatingLogoScale));
+      if (slider) slider.value = String(cur);
+      if (sizeValue) sizeValue.textContent = `${cur}%`;
+      // ⋮ 버튼 viewport 위치 기반으로 메뉴 위치 결정
+      const btnRect = moreBtn.getBoundingClientRect();
+      sizeMenu.style.top = "auto";
+      sizeMenu.style.left = "auto";
+      sizeMenu.style.bottom = `${window.innerHeight - btnRect.top + 6}px`;
+      sizeMenu.style.right = `${window.innerWidth - btnRect.right}px`;
+      sizeMenu.hidden = false;
+    });
+  }
+
   function handleDragCancel(event) {
     if (!dragState.active || dragState.pointerId !== event.pointerId || !overlay?.card) return;
     overlay.card.dataset.dragging = "false";
@@ -1499,9 +1615,49 @@
   }
 
 
+  function handleBubbleActionClick(event) {
+    const action = event.target?.closest?.("[data-bubble-action]")?.dataset?.bubbleAction;
+    if (!action) return;
+    event.stopPropagation();
+
+    if (action === "enable-focus-mode") {
+      settings = sanitizeSettings({ ...settings, focusMode: true });
+      storageSet({ [STORAGE_KEYS.SETTINGS]: settings });
+      if (overlay?.card) {
+        overlay.card.dataset.focus = "true";
+        const focusBtn = overlay.card.querySelector(".cp-focus-btn");
+        if (focusBtn) focusBtn.classList.add("active");
+        const hint = overlay.card.querySelector(".cp-badge-copy span.text-body-m");
+        if (hint) hint.textContent = "집중 모드 ON";
+      }
+      hideBubble();
+      showBubble(buildSnapshot(), { title: "집중 모드 켜짐", message: "프롬프팅 팁에만 집중할게요 🎯", duration: 3000, kind: "focus-mode-on" });
+      return;
+    }
+
+    if (action === "dismiss-focus-prompt") {
+      hideBubble();
+      return;
+    }
+  }
+
+  function showFocusModePrompt(snapshot) {
+    if (!overlay) overlay = ensureOverlay();
+    if (!overlay) return;
+    const bubble = overlay.bubble;
+    bubble.innerHTML = `<strong class="text-status">긴 작업 중인가요?</strong><span class="cp-bubble-msg text-body-m">보고서 분석, 코드 리뷰 등 긴 입력이 필요한 상황이라면 집중 모드를 사용해보세요</span><div class="cp-bubble-actions"><button class="cp-bubble-btn cp-bubble-btn-primary text-body-s" data-bubble-action="enable-focus-mode">집중 모드 켜기</button><button class="cp-bubble-btn text-body-s" data-bubble-action="dismiss-focus-prompt">괜찮아요</button></div>`;
+    bubble.dataset.visible = "true";
+    bubble.dataset.kind = "focus-prompt";
+    clearTimeout(overlayTimer);
+    updateOverlayPosition();
+  }
+
   function showBubble(snapshot, options = {}) {
     if (!overlay) overlay = ensureOverlay();
     if (!overlay) return;
+    if (overlay.bubble.dataset.kind === "focus-prompt" && options.kind !== "focus-prompt") {
+      overlay.bubble.innerHTML = `<strong class="text-status"></strong><span class="text-body-m"></span>`;
+    }
     const title = overlay.bubble.querySelector("strong");
     const body = overlay.bubble.querySelector("span");
     title.textContent = options.title || `${getLevelLabel(snapshot.level)} 구간`;
@@ -1849,6 +2005,15 @@
       return;
     }
 
+    if (settings.focusMode) {
+      updatePromptSession(snapshot);
+      rememberNonEmptySnapshot(text, snapshot);
+      maybeLogDraftUpdate(snapshot);
+      lastLevel = snapshot.level;
+      lastTokenCount = snapshot.estimatedTokens;
+      return;
+    }
+
     updatePromptSession(snapshot);
     rememberNonEmptySnapshot(text, snapshot);
     maybeLogDraftUpdate(snapshot);
@@ -1858,9 +2023,6 @@
       lastLoggedLevel = snapshot.level;
     }
 
-    // 테스트와 실제 사용 모두에서 threshold를 다시 넘으면 넛지가 다시 뜨도록
-    // 낮음으로 내려가면 medium/high entry 상태를 초기화하고,
-    // 중간으로 내려가면 high entry 상태를 초기화한다.
     if (snapshot.level === "low") {
       entryShown.medium = false;
       entryShown.high = false;
@@ -1870,8 +2032,19 @@
 
     if (snapshot.level === "high" && !entryShown.high) {
       entryShown.high = true;
-      const message = pickNudge("entry", "high") || "나눠서 물어보면 각각 더 정확한 답변을 받을 수 있어요";
-      showTipBar(snapshot, { title: "높음 구간 진입", text: message }, "entry:high", { duration: PROMPT_TIP_AUTO_DURATION_MS });
+      if (settings.focusMode) {
+        maybeShowAutoPromptTip(snapshot, text);
+      } else {
+        const message = pickNudge("entry", "high") || "나눠서 물어보면 각각 더 정확한 답변을 받을 수 있어요";
+        showTipBar(snapshot, { title: "높음 구간 진입", text: message }, "entry:high", { duration: PROMPT_TIP_AUTO_DURATION_MS });
+        if (!focusModePromptShown) {
+          focusModePromptShown = true;
+          window.setTimeout(() => {
+            if (!settings.focusMode && settings.enabled && currentEditor && !badgeHoverActive && !isOnboardingOpen())
+              showFocusModePrompt(buildSnapshot());
+          }, PROMPT_TIP_AUTO_DURATION_MS + 400);
+        }
+      }
     } else if (snapshot.level === "medium" && !entryShown.medium) {
       entryShown.medium = true;
       const message = pickNudge("entry", "medium") || "핵심만 남기면 더 빠르고 정확한 답변을 받을 수 있어요";
@@ -2029,11 +2202,12 @@
     if (!overlay) return;
     const path = typeof event.composedPath === "function" ? event.composedPath() : [];
     const insideCard = path.includes(overlay.card);
+    const insideSizeMenu = overlay.sizeMenu && path.includes(overlay.sizeMenu);
 
-    if (!insideCard) {
+    if (!insideCard && !insideSizeMenu) {
       if (overlay.bubble?.dataset.visible === "true") hideBubble();
+      closeSizeMenu();
       // 프롬프팅 팁 바는 외부 클릭으로 즉시 닫지 않는다.
-      // 노출 시간이 끝날 때 hideInlinePromptTip()의 접힘 애니메이션으로만 사라지게 한다.
     }
   }
 
@@ -2096,31 +2270,48 @@
     const puriHighUrl = chrome.runtime.getURL("assets/puri_high.svg");
     const badgeImgUrl = chrome.runtime.getURL("assets/badge.png");
 
+    const puriMap = {
+      idle: chrome.runtime.getURL("assets/puri_idle.svg"),
+      low: chrome.runtime.getURL("assets/puri_low.svg"),
+      medium: chrome.runtime.getURL("assets/puri_medium.svg"),
+      high: chrome.runtime.getURL("assets/puri_high.svg")
+    };
+
     const SLIDES = [
       {
-        imgUrl: puriLowUrl,
-        imgSize: 80,
+        emoji: "🌱",
         title: "챗풀에 오신 걸 환영해요",
-        body: "ChatGPT · Gemini · Claude 등 대화형 AI에 입력할 때마다\n푸리가 입력 길이를 알려드려요\n\n길게 쓸수록 푸리가 힘들어하고\n간결하게 쓸수록 푸리가 건강해져요\n\n현재 ChatGPT · Gemini · Claude 지원",
-        note: "💡 대화형 AI 응답 1회에 생수 한 병 분량의 냉각수가 소비돼요"
+        body: "채팅 입력 길이를 실시간으로 보여주고\n프롬프트 팁까지 알려드려요!\nChatGPT · Claude · Gemini 지원"
       },
       {
-        imgLevel: "low",
-        title: "푸리 상태로 입력 길이를 확인해요",
-        htmlBody: `<div class="level-row"><img src="${puriLowUrl}" width="32" height="32" alt="낮음" /><span class="text-body-l"><strong class="text-status">낮음</strong> — 딱 좋은 길이예요</span></div><div class="level-row"><img src="${puriMedUrl}" width="32" height="32" alt="중간" /><span class="text-body-l"><strong class="text-status">중간</strong> — 핵심만 남기면 더 빠른 답변을 받을 수 있어요</span></div><div class="level-row"><img src="${puriHighUrl}" width="32" height="32" alt="높음" /><span class="text-body-l"><strong class="text-status">높음</strong> — 나눠서 물어보면 더 정확한 답변을 얻을 수 있어요</span></div>`,
-        htmlNote: `<span class="text-body-m">채팅을 입력하면 캐릭터가 프롬프트를 더 잘 쓰는 팁을 알려줘요</span><br><span class="text-body-m">팁이 너무 빨리 사라져서 못 읽었다면 캐릭터 위에 마우스를 올려보세요. 최근 팁을 다시 볼 수 있어요</span>`
+        emoji: "🐣",
+        title: "챗풀 뱃지란?",
+        htmlBody: `<span style="font-size:14px;color:#5e5e57;line-height:1.6">입력창 위에 떠있는 뱃지로<br>입력 길이를 바로 확인할 수 있어요</span><div class="ob-level-list"><div class="ob-level-row"><img src="${puriMap.low}" width="28" height="28" /><span>낮음 — 딱 좋은 길이예요</span></div><div class="ob-level-row"><img src="${puriMap.medium}" width="28" height="28" /><span>중간 — 핵심만 남기면 더 빠른 답변을 받을 수 있어요</span></div><div class="ob-level-row"><img src="${puriMap.high}" width="28" height="28" /><span>높음 — 나눠서 물어보면 더 정확한 답변을 얻을 수 있어요</span></div></div>`
+      },
+      {
+        emoji: "💬",
+        title: "뱃지 옆으로 프롬프트 팁이 뜨면 읽어보세요",
+        body: "레벨이 바뀌거나 뱃지에 마우스를 올리면\n프롬프트를 더 잘 작성할 수 있도록 도와주는 팁이 나타나요"
+      },
+      {
+        emoji: "⚙️",
+        title: "설정은 뱃지 클릭으로 간단하게!",
+        body: "뱃지 클릭 → 설정 바로 열기\n(또는 주소창 옆의 퍼즐 아이콘 → 챗풀 선택)"
       },
       {
         emoji: "📊",
-        title: "설정은 여기서 바꿀 수 있어요",
-        htmlBody: `<div class="slide3-badge-hint"><img src="${badgeImgUrl}" class="badge-preview" alt="챗풀 뱃지" /><span>이 뱃지를 클릭하면 바로 설정을 열 수 있어요</span></div><span class="text-body-l" style="color:#919188">(또는 브라우저 우측 상단 ${puzzleImg(14)} 퍼즐 아이콘 클릭)</span><span class="text-body-l">📊 오늘 AI를 얼마나 썼는지 리포트 확인</span><span class="text-body-l">🎨 원하는 캐릭터 이미지 업로드</span><span class="text-body-l">⚙️ 챗풀 ON/OFF 설정</span>`,
-        note: null
+        title: "오늘 얼마나 썼는지 확인해봐요",
+        body: "설정을 열면 오늘의 리포트를 볼 수 있어요\n플랫폼별 전송 횟수, 평균 입력 길이,\n절감한 냉각수를 확인하고 이전보다 얼마나 줄였는지 확인해보세요!"
+      },
+      {
+        emoji: "⚡",
+        title: "긴 작업엔 집중 모드를 켜보세요",
+        body: "뱃지 오른쪽 ⚡ 버튼으로 바로 켤 수 있어요\n프롬프트 팁이 나오지 않아 작업에만 집중할 수 있어요"
       },
       {
         emoji: "🎨",
-        title: "푸리를 내 스타일로 바꿀 수 있어요",
-        body: "설정에서 푸리를 클릭하고 원하는 캐릭터 이미지를 업로드하면\n나만의 챗풀을 만들 수 있어요",
-        note: null
+        title: "채팅창 화면을 내가 원하는 대로 꾸며보세요",
+        body: "좋아하는 캐릭터나 이미지가 있나요? 원하는 이미지를 업로드하면\n나만의 챗풀을 만들 수 있어요!\n설정에서 푸리 캐릭터를 클릭하고 연필 아이콘을 눌러보세요"
       }
     ];
 
@@ -2454,9 +2645,8 @@
         renderSlide(currentSlide);
         updateBackdrop(currentSlide);
 
-        if (nextIndex === 0) posSlide0(false);
-        else if (nextIndex === 1) posSlide1(false, badgeRect);
-        else posSlide2(false);
+        if (nextIndex === 1) posSlide1(false, badgeRect);
+        else posSlide0(false);
 
         slideArea.classList.remove("cp-ob-exit");
         slideArea.classList.add("cp-ob-enter");
@@ -2488,9 +2678,8 @@
         renderSlide(currentSlide);
         updateBackdrop(currentSlide);
 
-        if (prevIndex === 0) posSlide0(false);
-        else if (prevIndex === 1) posSlide1(false, badgeRect);
-        else posSlide2(false);
+        if (prevIndex === 1) posSlide1(false, badgeRect);
+        else posSlide0(false);
 
         slideArea.classList.remove("cp-ob-exit-rev");
         slideArea.classList.add("cp-ob-enter-rev");
@@ -2671,13 +2860,19 @@
         margin-bottom: 12px;
       }
       .cp-ob-body {
-        color: var(--gray-800);
+        color: #5e5e57;
         margin-bottom: 12px;
         display: flex;
         flex-direction: column;
-        gap: 0;
+        gap: 4px;
       }
-      .cp-ob-body .spacer { display: block; height: 8px; }
+      .cp-ob-body span, .cp-ob-body .text-body-l {
+        font-size: 14px !important;
+        font-weight: 400;
+        line-height: 1.6;
+        color: #5e5e57;
+      }
+      .cp-ob-body .spacer { display: block; height: 6px; }
       .cp-ob-body .level-row {
         display: flex;
         align-items: center;
@@ -2761,6 +2956,56 @@
         color: var(--gray-900);
         line-height: 130%;
       }
+      .ob-badge-showcase {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 12px;
+      }
+      .ob-badge-big {
+        height: 52px;
+        width: auto;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      }
+      .ob-level-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 10px;
+      }
+      .ob-level-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 10px;
+        background: var(--gray-50);
+        border-radius: 8px;
+      }
+      .ob-level-row img { flex-shrink: 0; }
+      .ob-level-row span { font-size: 13px; font-weight: 500; color: var(--gray-800); line-height: 1.4; }
+      .ob-level-low { color: #4e5000; }
+      .ob-level-medium { color: #9a6200; }
+      .ob-level-high { color: #ef4444; }
+      .ob-popup-mockup {
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.08);
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-top: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      }
+      .ob-popup-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--green-900);
+        margin-bottom: 4px;
+      }
+      .ob-popup-body {
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--gray-800);
+        line-height: 150%;
+      }
     `;
   }
 
@@ -2770,13 +3015,14 @@
     if (customCharacterUrl) {
       return `<img src="${customCharacterUrl}" class="cp-character" alt="${esc(level)}" draggable="false" />`;
     }
+    const displayLevel = settings.focusMode ? "idle" : level;
     const map = {
       idle: chrome.runtime.getURL("assets/puri_idle.svg"),
       low: chrome.runtime.getURL("assets/puri_low.svg"),
       medium: chrome.runtime.getURL("assets/puri_medium.svg"),
       high: chrome.runtime.getURL("assets/puri_high.svg")
     };
-    const src = map[level] || map.idle;
+    const src = map[displayLevel] || map.idle;
     return `<img src="${src}" class="cp-character" alt="${esc(level)}" draggable="false" />`;
   }
   chrome.runtime.onMessage.addListener((message) => {
@@ -3016,13 +3262,15 @@
         align-items: center;
         padding: 0 8px 0 4px;
         min-width: 152px;
+        position: relative;
       }
-      .cp-badge-icon {
+      .cp-badge-core {
         display: flex;
         align-items: center;
         gap: 12px;
         flex-shrink: 0;
         min-width: 0;
+        flex: 1 1 auto;
       }
       .cp-tree-wrap {
         flex: 0 0 auto;
@@ -3080,6 +3328,104 @@
       .cp-widget[data-level="low"] .cp-level-label { color: #4e5000; }
       .cp-widget[data-level="medium"] .cp-level-label { color: #9a6200; }
       .cp-widget[data-level="high"] .cp-level-label { color: #ef4444; }
+      .cp-widget[data-focus="true"] {
+        border: 1.5px solid #d1d600;
+        background: rgba(209,214,0,0.08);
+        --level-color: var(--gray-200);
+        --level-deep: var(--gray-600);
+      }
+      .cp-widget[data-focus="true"] .cp-badge-copy span { color: #4e5000; font-weight: 700; }
+      .cp-widget[data-focus="true"] .cp-level-label { color: #4e5000 !important; }
+      .cp-widget[data-focus="true"] .cp-character { animation: puri-idle 3s ease-in-out infinite; }
+      .cp-badge-actions {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        margin-left: 4px;
+        flex-shrink: 0;
+      }
+      .cp-focus-btn, .cp-more-btn {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #919188;
+        transition: background 0.15s, color 0.15s;
+        font-family: inherit;
+        padding: 0;
+        user-select: none;
+        flex-shrink: 0;
+      }
+      .cp-focus-btn { width: 28px; height: 28px; font-size: 15px; }
+      .cp-focus-btn:hover, .cp-more-btn:hover {
+        background: rgba(0,0,0,0.06);
+        color: #1a1a16;
+      }
+      .cp-focus-btn.active {
+        background: #d1d600;
+        color: #1a1a16;
+      }
+      .cp-size-menu {
+        position: fixed;
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.08);
+        border-radius: 12px;
+        padding: 12px 14px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        z-index: 2147483647;
+        min-width: 180px;
+        pointer-events: auto;
+      }
+      .cp-size-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #5e5e57;
+        font-weight: 500;
+        margin-bottom: 8px;
+        font-family: inherit;
+        letter-spacing: inherit;
+      }
+      .cp-size-slider {
+        width: 100%;
+        accent-color: #d1d600;
+        cursor: pointer;
+      }
+      .cp-bubble-msg { display: block; margin-bottom: 8px; }
+      .cp-bubble-actions {
+        display: flex;
+        gap: 6px;
+        margin-top: 4px;
+      }
+      .cp-bubble-btn {
+        flex: 1;
+        padding: 6px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--gray-200);
+        background: #ffffff;
+        color: var(--gray-800);
+        cursor: pointer;
+        font-family: inherit;
+        letter-spacing: inherit;
+        font-size: 10px;
+        font-weight: 600;
+        text-align: center;
+        white-space: nowrap;
+        transition: background 120ms ease;
+      }
+      .cp-bubble-btn:hover { background: var(--gray-50); }
+      .cp-bubble-btn.cp-bubble-btn-primary {
+        background: var(--green-900);
+        color: #ffffff;
+        border-color: var(--green-900);
+      }
+      .cp-bubble-btn.cp-bubble-btn-primary:hover { filter: brightness(1.08); }
     `;
   }
 

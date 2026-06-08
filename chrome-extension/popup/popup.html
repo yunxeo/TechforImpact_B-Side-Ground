@@ -88,20 +88,26 @@
         <button id="openGuide" class="secondary text-body-l" type="button">사용 팁 열기</button>
       </section>
 
-      <section class="card tips-card">
-        <span class="eyebrow text-body-s">Prompt Guide</span>
-        <h2 class="text-h2">프롬프트 팁 모음</h2>
-        <p class="help-text text-body-m"><span id="tipTotal">0</span>개의 프롬프팅 팁을 확인해보세요</p>
-        <button id="openTips" class="secondary text-body-l" type="button">팁 모음 열기</button>
-
-        <section id="tipLibrary" class="tip-library" hidden>
-          <div id="categoryTabs" class="category-tabs" role="tablist" aria-label="프롬프트 팁 카테고리"></div>
-          <div class="tip-list-head">
-            <strong id="activeCategoryName" class="text-h3">전체</strong>
-            <span id="activeCategoryCount" class="text-body-s">0개</span>
+      <section class="card settings-card">
+        <span class="eyebrow text-body-s">Settings</span>
+        <h2 class="text-h2">설정</h2>
+        <div class="setting-row">
+          <div class="setting-info">
+            <p class="text-body-l setting-label">집중 모드</p>
+            <p class="text-body-m setting-desc">긴 작업 시 환경 넛지 없이 프롬프팅 팁만 제공해요</p>
           </div>
-          <div id="tipList" class="tip-list"></div>
-        </section>
+          <label class="switch" title="집중 모드 켜기/끄기">
+            <input id="focusMode" type="checkbox" />
+            <span></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="card instructions-card">
+        <span class="eyebrow text-body-s">CUSTOM INSTRUCTIONS</span>
+        <h2 class="text-h2">맞춤형 지침 추천</h2>
+        <p class="help-text text-body-m">ChatGPT · Claude에 설정하면 매번 AI가 더 잘 이해해요</p>
+        <div class="instructions-list" id="instructionsList"></div>
       </section>
     </main>
     <script src="../content/prompt-tips.js"></script>
