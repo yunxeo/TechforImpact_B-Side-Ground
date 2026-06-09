@@ -2336,7 +2336,7 @@
       {
         slideImgSm: obAssets.puriFocus,
         title: "긴 작업엔 집중 모드를 켜보세요",
-        htmlBody: `<span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block">보고서 분석, 코드 리뷰처럼<br>긴 입력이 필요한 작업 중일 때 사용해요</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">켜두면 환경 넛지 없이<br>프롬프팅 팁만 조용히 알려드려요</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">뱃지 오른쪽 <img src="${obAssets.focusIcon}" width="16" height="16" style="vertical-align:middle;margin:0 2px" alt="" /> 버튼으로 바로 켤 수 있어요</span>`
+        htmlBody: `<span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block">보고서 분석, 코드 리뷰처럼<br>긴 입력이 필요한 작업 중일 때 사용해요</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">켜두면 프롬프팅 팁 없이<br>현재 글자수와 토큰수만 조용히 알려드려요</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">뱃지 오른쪽 <img src="${obAssets.focusIcon}" width="16" height="16" style="vertical-align:middle;margin:0 2px" alt="" /> 버튼으로 바로 켤 수 있어요</span>`
       },
       {
         slideImg: obAssets.report,
