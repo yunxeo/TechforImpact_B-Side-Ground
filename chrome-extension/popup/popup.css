@@ -605,3 +605,22 @@ button.secondary {
   margin-bottom: 0;
   line-height: 1.4;
 }
+
+.landing-link-bar {
+  padding: 10px 16px 14px;
+  border-top: 1px solid #e5e5d8;
+  text-align: center;
+}
+
+.landing-link-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: #919188;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  transition: color 0.15s;
+}
+
+.landing-link-btn:hover {
+  color: #383833;
+}
