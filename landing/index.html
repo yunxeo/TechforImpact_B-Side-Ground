@@ -410,6 +410,164 @@
     @media (max-width: 480px) {
       .hero-heading { font-size: 32px; }
     }
+
+    /* ── Custom Prompts Section ── */
+    .section-custom-prompts {
+      padding: 100px 0;
+      background: #f7f7f0;
+    }
+    .persona-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin: 48px 0 32px;
+    }
+    @media (max-width: 900px) {
+      .persona-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .persona-grid { grid-template-columns: 1fr; }
+    }
+    .persona-card {
+      background: #ffffff;
+      border: 1.5px solid #e5e5d8;
+      border-radius: 16px;
+      padding: 20px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .persona-card:hover {
+      border-color: #d1d600;
+      transform: translateY(-2px);
+    }
+    .persona-icon {
+      font-size: 28px;
+      display: block;
+      margin-bottom: 10px;
+    }
+    .persona-card strong {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1a1a16;
+      display: block;
+      margin-bottom: 10px;
+    }
+    .persona-card ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .persona-card li {
+      font-size: 12px;
+      color: #5e5e57;
+      padding: 3px 0;
+      border-bottom: 1px solid #f0f0e8;
+    }
+    .persona-card li.more {
+      color: #d1d600;
+      font-weight: 700;
+      border-bottom: none;
+      margin-top: 4px;
+    }
+    .custom-cta {
+      text-align: center;
+      font-size: 14px;
+      color: #919188;
+      margin-top: 16px;
+    }
+
+    /* ── Customize Section ── */
+    .section-customize {
+      padding: 100px 0;
+      background: #ffffff;
+    }
+    .customize-demo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 48px;
+      margin-top: 48px;
+    }
+    .customize-examples {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+    .customize-ex {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .customize-ex img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 2px solid #e5e5d8;
+      padding: 8px;
+      background: #f7f7f0;
+    }
+    .customize-ex span {
+      font-size: 13px;
+      color: #919188;
+      font-weight: 500;
+    }
+    .customize-placeholder {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 2px dashed #d1d600;
+      background: #f9fac0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .customize-placeholder > span {
+      font-size: 24px;
+      color: #a8ac00;
+    }
+    .customize-placeholder small {
+      font-size: 10px;
+      color: #a8ac00;
+      font-weight: 700;
+    }
+    .customize-arrow {
+      font-size: 24px;
+      color: #c8c8ba;
+    }
+    .customize-steps {
+      display: flex;
+      gap: 32px;
+    }
+    .customize-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #d1d600;
+      color: #1a1a16;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .customize-step p {
+      font-size: 13px;
+      color: #383833;
+      margin: 0;
+    }
+    @media (max-width: 600px) {
+      .customize-steps { flex-direction: column; }
+      .customize-examples { flex-direction: column; }
+      .customize-arrow { transform: rotate(90deg); }
+    }
   </style>
 </head>
 <body>
@@ -689,6 +847,138 @@
           <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_high.svg" width="56" height="56" alt="높음" />
           <span class="stage-label high">높음</span>
           <p>나눠서 물어봐요</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ CUSTOM PROMPTS ══════════ -->
+
+<section id="custom-prompts" class="section-custom-prompts">
+  <div class="container">
+    <p class="eyebrow">CUSTOM INSTRUCTIONS</p>
+    <h2>내 상황에 맞는 지침을 골라보세요</h2>
+    <p class="section-sub">7가지 사용 유형 × 10개 프리셋 — 복사해서 AI 맞춤 지침에 바로 붙여넣으세요</p>
+
+    <div class="persona-grid">
+      <div class="persona-card">
+        <span class="persona-icon">📚</span>
+        <strong>과제 중심 대학생</strong>
+        <ul>
+          <li>보고서 / 리포트용</li>
+          <li>발표 준비용</li>
+          <li>요약 / 정리용</li>
+          <li>교수님 메일용</li>
+          <li class="more">+ 6개 더</li>
+        </ul>
+      </div>
+      <div class="persona-card">
+        <span class="persona-icon">📝</span>
+        <strong>시험공부형 학생</strong>
+        <ul>
+          <li>개념 이해용</li>
+          <li>문제 풀이용</li>
+          <li>시험 직전 정리용</li>
+          <li>오답 정리용</li>
+          <li class="more">+ 6개 더</li>
+        </ul>
+      </div>
+      <div class="persona-card">
+        <span class="persona-icon">💻</span>
+        <strong>코딩 중심 사용자</strong>
+        <ul>
+          <li>오류 해결용</li>
+          <li>기능 구현용</li>
+          <li>리팩토링용</li>
+          <li>디버깅 절차용</li>
+          <li class="more">+ 6개 더</li>
+        </ul>
+      </div>
+      <div class="persona-card">
+        <span class="persona-icon">✍️</span>
+        <strong>글쓰기 / 커뮤니케이션형</strong>
+        <ul>
+          <li>메일 작성용</li>
+          <li>문장 다듬기용</li>
+          <li>홍보 문구용</li>
+          <li>사과 / 부탁 / 거절용</li>
+          <li class="more">+ 6개 더</li>
+        </ul>
+      </div>
+      <div class="persona-card">
+        <span class="persona-icon">🔍</span>
+        <strong>리서치 / 자료조사형</strong>
+        <ul>
+          <li>시장 조사용</li>
+          <li>논문 / 자료 정리용</li>
+          <li>트렌드 분석용</li>
+          <li>비교 조사용</li>
+          <li class="more">+ 6개 더</li>
+        </ul>
+      </div>
+      <div class="persona-card">
+        <span class="persona-icon">🚀</span>
+        <strong>창업 / 비즈니스형</strong>
+        <ul>
+          <li>사업 아이디어 검토용</li>
+          <li>MVP 검증용</li>
+          <li>마케팅 전략용</li>
+          <li>리스크 점검용</li>
+          <li class="more">+ 6개 더</li>
+        </ul>
+      </div>
+      <div class="persona-card">
+        <span class="persona-icon">⚡</span>
+        <strong>초압축 효율형</strong>
+        <ul>
+          <li>빠른 판단용</li>
+          <li>즉시 실행용</li>
+          <li>요약용</li>
+          <li>코드 도움용</li>
+          <li class="more">+ 6개 더</li>
+        </ul>
+      </div>
+    </div>
+    <p class="custom-cta">챗풀 설치 후 팝업에서 바로 선택하고 복사할 수 있어요</p>
+  </div>
+</section>
+
+<!-- ══════════ CUSTOMIZE ══════════ -->
+
+<section id="customize" class="section-customize">
+  <div class="container">
+    <p class="eyebrow">PERSONALIZATION</p>
+    <h2>뱃지를 내 스타일로 꾸며보세요</h2>
+    <p class="section-sub">원하는 이미지를 업로드하면 나만의 챗풀을 만들 수 있어요</p>
+
+    <div class="customize-demo">
+      <div class="customize-examples">
+        <div class="customize-ex default">
+          <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low.svg" alt="기본 푸리" />
+          <span>기본 푸리</span>
+        </div>
+        <div class="customize-arrow">→</div>
+        <div class="customize-ex custom">
+          <div class="customize-placeholder">
+            <span>✦</span>
+            <small>내 이미지</small>
+          </div>
+          <span>나만의 캐릭터</span>
+        </div>
+      </div>
+      <div class="customize-steps">
+        <div class="customize-step">
+          <span class="step-num">1</span>
+          <p>챗풀 팝업 열기</p>
+        </div>
+        <div class="customize-step">
+          <span class="step-num">2</span>
+          <p>푸리 캐릭터 클릭 후 연필 아이콘 선택</p>
+        </div>
+        <div class="customize-step">
+          <span class="step-num">3</span>
+          <p>원하는 이미지 업로드</p>
         </div>
       </div>
     </div>

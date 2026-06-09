@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const APP = "챗풀Chatpull";
+  const APP = "Groo";
   const ROOT_ID = "chatpull-green-root";
   const ONBOARDING_ROOT_ID = "chatpull-onboarding-root";
   const ONBOARDING_KEY = "chatpool.onboarded";
@@ -918,7 +918,10 @@
     sizeMenu.innerHTML = `
       <div class="cp-size-label">
         <span>뱃지 크기</span>
-        <span class="cp-size-value">${settings.floatingLogoScale}%</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="cp-size-value">${settings.floatingLogoScale}%</span>
+          <button class="cp-size-reset" title="기본값으로">↺</button>
+        </div>
       </div>
       <input type="range" class="cp-size-slider" min="70" max="120" step="5" value="${Math.max(70, Math.min(120, settings.floatingLogoScale))}" />
     `;
@@ -965,6 +968,16 @@
         e.stopPropagation();
         updateSize(sliderEl.value);
       });
+
+      const resetBtn = sizeMenu.querySelector(".cp-size-reset");
+      if (resetBtn) {
+        resetBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          sliderEl.value = "100";
+          updateSize(100);
+          storageSet({ [STORAGE_KEYS.SETTINGS]: settings });
+        });
+      }
     }
 
     card.addEventListener("mouseenter", handleBadgePointerEnter);
@@ -1175,7 +1188,7 @@
           </div>
         </div>
         <div class="cp-badge-actions">
-          <button class="cp-focus-btn${settings.focusMode ? " active" : ""}" title="집중 모드">⚡</button>
+          <button class="cp-focus-btn${settings.focusMode ? " active" : ""}" title="집중 모드"><img src="${chrome.runtime.getURL("assets/focus_icon1.svg")}" width="16" height="16" alt="" draggable="false" /></button>
           <button class="cp-more-btn" title="더보기">⋮</button>
         </div>
       </div>
@@ -1581,6 +1594,17 @@
     focusBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       settings.focusMode = !settings.focusMode;
+
+      // 캐릭터 즉시 교체 (updateOverlay 딜레이 없이)
+      if (!customCharacterUrl) {
+        const charImg = overlay.card.querySelector(".cp-character");
+        if (charImg) {
+          charImg.src = settings.focusMode
+            ? chrome.runtime.getURL("assets/puri_focus.svg")
+            : chrome.runtime.getURL(`assets/puri_${lastLevel || "idle"}.svg`);
+        }
+      }
+
       focusBtn.classList.toggle("active", settings.focusMode);
       overlay.card.dataset.focus = String(settings.focusMode);
       storageSet({ [STORAGE_KEYS.SETTINGS]: settings });
@@ -2276,42 +2300,50 @@
       medium: chrome.runtime.getURL("assets/puri_medium.svg"),
       high: chrome.runtime.getURL("assets/puri_high.svg")
     };
+    const obAssets = {
+      puriFocus: chrome.runtime.getURL("assets/puri_focus.svg"),
+      badge: chrome.runtime.getURL("assets/badge.png"),
+      prompt: chrome.runtime.getURL("assets/prompt.png"),
+      resize: chrome.runtime.getURL("assets/resize.png"),
+      report: chrome.runtime.getURL("assets/report.png"),
+      custom: chrome.runtime.getURL("assets/custom.png"),
+      puzzle: chrome.runtime.getURL("assets/extension-puzzle-outline.svg"),
+      focusIcon: chrome.runtime.getURL("assets/focus_icon1.svg")
+    };
 
     const SLIDES = [
       {
-        emoji: "🌱",
-        title: "챗풀에 오신 걸 환영해요",
+        slideImgSm: puriMap.low,
+        title: "그루에 오신 걸 환영해요",
         body: "채팅 입력 길이를 실시간으로 보여주고\n프롬프트 팁까지 알려드려요!\nChatGPT · Claude · Gemini 지원"
       },
       {
-        emoji: "🐣",
-        title: "챗풀 뱃지란?",
-        htmlBody: `<span style="font-size:14px;color:#5e5e57;line-height:1.6">입력창 위에 떠있는 뱃지로<br>입력 길이를 바로 확인할 수 있어요</span><div class="ob-level-list"><div class="ob-level-row"><img src="${puriMap.low}" width="28" height="28" /><span>낮음 — 딱 좋은 길이예요</span></div><div class="ob-level-row"><img src="${puriMap.medium}" width="28" height="28" /><span>중간 — 핵심만 남기면 더 빠른 답변을 받을 수 있어요</span></div><div class="ob-level-row"><img src="${puriMap.high}" width="28" height="28" /><span>높음 — 나눠서 물어보면 더 정확한 답변을 얻을 수 있어요</span></div></div>`
+        title: "그루 뱃지란?",
+        htmlBody: `<span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-bottom:8px">입력창 위에 떠있는 뱃지로<br>입력 길이를 바로 확인할 수 있어요</span><div class="ob-level-list"><div class="ob-level-row"><img src="${puriMap.low}" width="28" height="28" /><span>낮음 — 딱 좋은 길이예요</span></div><div class="ob-level-row"><img src="${puriMap.medium}" width="28" height="28" /><span>중간 — 핵심만 남기면 더 빠른 답변을 받을 수 있어요</span></div><div class="ob-level-row"><img src="${puriMap.high}" width="28" height="28" /><span>높음 — 나눠서 물어보면 더 정확한 답변을 얻을 수 있어요</span></div></div>`
       },
       {
-        emoji: "💬",
-        title: "뱃지 옆으로 프롬프트 팁이 뜨면 읽어보세요",
-        body: "레벨이 바뀌거나 뱃지에 마우스를 올리면\n프롬프트를 더 잘 작성할 수 있도록 도와주는 팁이 나타나요"
+        title: "뱃지 크기를 원하는 대로 조절할 수 있어요",
+        body: "뱃지 오른쪽 ⋮ 아이콘을 클릭하면\n슬라이더로 크기를 자유롭게 조절할 수 있어요"
       },
       {
-        emoji: "⚙️",
-        title: "설정은 뱃지 클릭으로 간단하게!",
-        body: "뱃지 클릭 → 설정 바로 열기\n(또는 주소창 옆의 퍼즐 아이콘 → 챗풀 선택)"
+        slideImg: obAssets.prompt,
+        title: "프롬프트를 더 잘 쓰도록 도와줘요",
+        body: "입력한 내용에서 특정 패턴이 감지되거나\n뱃지에 마우스를 올리면\n프롬프트를 더 잘 작성할 수 있도록 도와주는 팁이 펼쳐져요"
       },
       {
-        emoji: "📊",
-        title: "오늘 얼마나 썼는지 확인해봐요",
-        body: "설정을 열면 오늘의 리포트를 볼 수 있어요\n플랫폼별 전송 횟수, 평균 입력 길이,\n절감한 냉각수를 확인하고 이전보다 얼마나 줄였는지 확인해보세요!"
-      },
-      {
-        emoji: "⚡",
+        slideImgSm: obAssets.puriFocus,
         title: "긴 작업엔 집중 모드를 켜보세요",
-        body: "뱃지 오른쪽 ⚡ 버튼으로 바로 켤 수 있어요\n프롬프트 팁이 나오지 않아 작업에만 집중할 수 있어요"
+        htmlBody: `<span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block">보고서 분석, 코드 리뷰처럼<br>긴 입력이 필요한 작업 중일 때 사용해요</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">켜두면 환경 넛지 없이<br>프롬프팅 팁만 조용히 알려드려요</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">뱃지 오른쪽 <img src="${obAssets.focusIcon}" width="16" height="16" style="vertical-align:middle;margin:0 2px" alt="" /> 버튼으로 바로 켤 수 있어요</span>`
       },
       {
-        emoji: "🎨",
-        title: "채팅창 화면을 내가 원하는 대로 꾸며보세요",
-        body: "좋아하는 캐릭터나 이미지가 있나요? 원하는 이미지를 업로드하면\n나만의 챗풀을 만들 수 있어요!\n설정에서 푸리 캐릭터를 클릭하고 연필 아이콘을 눌러보세요"
+        slideImg: obAssets.report,
+        title: "📊 오늘 얼마나 썼는지 확인해봐요",
+        htmlBody: `<span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block">뱃지 클릭 → 리포트 바로 열기<br>또는 <img src="${obAssets.puzzle}" width="16" height="16" style="vertical-align:middle;margin:0 2px" alt="" /> 퍼즐 아이콘 → 그루 선택</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">플랫폼별 전송 횟수, 평균 입력 길이를 확인하고<br>이전보다 얼마나 줄였는지 확인해보세요!</span>`
+      },
+      {
+        slideImg: obAssets.custom,
+        title: "뱃지를 내 스타일로 바꿀 수 있어요",
+        body: "좋아하는 캐릭터나 이미지가 있나요?\n원하는 이미지를 업로드하면\n나만의 그루를 만들 수 있어요!\n설정에서 푸리 캐릭터를 클릭하고 연필 아이콘을 눌러보세요"
       }
     ];
 
@@ -2350,7 +2382,11 @@
     const noteEl = document.createElement("div");
     noteEl.className = "cp-ob-note text-body-m";
 
-    slideArea.append(emojiEl, titleEl, bodyEl, noteEl);
+    const slideImgEl = document.createElement("div");
+    slideImgEl.className = "cp-ob-slide-img-wrap";
+    slideImgEl.style.display = "none";
+
+    slideArea.append(emojiEl, titleEl, bodyEl, slideImgEl, noteEl);
 
     const nav = document.createElement("div");
     nav.className = "cp-ob-nav";
@@ -2389,15 +2425,13 @@
       if (!bc) return;
       bc.dataset.visible = "true";
       if (bc.dataset.level === "idle") bc.dataset.level = "low";
-      bc.style.boxShadow = "0 0 0 3px rgba(209, 214, 0, 0.45), 0 0 12px rgba(209, 214, 0, 0.25)";
-      bc.style.transition = "box-shadow 300ms ease, opacity 160ms ease, transform 160ms ease";
+      bc.classList.add("cp-onboarding-highlight");
     }
 
     function removeBadgeHighlight() {
       const bc = getBadgeCard();
       if (!bc) return;
-      bc.style.boxShadow = "";
-      bc.style.transition = "";
+      bc.classList.remove("cp-onboarding-highlight");
       bc.dataset.visible = String(!!(settings.enabled && currentEditor));
     }
 
@@ -2562,16 +2596,31 @@
       const slide = SLIDES[index];
       const isLast = index === SLIDES.length - 1;
 
-      if (slide.imgLevel) {
-        emojiEl.innerHTML = characterIcon(slide.imgLevel);
-        emojiEl.classList.add("cp-ob-emoji-img");
-      } else if (slide.imgUrl) {
-        const s = slide.imgSize || 48;
-        emojiEl.innerHTML = `<img src="${slide.imgUrl}" width="${s}" height="${s}" style="width:${s}px;height:${s}px" alt="" draggable="false" />`;
-        emojiEl.classList.add("cp-ob-emoji-img");
-      } else {
-        emojiEl.textContent = slide.emoji || "";
+      // PNG 이미지는 본문 아래, SVG/이모지는 상단 유지
+      if (slide.slideImg) {
+        emojiEl.textContent = "";
         emojiEl.classList.remove("cp-ob-emoji-img");
+        emojiEl.style.display = "none";
+        slideImgEl.innerHTML = `<img src="${slide.slideImg}" class="onboarding-slide-img" alt="" draggable="false" />`;
+        slideImgEl.style.display = "block";
+      } else {
+        emojiEl.style.display = "";
+        slideImgEl.innerHTML = "";
+        slideImgEl.style.display = "none";
+        if (slide.slideImgSm) {
+          emojiEl.innerHTML = `<img src="${slide.slideImgSm}" class="onboarding-slide-img-sm" alt="" draggable="false" />`;
+          emojiEl.classList.add("cp-ob-emoji-img");
+        } else if (slide.imgLevel) {
+          emojiEl.innerHTML = characterIcon(slide.imgLevel);
+          emojiEl.classList.add("cp-ob-emoji-img");
+        } else if (slide.imgUrl) {
+          const s = slide.imgSize || 48;
+          emojiEl.innerHTML = `<img src="${slide.imgUrl}" width="${s}" height="${s}" style="width:${s}px;height:${s}px" alt="" draggable="false" />`;
+          emojiEl.classList.add("cp-ob-emoji-img");
+        } else {
+          emojiEl.textContent = slide.emoji || "";
+          emojiEl.classList.remove("cp-ob-emoji-img");
+        }
       }
       titleEl.textContent = slide.title;
       if (slide.htmlBody) {
@@ -2632,6 +2681,9 @@
       if (nextIndex === 1) {
         applyBadgeHighlight();
         hideBubbleForOnboarding();
+      } else if (nextIndex === 2) {
+        applyBadgeHighlight();
+        if (currentSlide === 1) restoreBubbleFromOnboarding();
       } else {
         if (currentSlide === 1) restoreBubbleFromOnboarding();
         removeBadgeHighlight();
@@ -2662,12 +2714,15 @@
       const prevIndex = currentSlide - 1;
       const badgeRect = prevIndex === 1 ? calcBadgePos() : null;
 
-      if (currentSlide === 1) {
-        restoreBubbleFromOnboarding();
-        removeBadgeHighlight();
-      } else if (prevIndex === 1) {
+      if (prevIndex === 1) {
         applyBadgeHighlight();
         hideBubbleForOnboarding();
+      } else if (prevIndex === 2) {
+        applyBadgeHighlight();
+        if (currentSlide === 1) restoreBubbleFromOnboarding();
+      } else {
+        if (currentSlide === 1) restoreBubbleFromOnboarding();
+        removeBadgeHighlight();
       }
 
       slideArea.classList.remove("cp-ob-enter-rev");
@@ -2967,6 +3022,26 @@
         border-radius: 12px;
         box-shadow: 0 4px 16px rgba(0,0,0,0.1);
       }
+      .onboarding-slide-img {
+        width: 100%;
+        max-height: 160px;
+        object-fit: contain;
+        margin-top: 12px;
+        border-radius: 8px;
+        display: block;
+      }
+      .onboarding-slide-img-sm {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+        margin-bottom: 12px;
+        display: block;
+        animation: puriFloat 3s ease-in-out infinite;
+      }
+      @keyframes puriFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-6px); }
+      }
       .ob-level-list {
         display: flex;
         flex-direction: column;
@@ -3015,15 +3090,16 @@
     if (customCharacterUrl) {
       return `<img src="${customCharacterUrl}" class="cp-character" alt="${esc(level)}" draggable="false" />`;
     }
-    const displayLevel = settings.focusMode ? "idle" : level;
+    if (settings.focusMode) {
+      return `<img src="${chrome.runtime.getURL("assets/puri_focus.svg")}" class="cp-character" alt="${esc(level)}" draggable="false" />`;
+    }
     const map = {
       idle: chrome.runtime.getURL("assets/puri_idle.svg"),
       low: chrome.runtime.getURL("assets/puri_low.svg"),
       medium: chrome.runtime.getURL("assets/puri_medium.svg"),
       high: chrome.runtime.getURL("assets/puri_high.svg")
     };
-    const src = map[displayLevel] || map.idle;
-    return `<img src="${src}" class="cp-character" alt="${esc(level)}" draggable="false" />`;
+    return `<img src="${map[level] || map.idle}" class="cp-character" alt="${esc(level)}" draggable="false" />`;
   }
   chrome.runtime.onMessage.addListener((message) => {
     if (message?.type === "CHATPOOL_SHOW_ONBOARDING") {
@@ -3328,14 +3404,19 @@
       .cp-widget[data-level="low"] .cp-level-label { color: #4e5000; }
       .cp-widget[data-level="medium"] .cp-level-label { color: #9a6200; }
       .cp-widget[data-level="high"] .cp-level-label { color: #ef4444; }
-      .cp-widget[data-focus="true"] {
-        border: 1.5px solid #d1d600;
-        background: rgba(209,214,0,0.08);
-        --level-color: var(--gray-200);
-        --level-deep: var(--gray-600);
+      .cp-onboarding-highlight {
+        box-shadow: 0 0 0 3px #3CB4F8, 0 0 16px rgba(60,180,248,0.4);
+        transition: box-shadow 0.3s ease;
       }
-      .cp-widget[data-focus="true"] .cp-badge-copy span { color: #4e5000; font-weight: 700; }
-      .cp-widget[data-focus="true"] .cp-level-label { color: #4e5000 !important; }
+      .cp-widget[data-focus="true"] {
+        border: 1.5px solid #3CB4F8;
+        background: #1a1a16;
+        --level-color: #3CB4F8;
+        --level-deep: #ffffff;
+      }
+      .cp-widget[data-focus="true"] .cp-badge-copy strong { color: #ffffff; }
+      .cp-widget[data-focus="true"] .cp-badge-copy span { color: #3CB4F8; }
+      .cp-widget[data-focus="true"] .cp-level-label { color: #ffffff !important; }
       .cp-widget[data-focus="true"] .cp-character { animation: puri-idle 3s ease-in-out infinite; }
       .cp-badge-actions {
         display: flex;
@@ -3368,8 +3449,9 @@
         color: #1a1a16;
       }
       .cp-focus-btn.active {
-        background: #d1d600;
-        color: #1a1a16;
+        background: transparent;
+        color: #3CB4F8;
+        border: none;
       }
       .cp-size-menu {
         position: fixed;
@@ -3397,6 +3479,19 @@
         accent-color: #d1d600;
         cursor: pointer;
       }
+      .cp-size-reset {
+        background: none;
+        border: 1px solid #c8c8ba;
+        border-radius: 4px;
+        font-size: 11px;
+        padding: 1px 5px;
+        cursor: pointer;
+        color: #919188;
+        font-family: inherit;
+        transition: color 0.15s, border-color 0.15s;
+        flex-shrink: 0;
+      }
+      .cp-size-reset:hover { color: #1a1a16; border-color: #919188; }
       .cp-bubble-msg { display: block; margin-bottom: 8px; }
       .cp-bubble-actions {
         display: flex;

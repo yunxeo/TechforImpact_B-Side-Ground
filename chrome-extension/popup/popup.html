@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>챗풀Chatpull</title>
+    <title>그루Groo</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <main class="wrap">
       <header class="header">
         <div>
-          <h1 class="text-h1">챗풀Chatpull</h1>
+          <h1 class="text-h1">그루Groo</h1>
           <p class="text-body-m">ChatGPT · Gemini · Claude 지원</p>
         </div>
         <label class="switch" title="확장 프로그램 켜기/끄기">
@@ -84,7 +84,7 @@
       <section class="card usage-card">
         <span class="eyebrow text-body-s">Usage Guide</span>
         <h2 class="text-h2">처음 사용 팁</h2>
-        <p class="help-text text-body-m">ChatGPT·Gemini 입력창 위 챗풀 배지와 팁 사용법을 다시 볼 수 있어요.</p>
+        <p class="help-text text-body-m">ChatGPT·Gemini 입력창 위 그루 배지와 팁 사용법을 다시 볼 수 있어요.</p>
         <button id="openGuide" class="secondary text-body-l" type="button">사용 팁 열기</button>
       </section>
 
@@ -103,14 +103,14 @@
         </div>
       </section>
 
-      <section class="card instructions-card">
-        <span class="eyebrow text-body-s">CUSTOM INSTRUCTIONS</span>
-        <h2 class="text-h2">맞춤형 지침 추천</h2>
-        <p class="help-text text-body-m">ChatGPT · Claude에 설정하면 매번 AI가 더 잘 이해해요</p>
-        <div class="instructions-list" id="instructionsList"></div>
+      <section class="card custom-prompt-section">
+        <h2 class="text-h2 section-title">맞춤형 지침 추천</h2>
+        <div class="persona-tabs" id="personaTabs"></div>
+        <div class="preset-list" id="presetList"></div>
+        <button class="copy-btn" id="copyPromptBtn" type="button" disabled>지침 복사하기</button>
+        <p class="copy-hint">복사한 지침을 ChatGPT · Claude 맞춤형 지침에 붙여넣어 보세요</p>
       </section>
     </main>
-    <script src="../content/prompt-tips.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

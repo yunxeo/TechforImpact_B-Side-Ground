@@ -510,64 +510,98 @@ button.secondary {
   color: var(--color-text-sub);
 }
 
-/* Instructions card */
-.instructions-list {
-  display: grid;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.instruction-item {
-  padding: 12px;
-  border-radius: 14px;
-  background: var(--green-50);
-  border: 1px solid rgba(209, 214, 0, 0.35);
-}
-
-.instruction-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.instruction-tag {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 99px;
-  background: var(--green-900);
-  color: #ffffff;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.instruction-title {
-  color: var(--gray-900);
-}
-
-.instruction-content {
+/* Custom prompts section */
+.custom-prompt-section .section-title {
   margin: 0 0 10px;
-  color: var(--gray-800);
-  line-height: 160%;
-  word-break: keep-all;
 }
 
-.instruction-copy {
-  display: inline-block;
-  padding: 5px 12px;
-  border-radius: 8px;
-  background: #ffffff;
-  color: var(--green-900);
-  border: 1px solid rgba(209, 214, 0, 0.5);
+.persona-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.persona-tab {
+  font-size: 11px;
   font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1.5px solid #e5e5d8;
+  background: transparent;
+  cursor: pointer;
+  color: #5e5e57;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.persona-tab.active {
+  background: #d1d600;
+  border-color: #d1d600;
+  color: #1a1a16;
+}
+
+.preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+.preset-item {
+  font-size: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1.5px solid #e5e5d8;
+  cursor: pointer;
+  color: #383833;
+  background: #fafaf5;
+  transition: all 0.15s;
+}
+
+.preset-item:hover {
+  border-color: #d1d600;
+  background: #f9fac0;
+}
+
+.preset-item.selected {
+  border-color: #d1d600;
+  background: #f2f47a;
+  font-weight: 600;
+}
+
+.copy-btn {
+  width: 100%;
+  padding: 9px;
+  border-radius: 10px;
+  border: none;
+  background: #d1d600;
+  color: #1a1a16;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
   font-family: inherit;
-  transition: background 120ms ease;
-  width: auto;
-  margin-top: 0;
+  transition: opacity 0.15s, background 0.15s;
 }
 
-.instruction-copy:hover {
-  background: var(--green-100);
-  filter: none;
+.copy-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.copy-btn.copied {
+  background: #4e5000;
+  color: #ffffff;
+}
+
+.copy-hint {
+  font-size: 10px;
+  color: #919188;
+  text-align: center;
+  margin-top: 6px;
+  margin-bottom: 0;
+  line-height: 1.4;
 }
