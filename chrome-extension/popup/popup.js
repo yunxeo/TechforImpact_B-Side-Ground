@@ -240,6 +240,10 @@ function getDateLabel(offset) {
   return `${date.getMonth() + 1}월 ${date.getDate()}일`;
 }
 
+function getDayLabel() {
+  return reportOffset === 0 ? "오늘" : "이날";
+}
+
 function render(state) {
   nodes.enabled.checked = Boolean(state.settings.enabled);
   if (nodes.focusMode) nodes.focusMode.checked = Boolean(state.settings.focusMode);
@@ -470,9 +474,10 @@ function renderReport(report) {
 }
 
 function buildInsightItems(stat) {
+  const day = getDayLabel();
   if (!stat.submitCount) {
     return [
-      insightHtml("아직 오늘 AI를 사용하지 않았어요."),
+      insightHtml(`아직 ${day} AI를 사용하지 않았어요.`),
       insightHtml("평균 글자 수와 다듬은 양은 전송 후에 볼 수 있어요.")
     ];
   }
@@ -488,8 +493,8 @@ function buildInsightItems(stat) {
   if (geminiCount > 0) platforms.push(`Gemini에 <strong class="text-display">${formatNumber(geminiCount)}번</strong>`);
 
   const platformLine = platforms.length > 0
-    ? `오늘 ${platforms.join(", ")} 보냈어요.`
-    : `오늘 <strong class="text-display">${formatNumber(stat.submitCount)}번</strong> AI에 보냈어요.`;
+    ? `${day} ${platforms.join(", ")} 보냈어요.`
+    : `${day} <strong class="text-display">${formatNumber(stat.submitCount)}번</strong> AI에 보냈어요.`;
 
   const items = [
     insightHtml(platformLine),
@@ -501,7 +506,7 @@ function buildInsightItems(stat) {
       insightHtml(`처음 쓴 글보다 평균 <strong class="text-display">${formatNumber(stat.avgReducedChars)}자</strong> 정도 줄이고 보냈어요.`)
     );
   } else {
-    items.push(insightHtml("오늘은 거의 다듬지 않고 그대로 보내셨네요."));
+    items.push(insightHtml(`${day}은 거의 다듬지 않고 그대로 보내셨네요.`));
   }
 
   return items;
@@ -522,7 +527,7 @@ function buildLevelMixNote(stat) {
   if (stat.highRatioPct > 0) parts.push(`높음 ${stat.highRatioPct}%`);
 
   if (!parts.length) {
-    return "오늘 보낸 프롬프트 길이 비율을 정리하는 중이에요.";
+    return `${getDayLabel()} 보낸 프롬프트 길이 비율을 정리하는 중이에요.`;
   }
 
   const lead = stat.highRatioPct >= 50
@@ -540,15 +545,16 @@ function getDailyReportNudge(stat) {
   const highRatio = stat.highCount / stat.submitCount;
   const messages = [];
 
+  const day = getDayLabel();
   if (highRatio > 0.5) {
-    messages.push(`오늘 ${stat.submitCount}번 중 ${stat.highCount}번이 길었어요. 리포트 확인해볼까요?`);
+    messages.push(`${day} ${stat.submitCount}번 중 ${stat.highCount}번이 길었어요. 리포트 확인해볼까요?`);
     messages.push("긴 입력이 많았던 하루예요. 팝업에서 자세히 볼 수 있어요 📊");
   } else if (highRatio > 0.2) {
-    messages.push(`오늘 ${stat.submitCount}번 전송했어요. 오늘 프롬프트 패턴 확인해볼까요?`);
-    messages.push("조금씩 나아지고 있어요! 오늘 리포트 확인해봐요 🌿");
+    messages.push(`${day} ${stat.submitCount}번 전송했어요. ${day} 프롬프트 패턴 확인해볼까요?`);
+    messages.push(`조금씩 나아지고 있어요! ${day} 리포트 확인해봐요 🌿`);
   } else {
-    messages.push("오늘도 간결하게 잘 쓰고 있어요! 리포트에서 확인해봐요 🌱");
-    messages.push(`오늘 ${stat.submitCount}번 전송했는데 대부분 짧았어요. 최고예요 ✨`);
+    messages.push(`${day}도 간결하게 잘 쓰고 있어요! 리포트에서 확인해봐요 🌱`);
+    messages.push(`${day} ${stat.submitCount}번 전송했는데 대부분 짧았어요. 최고예요 ✨`);
   }
 
   return messages[Math.floor(Math.random() * messages.length)];
@@ -558,25 +564,25 @@ function getPuriComment(stat) {
   if (!stat || stat.submitCount === 0) {
     return {
       imgKey: "idle",
-      msg: "아직 오늘 전송 기록이 없어요. 오늘도 간결하게 써봐요!"
+      msg: `아직 ${getDayLabel()} 전송 기록이 없어요. ${getDayLabel()}도 간결하게 써봐요!`
     };
   }
   const highRatio = stat.highCount / stat.submitCount;
   if (highRatio > 0.5) {
     return {
       imgKey: "high",
-      msg: `오늘 ${stat.submitCount}번 중 ${stat.highCount}번은 길었어요. 나눠 물어보면 답이 더 또렷해질 수 있어요.`
+      msg: `${getDayLabel()} ${stat.submitCount}번 중 ${stat.highCount}번은 길었어요. 나눠 물어보면 답이 더 또렷해질 수 있어요.`
     };
   }
   if (highRatio > 0.2) {
     return {
       imgKey: "medium",
-      msg: `오늘 ${stat.submitCount}번 보냈어요. 조금만 더 줄이면 더 빠른 답을 받기 쉬워요.`
+      msg: `${getDayLabel()} ${stat.submitCount}번 보냈어요. 조금만 더 줄이면 더 빠른 답을 받기 쉬워요.`
     };
   }
   return {
     imgKey: "low",
-    msg: `오늘 ${stat.submitCount}번 보냈는데, 대부분 간결했어요. 잘하고 있어요!`
+    msg: `${getDayLabel()} ${stat.submitCount}번 보냈는데, 대부분 간결했어요. 잘하고 있어요!`
   };
 }
 

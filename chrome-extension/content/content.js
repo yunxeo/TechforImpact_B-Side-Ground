@@ -973,8 +973,8 @@
       if (resetBtn) {
         resetBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          sliderEl.value = "100";
-          updateSize(100);
+          sliderEl.value = "80";
+          updateSize(80);
           storageSet({ [STORAGE_KEYS.SETTINGS]: settings });
         });
       }
@@ -2322,8 +2322,8 @@
         htmlBody: `<span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-bottom:8px">입력창 위에 떠있는 뱃지로<br>입력 길이를 바로 확인할 수 있어요</span><div class="ob-level-list"><div class="ob-level-row"><img src="${puriMap.low}" width="28" height="28" /><span>낮음 — 딱 좋은 길이예요</span></div><div class="ob-level-row"><img src="${puriMap.medium}" width="28" height="28" /><span>중간 — 핵심만 남기면 더 빠른 답변을 받을 수 있어요</span></div><div class="ob-level-row"><img src="${puriMap.high}" width="28" height="28" /><span>높음 — 나눠서 물어보면 더 정확한 답변을 얻을 수 있어요</span></div></div>`
       },
       {
-        title: "뱃지 크기를 원하는 대로 조절할 수 있어요",
-        body: "뱃지 오른쪽 ⋮ 아이콘을 클릭하면\n슬라이더로 크기를 자유롭게 조절할 수 있어요"
+        title: "뱃지 크기를 조절할 수 있어요",
+        body: "뱃지 오른쪽 ⋮ 버튼을 누르면\n슬라이더로 크기를 바꿀 수 있어요"
       },
       {
         slideImg: obAssets.prompt,
@@ -2341,9 +2341,8 @@
         htmlBody: `<span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block">뱃지 클릭 → 리포트 바로 열기<br>또는 <img src="${obAssets.puzzle}" width="16" height="16" style="vertical-align:middle;margin:0 2px" alt="" /> 퍼즐 아이콘 → 그루 선택</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">플랫폼별 전송 횟수, 평균 입력 길이를 확인하고<br>이전보다 얼마나 줄였는지 확인해보세요!</span>`
       },
       {
-        slideImg: obAssets.custom,
-        title: "뱃지를 내 스타일로 바꿀 수 있어요",
-        body: "좋아하는 캐릭터나 이미지가 있나요?\n원하는 이미지를 업로드하면\n나만의 그루를 만들 수 있어요!\n설정에서 푸리 캐릭터를 클릭하고 연필 아이콘을 눌러보세요"
+        title: "뱃지를 내 스타일로 꾸며보세요",
+        htmlBody: `<div class="customize-demo"><div class="customize-examples"><div class="customize-ex default"><img src="${puriMap.low}" alt="기본 푸리" /><span>기본 푸리</span></div><div class="customize-arrow">→</div><div class="customize-ex custom"><div class="customize-placeholder"><span>✦</span><small>내 이미지</small></div><span>나만의 캐릭터</span></div></div><div class="customize-steps"><div class="customize-step"><span class="step-num">1</span><p>그루 뱃지 클릭</p></div><div class="customize-step"><span class="step-num">2</span><p>푸리 캐릭터 클릭 후 연필 아이콘 선택</p></div><div class="customize-step"><span class="step-num">3</span><p>원하는 이미지 업로드</p></div></div></div><p class="onboarding-restart-hint">사용 팁을 다시 보고 싶다면?<br><span>그루 뱃지 클릭 → 설정 → 처음 사용팁 다시 열기</span></p><div class="onboarding-tip-card"><div class="tip-card-title">처음 사용팁</div><div class="tip-card-desc">ChatGPT · Claude · Gemini 입력창 위 그루 배지와 팁 사용법을 다시 볼 수 있어요.</div><button class="tip-restart-btn">처음 사용팁 다시 열기</button></div>`
       }
     ];
 
@@ -2468,6 +2467,7 @@
     function posSlide0(skipTransition) {
       const CARD_W = Math.min(400, window.innerWidth - 32);
       const CARD_H_EST = 380;
+      card.style.visibility = ""; // posSlide1이 hidden으로 두었을 수 있으므로 복원
       applyCardPos({
         left: (window.innerWidth - CARD_W) / 2,
         top: Math.max(20, (window.innerHeight - CARD_H_EST) / 2),
@@ -2480,6 +2480,7 @@
       const CARD_W = 280;
       const GAP = 12;
       const MARGIN = 8;
+      const expectedSlide = currentSlide; // 호출 시점의 슬라이드 인덱스를 캡처
 
       // 1단계: transition 없이 off-screen invisible 위치로 이동 → 실제 높이 확보
       card.style.transition = "none";
@@ -2492,7 +2493,7 @@
 
       function measureAndApply(r) {
         requestAnimationFrame(() => {
-          if (currentSlide !== 1) return;
+          if (currentSlide !== expectedSlide) return;
 
           const measured = card.getBoundingClientRect();
           const cardH = measured.height || 280;
@@ -2531,12 +2532,12 @@
         // 뱃지 rect가 없으면 등장 대기 후 재시도
         let tries = 0;
         const retry = () => {
-          if (currentSlide !== 1) return;
+          if (currentSlide !== expectedSlide) return;
           tries++;
           const r = calcBadgePos();
           if (r) {
             measureAndApply(r);
-            updateBackdrop(1);
+            updateBackdrop(expectedSlide);
           } else if (tries < 6) {
             setTimeout(retry, 300);
           }
@@ -2559,7 +2560,7 @@
     // --- Backdrop / spotlight ---
     function updateBackdrop(slideIndex) {
       backdrop.classList.add("visible");
-      if (slideIndex === 1) {
+      if (slideIndex === 1 || slideIndex === 2) {
         const r = calcBadgePos();
         if (r) {
           applySpotlight(r);
@@ -2567,7 +2568,7 @@
           backdrop.style.background = "rgba(0,0,0,0.5)";
           let tries = 0;
           const retry = () => {
-            if (currentSlide !== 1) return;
+            if (currentSlide !== slideIndex) return;
             tries++;
             const rect = calcBadgePos();
             if (rect) {
@@ -2676,7 +2677,7 @@
       }
 
       const nextIndex = currentSlide + 1;
-      const badgeRect = nextIndex === 1 ? calcBadgePos() : null;
+      const badgeRect = (nextIndex === 1 || nextIndex === 2) ? calcBadgePos() : null;
 
       if (nextIndex === 1) {
         applyBadgeHighlight();
@@ -2697,7 +2698,7 @@
         renderSlide(currentSlide);
         updateBackdrop(currentSlide);
 
-        if (nextIndex === 1) posSlide1(false, badgeRect);
+        if (nextIndex === 1 || nextIndex === 2) posSlide1(false, badgeRect);
         else posSlide0(false);
 
         slideArea.classList.remove("cp-ob-exit");
@@ -2712,7 +2713,7 @@
       if (currentSlide <= 0) return;
 
       const prevIndex = currentSlide - 1;
-      const badgeRect = prevIndex === 1 ? calcBadgePos() : null;
+      const badgeRect = (prevIndex === 1 || prevIndex === 2) ? calcBadgePos() : null;
 
       if (prevIndex === 1) {
         applyBadgeHighlight();
@@ -2733,7 +2734,7 @@
         renderSlide(currentSlide);
         updateBackdrop(currentSlide);
 
-        if (prevIndex === 1) posSlide1(false, badgeRect);
+        if (prevIndex === 1 || prevIndex === 2) posSlide1(false, badgeRect);
         else posSlide0(false);
 
         slideArea.classList.remove("cp-ob-exit-rev");
@@ -3081,6 +3082,117 @@
         color: var(--gray-800);
         line-height: 150%;
       }
+      .ob-step-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .ob-step-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--gray-800);
+      }
+      .ob-step-num {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--green-400);
+        color: #1a1a16;
+        font-size: 11px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .customize-demo {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        margin-top: 16px;
+      }
+      .customize-examples {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .customize-ex {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+      .customize-ex img {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        border: 2px solid #e5e5d8;
+        padding: 6px;
+        background: #f7f7f0;
+      }
+      .customize-ex span {
+        font-size: 11px;
+        color: #919188;
+        font-weight: 500;
+      }
+      .customize-placeholder {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        border: 2px dashed #d1d600;
+        background: #f9fac0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+      }
+      .customize-placeholder > span {
+        font-size: 20px;
+        color: #a8ac00;
+      }
+      .customize-placeholder small {
+        font-size: 9px;
+        color: #a8ac00;
+        font-weight: 700;
+      }
+      .customize-arrow {
+        font-size: 20px;
+        color: #c8c8ba;
+      }
+      .customize-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+      }
+      .customize-step {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .step-num {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #d1d600;
+        color: #1a1a16;
+        font-size: 11px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .customize-step p {
+        font-size: 12px;
+        color: #383833;
+        margin: 0;
+      }
     `;
   }
 
@@ -3410,7 +3522,7 @@
       }
       .cp-widget[data-focus="true"] {
         border: 1.5px solid #3CB4F8;
-        background: #1a1a16;
+        background: #2c2c2c;
         --level-color: #3CB4F8;
         --level-deep: #ffffff;
       }

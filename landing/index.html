@@ -568,6 +568,16 @@
       .customize-examples { flex-direction: column; }
       .customize-arrow { transform: rotate(90deg); }
     }
+
+    /* ── Platform logos ── */
+    .platform-logo {
+      height: 24px;
+      width: auto;
+      object-fit: contain;
+      opacity: 0.8;
+    }
+
+    /* section-header { text-align: center } covers #custom-prompts and #customize headers */
   </style>
 </head>
 <body>
@@ -650,15 +660,15 @@
   <p class="platforms-label">지원 플랫폼</p>
   <div class="platforms-logos">
     <span>
-      <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg" alt="" />
+      <img src="../chrome-extension/assets/chatgpt_logo.png" alt="ChatGPT" class="platform-logo" />
       ChatGPT
     </span>
     <span>
-      <img src="https://upload.wikimedia.org/wikipedia/commons/8/8a/Claude_AI_logo.svg" alt="" />
+      <img src="../chrome-extension/assets/claude_logo.svg" alt="Claude" class="platform-logo" />
       Claude
     </span>
     <span>
-      <img src="https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg" alt="" />
+      <img src="../chrome-extension/assets/gemini_logo.png" alt="Gemini" class="platform-logo" />
       Gemini
     </span>
   </div>
@@ -857,9 +867,11 @@
 
 <section id="custom-prompts" class="section-custom-prompts">
   <div class="container">
-    <p class="eyebrow">CUSTOM INSTRUCTIONS</p>
-    <h2>내 상황에 맞는 지침을 골라보세요</h2>
-    <p class="section-sub">7가지 사용 유형 × 10개 프리셋 — 복사해서 AI 맞춤 지침에 바로 붙여넣으세요</p>
+    <div class="section-header">
+      <p class="section-eyebrow">· CUSTOM INSTRUCTIONS</p>
+      <h2 class="section-title">내 상황에 맞는 지침을 골라보세요</h2>
+      <p class="section-sub">7가지 사용 유형 × 10개 프리셋 — 복사해서 AI 맞춤 지침에 바로 붙여넣으세요</p>
+    </div>
 
     <div class="persona-grid">
       <div class="persona-card">
@@ -948,9 +960,11 @@
 
 <section id="customize" class="section-customize">
   <div class="container">
-    <p class="eyebrow">PERSONALIZATION</p>
-    <h2>뱃지를 내 스타일로 꾸며보세요</h2>
-    <p class="section-sub">원하는 이미지를 업로드하면 나만의 그루를 만들 수 있어요</p>
+    <div class="section-header">
+      <p class="section-eyebrow">· PERSONALIZATION</p>
+      <h2 class="section-title">뱃지를 내 스타일로 꾸며보세요</h2>
+      <p class="section-sub">원하는 이미지를 업로드하면 나만의 그루를 만들 수 있어요</p>
+    </div>
 
     <div class="customize-demo">
       <div class="customize-examples">
@@ -970,7 +984,7 @@
       <div class="customize-steps">
         <div class="customize-step">
           <span class="step-num">1</span>
-          <p>그루 팝업 열기</p>
+          <p>그루 뱃지 클릭</p>
         </div>
         <div class="customize-step">
           <span class="step-num">2</span>
