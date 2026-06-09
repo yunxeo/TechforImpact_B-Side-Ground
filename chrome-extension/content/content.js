@@ -2339,7 +2339,7 @@
         htmlBody: `<span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block">보고서 분석, 코드 리뷰처럼<br>긴 입력이 필요한 작업 중일 때 사용해요</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">켜두면 프롬프팅 팁 없이<br>현재 글자수와 토큰수만 조용히 알려드려요</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">뱃지 오른쪽 <img src="${obAssets.focusIcon}" width="16" height="16" style="vertical-align:middle;margin:0 2px" alt="" /> 버튼으로 바로 켤 수 있어요</span>`
       },
       {
-        title: "뱃지를 내 스타일로 꾸며보세요",
+        title: "🎨 좋아하는 캐릭터가 있나요?\n뱃지를 내 스타일로 꾸며보세요",
         htmlBody: `<div class="customize-demo"><div class="customize-examples"><div class="customize-ex default"><img src="${puriMap.low}" alt="기본 푸리" /><span>기본 푸리</span></div><div class="customize-arrow">→</div><div class="customize-ex custom"><div class="customize-placeholder"><span>✦</span><small>내 이미지</small></div><span>나만의 캐릭터</span></div></div><div class="customize-steps"><div class="customize-step"><span class="step-num">1</span><p>그루 뱃지 클릭</p></div><div class="customize-step"><span class="step-num">2</span><p>푸리 캐릭터 클릭 후 연필 아이콘 선택</p></div><div class="customize-step"><span class="step-num">3</span><p>원하는 이미지 업로드</p>`
       },
       {
