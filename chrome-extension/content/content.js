@@ -627,6 +627,7 @@
 
   function handleBadgePointerEnter() {
     badgeHoverActive = true;
+    if (settings.focusMode) return;
     triggerHoverBubble();
     if (!inlinePromptTip.visible && !inlinePromptTip.closing && lastShownTip) {
       const { tip, key } = lastShownTip;
@@ -1594,6 +1595,7 @@
     focusBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       settings.focusMode = !settings.focusMode;
+      if (settings.focusMode) hideTipBar();
 
       // 캐릭터 즉시 교체 (updateOverlay 딜레이 없이)
       if (!customCharacterUrl) {
@@ -1647,6 +1649,7 @@
     if (action === "enable-focus-mode") {
       settings = sanitizeSettings({ ...settings, focusMode: true });
       storageSet({ [STORAGE_KEYS.SETTINGS]: settings });
+      hideTipBar();
       if (overlay?.card) {
         overlay.card.dataset.focus = "true";
         const focusBtn = overlay.card.querySelector(".cp-focus-btn");
@@ -2342,7 +2345,11 @@
       },
       {
         title: "뱃지를 내 스타일로 꾸며보세요",
-        htmlBody: `<div class="customize-demo"><div class="customize-examples"><div class="customize-ex default"><img src="${puriMap.low}" alt="기본 푸리" /><span>기본 푸리</span></div><div class="customize-arrow">→</div><div class="customize-ex custom"><div class="customize-placeholder"><span>✦</span><small>내 이미지</small></div><span>나만의 캐릭터</span></div></div><div class="customize-steps"><div class="customize-step"><span class="step-num">1</span><p>그루 뱃지 클릭</p></div><div class="customize-step"><span class="step-num">2</span><p>푸리 캐릭터 클릭 후 연필 아이콘 선택</p></div><div class="customize-step"><span class="step-num">3</span><p>원하는 이미지 업로드</p></div></div></div><p>`
+        htmlBody: `<div class="customize-demo"><div class="customize-examples"><div class="customize-ex default"><img src="${puriMap.low}" alt="기본 푸리" /><span>기본 푸리</span></div><div class="customize-arrow">→</div><div class="customize-ex custom"><div class="customize-placeholder"><span>✦</span><small>내 이미지</small></div><span>나만의 캐릭터</span></div></div><div class="customize-steps"><div class="customize-step"><span class="step-num">1</span><p>그루 뱃지 클릭</p></div><div class="customize-step"><span class="step-num">2</span><p>푸리 캐릭터 클릭 후 연필 아이콘 선택</p></div><div class="customize-step"><span class="step-num">3</span><p>원하는 이미지 업로드</p></div></div></div><p class="onboarding-restart-hint">사용 팁을 다시 보고 싶다면?<br><span>그루 뱃지 클릭 → 설정 → 처음 사용팁 다시 열기</span></p><div class="onboarding-tip-card"><div class="tip-card-title">처음 사용팁</div><div class="tip-card-desc">ChatGPT · Claude · Gemini 입력창 위 그루 배지와 팁 사용법을 다시 볼 수 있어요.</div><button class="tip-restart-btn">처음 사용팁 다시 열기</button></div>`
+      },
+      {
+        title: "사용 팁을 다시 보고 싶다면?",
+        htmlBody: `<p class="onboarding-restart-hint">그루 뱃지 클릭 → 설정 → 처음 사용팁 다시 열기</p><div class="onboarding-tip-card"><div class="tip-card-title">처음 사용팁</div><div class="tip-card-desc">ChatGPT · Claude · Gemini 입력창 위 그루 배지와 팁 사용법을 다시 볼 수 있어요.</div><button class="tip-restart-btn">처음 사용팁 다시 열기</button></div>`
       }
     ];
 
@@ -2756,6 +2763,22 @@
     skipBtn.addEventListener("click", closeOnboarding);
     nextBtn.addEventListener("click", goNext);
     prevBtn.addEventListener("click", goPrev);
+    slideArea.addEventListener("click", (e) => {
+      if (e.target.classList.contains("tip-restart-btn")) {
+        slideArea.classList.add("cp-ob-exit-rev");
+        setTimeout(() => {
+          currentSlide = 0;
+          renderSlide(0);
+          updateBackdrop(0);
+          posSlide0(false);
+          slideArea.classList.remove("cp-ob-exit-rev");
+          slideArea.classList.add("cp-ob-enter-rev");
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => slideArea.classList.remove("cp-ob-enter-rev"));
+          });
+        }, 150);
+      }
+    });
 
     // 배지 오버레이보다 항상 위에 오도록 DOM 순서를 맨 뒤로 보낸다.
     document.documentElement.appendChild(host);
@@ -3193,6 +3216,55 @@
         color: #383833;
         margin: 0;
       }
+      .onboarding-restart-hint {
+        font-size: 13px;
+        color: #5e5e57;
+        line-height: 1.6;
+        margin: 0 0 4px;
+      }
+      .onboarding-restart-hint span {
+        color: #383833;
+        font-weight: 600;
+      }
+      .onboarding-tip-card {
+        background: #f7f7f0;
+        border: 1.5px solid #e5e5d8;
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-top: 16px;
+        width: 100%;
+      }
+      .onboarding-tip-card .tip-card-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: #919188;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .onboarding-tip-card .tip-card-desc {
+        font-size: 12px;
+        color: #383833;
+        line-height: 1.5;
+        margin-bottom: 10px;
+      }
+      .onboarding-tip-card .tip-restart-btn {
+        width: 100%;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1.5px solid #d1d600;
+        background: transparent;
+        color: #5e5e00;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+        letter-spacing: inherit;
+        transition: background 0.15s;
+      }
+      .onboarding-tip-card .tip-restart-btn:hover {
+        background: #f2f47a;
+      }
     `;
   }
 
@@ -3522,7 +3594,7 @@
       }
       .cp-widget[data-focus="true"] {
         border: 1.5px solid #3CB4F8;
-        background: #2c2c2c;
+        background: #3a3a3a;
         --level-color: #3CB4F8;
         --level-deep: #ffffff;
       }
