@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Groo",
   "version": "0.3.14",
-  "description": "ChatGPT와 Gemini 입력창의 예상 토큰량을 02번 Tree Status Badge로 표시하고, 기본 위치를 채팅창 오른쪽 위로 고정하고, 자동 프롬프팅 팁과 hover 환경 넛지를 분리한 Chatpull Green v1.2.14 프로토타입입니다.",
+  "description": "ChatGPT·Claude·Gemini 입력창의 토큰량을 실시간으로 시각화하고, 맞춤형 프롬프팅 팁과 지침을 제공하는 Groo입니다.",
   "permissions": [
     "storage",
     "tabs"
@@ -35,7 +35,7 @@
     }
   ],
   "action": {
-    "default_title": "Chatpull Green",
+    "default_title": "Groo",
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "assets/icon16.png",
