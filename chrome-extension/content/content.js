@@ -2345,7 +2345,7 @@
       },
       {
         title: "뱃지를 내 스타일로 꾸며보세요",
-        htmlBody: `<div class="customize-demo"><div class="customize-examples"><div class="customize-ex default"><img src="${puriMap.low}" alt="기본 푸리" /><span>기본 푸리</span></div><div class="customize-arrow">→</div><div class="customize-ex custom"><div class="customize-placeholder"><span>✦</span><small>내 이미지</small></div><span>나만의 캐릭터</span></div></div><div class="customize-steps"><div class="customize-step"><span class="step-num">1</span><p>그루 뱃지 클릭</p></div><div class="customize-step"><span class="step-num">2</span><p>푸리 캐릭터 클릭 후 연필 아이콘 선택</p></div><div class="customize-step"><span class="step-num">3</span><p>원하는 이미지 업로드</p></div></div></div><p class="onboarding-restart-hint">사용 팁을 다시 보고 싶다면?<br><span>그루 뱃지 클릭 → 설정 → 처음 사용팁 다시 열기</span></p><div class="onboarding-tip-card"><div class="tip-card-title">처음 사용팁</div><div class="tip-card-desc">ChatGPT · Claude · Gemini 입력창 위 그루 배지와 팁 사용법을 다시 볼 수 있어요.</div><button class="tip-restart-btn">처음 사용팁 다시 열기</button></div>`
+        htmlBody: `<div class="customize-demo"><div class="customize-examples"><div class="customize-ex default"><img src="${puriMap.low}" alt="기본 푸리" /><span>기본 푸리</span></div><div class="customize-arrow">→</div><div class="customize-ex custom"><div class="customize-placeholder"><span>✦</span><small>내 이미지</small></div><span>나만의 캐릭터</span></div></div><div class="customize-steps"><div class="customize-step"><span class="step-num">1</span><p>그루 뱃지 클릭</p></div><div class="customize-step"><span class="step-num">2</span><p>푸리 캐릭터 클릭 후 연필 아이콘 선택</p></div><div class="customize-step"><span class="step-num">3</span><p>원하는 이미지 업로드</p>`
       },
       {
         title: "사용 팁을 다시 보고 싶다면?",
