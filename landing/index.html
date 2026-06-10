@@ -592,6 +592,43 @@
     }
 
     /* section-header { text-align: center } covers #custom-prompts and #customize headers */
+
+    /* ─── How to Set ─── */
+    .section-how-to-set { padding: 100px 0; background: #ffffff; }
+    .how-tabs { display: flex; justify-content: center; gap: 12px; margin: 48px 0 32px; }
+    .how-tab {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: 99px;
+      border: 1.5px solid #e5e5d8; background: transparent;
+      font-size: 14px; font-weight: 600; color: #5e5e57;
+      cursor: pointer; transition: all 0.2s; font-family: inherit; letter-spacing: -.02em;
+    }
+    .how-tab img { width: 18px; height: 18px; object-fit: contain; }
+    .how-tab.active { border-color: #d1d600; background: #f2f47a; color: #1a1a16; }
+    .how-panel { display: none; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+    .how-panel.active { display: grid; }
+    .how-steps { display: flex; flex-direction: column; gap: 20px; }
+    .how-step { display: flex; align-items: flex-start; gap: 14px; }
+    .how-step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #d1d600; color: #1a1a16;
+      font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .how-step p { font-size: 15px; color: #383833; line-height: 1.6; margin: 0; }
+    .how-demo-window { border: 1.5px solid #e5e5d8; border-radius: 12px; overflow: hidden; background: #fafaf5; }
+    .how-demo-bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; background: #f0f0e8; border-bottom: 1px solid #e5e5d8; }
+    .how-demo-dot { width: 10px; height: 10px; border-radius: 50%; background: #d8d8cc; }
+    .how-demo-title { font-size: 12px; font-weight: 600; color: #919188; margin-left: 6px; }
+    .how-demo-body { padding: 20px; }
+    .how-demo-label { font-size: 12px; color: #919188; margin-bottom: 10px; font-weight: 500; }
+    .how-demo-textarea { min-height: 100px; font-size: 13px; color: #383833; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+    .how-demo-textarea::after { content: '|'; animation: blink 1s infinite; color: #d1d600; font-weight: 700; }
+    @media (max-width: 768px) {
+      .how-panel.active { grid-template-columns: 1fr; }
+      .how-tabs { flex-wrap: wrap; }
+    }
   </style>
 </head>
 <body>
@@ -970,6 +1007,127 @@
   </div>
 </section>
 
+<!-- ══════════ HOW TO SET ══════════ -->
+<section id="how-to-set" class="section-how-to-set">
+  <div class="container">
+    <p class="section-eyebrow">· HOW TO SET</p>
+    <h2 class="section-title">맞춤 지침 설정하는 법</h2>
+    <p class="section-desc">그루 팝업에서 복사한 지침을 아래 경로에 붙여넣으세요</p>
+
+    <div class="how-tabs">
+      <button class="how-tab active" data-tab="chatgpt">
+        <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/chatgpt_logo.png" alt="ChatGPT" />
+        ChatGPT
+      </button>
+      <button class="how-tab" data-tab="claude">
+        <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/claude_logo.svg" alt="Claude" />
+        Claude
+      </button>
+      <button class="how-tab" data-tab="gemini">
+        <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/gemini_logo.png" alt="Gemini" />
+        Gemini
+      </button>
+    </div>
+
+    <div class="how-content" id="howContent">
+
+      <div class="how-panel active" data-panel="chatgpt">
+        <div class="how-steps">
+          <div class="how-step">
+            <span class="how-step-num">1</span>
+            <p>우상단 프로필 클릭 → <strong>맞춤 설정</strong> 선택</p>
+          </div>
+          <div class="how-step">
+            <span class="how-step-num">2</span>
+            <p><strong>맞춤 지침</strong> 클릭</p>
+          </div>
+          <div class="how-step">
+            <span class="how-step-num">3</span>
+            <p>두 번째 칸 <em>"ChatGPT가 어떻게 응답하길 원하시나요?"</em>에 붙여넣기</p>
+          </div>
+        </div>
+        <div class="how-demo">
+          <div class="how-demo-window">
+            <div class="how-demo-bar">
+              <span class="how-demo-dot"></span>
+              <span class="how-demo-dot"></span>
+              <span class="how-demo-dot"></span>
+              <span class="how-demo-title">맞춤 지침</span>
+            </div>
+            <div class="how-demo-body">
+              <div class="how-demo-label">ChatGPT가 어떻게 응답하길 원하시나요?</div>
+              <div class="how-demo-textarea" id="chatgptTyping"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="how-panel" data-panel="claude">
+        <div class="how-steps">
+          <div class="how-step">
+            <span class="how-step-num">1</span>
+            <p>우상단 프로필 클릭 → <strong>Settings</strong> 선택</p>
+          </div>
+          <div class="how-step">
+            <span class="how-step-num">2</span>
+            <p><strong>Profile</strong> 탭 클릭</p>
+          </div>
+          <div class="how-step">
+            <span class="how-step-num">3</span>
+            <p><em>"What personal preferences should Claude consider?"</em>에 붙여넣기</p>
+          </div>
+        </div>
+        <div class="how-demo">
+          <div class="how-demo-window">
+            <div class="how-demo-bar">
+              <span class="how-demo-dot"></span>
+              <span class="how-demo-dot"></span>
+              <span class="how-demo-dot"></span>
+              <span class="how-demo-title">Profile</span>
+            </div>
+            <div class="how-demo-body">
+              <div class="how-demo-label">What personal preferences should Claude consider?</div>
+              <div class="how-demo-textarea" id="claudeTyping"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="how-panel" data-panel="gemini">
+        <div class="how-steps">
+          <div class="how-step">
+            <span class="how-step-num">1</span>
+            <p>그루 팝업에서 페르소나 지침 복사</p>
+          </div>
+          <div class="how-step">
+            <span class="how-step-num">2</span>
+            <p>Gemini 새 대화 시작</p>
+          </div>
+          <div class="how-step">
+            <span class="how-step-num">3</span>
+            <p>첫 메시지로 지침 붙여넣기 후 전송</p>
+          </div>
+        </div>
+        <div class="how-demo">
+          <div class="how-demo-window">
+            <div class="how-demo-bar">
+              <span class="how-demo-dot"></span>
+              <span class="how-demo-dot"></span>
+              <span class="how-demo-dot"></span>
+              <span class="how-demo-title">Gemini</span>
+            </div>
+            <div class="how-demo-body">
+              <div class="how-demo-label">Gemini에게 메시지 보내기</div>
+              <div class="how-demo-textarea" id="geminiTyping"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 <!-- ══════════ CUSTOMIZE ══════════ -->
 
 <section id="customize" class="section-customize">
@@ -1344,6 +1502,45 @@
   modalBackdrop.addEventListener('click', closeInstallModal);
   modalClose.addEventListener('click', closeInstallModal);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeInstallModal(); });
+
+  /* ── How to Set — 탭 전환 + 타이핑 애니메이션 ── */
+  const howTexts = {
+    chatgpt: "과제에 바로 쓸 수 있게 핵심만 정리해줘.\n불필요한 배경 설명, 반복, 과한 예시는 줄여줘.\n질문이 명확하면 추가 질문 없이 바로 결과물을 보여줘.",
+    claude:  "과제에 바로 쓸 수 있게 핵심만 정리해줘.\n불필요한 배경 설명, 반복, 과한 예시는 줄여줘.\n질문이 명확하면 추가 질문 없이 바로 결과물을 보여줘.",
+    gemini:  "나는 대학생이고 주로 과제와 발표 준비에 AI를 활용해.\n핵심만 간결하게 정리해줘.\n질문이 명확하면 추가 질문 없이 바로 결과물을 보여줘."
+  };
+
+  let howTypingInterval = null;
+
+  function startHowTyping(panelKey) {
+    const el = document.getElementById(panelKey + 'Typing');
+    if (!el) return;
+    const text = howTexts[panelKey];
+    let i = 0;
+    el.textContent = '';
+    if (howTypingInterval) clearInterval(howTypingInterval);
+    howTypingInterval = setInterval(() => {
+      if (i < text.length) {
+        el.textContent += text[i];
+        i++;
+      } else {
+        clearInterval(howTypingInterval);
+      }
+    }, 30);
+  }
+
+  document.querySelectorAll('.how-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.how-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.how-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      const key = tab.dataset.tab;
+      document.querySelector(`.how-panel[data-panel="${key}"]`).classList.add('active');
+      startHowTyping(key);
+    });
+  });
+
+  startHowTyping('chatgpt');
 </script>
 </body>
 </html>
