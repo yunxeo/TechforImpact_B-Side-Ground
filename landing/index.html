@@ -338,6 +338,7 @@
     /* ─── Team ─── */
     .section-team { padding: 80px 0; background: var(--gray-50); text-align: center; }
     .section-desc { font-size: 15px; color: var(--gray-600); line-height: 1.75; word-break: keep-all; margin-top: 16px; }
+    .team-puri { width: 120px; height: auto; display: block; margin: 0 auto 24px; }
     .team { padding: 100px 0; background: var(--gray-50); }
     .team-inner { display: grid; grid-template-columns: 1fr 1.2fr; gap: 80px; align-items: start; }
     .team-intro h2 { font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; line-height: 1.2; color: var(--dark); margin-bottom: 16px; word-break: keep-all; }
@@ -367,16 +368,15 @@
     .footer-inner { display: flex; align-items: center; justify-content: space-between; }
     .footer-logo { display: flex; align-items: center; }
     .footer-logo img { height: 18px; width: auto; opacity: .45; filter: brightness(0) invert(1); }
-    .footer-copy { font-size: 12px; color: rgba(255,255,255,.25); }
+    .footer-copy { font-size: 12px; color: rgba(255,255,255,.25); text-align: center; }
     .footer-icons { display: flex; gap: 12px; }
     .footer-icons a { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,.12); display: grid; place-items: center; color: rgba(255,255,255,.4); transition: color .15s, border-color .15s; }
     .footer-icons a:hover { color: var(--white); border-color: rgba(255,255,255,.35); }
     .footer-icons svg { width: 14px; height: 14px; }
     .footer-team {
-      display: flex; flex-wrap: wrap; gap: 16px 32px; justify-content: center;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
       font-size: 12px; color: #919188;
-      margin-bottom: 20px; padding-bottom: 20px;
-      border-bottom: 1px solid #e5e5d8;
+      margin-top: 20px;
     }
     .footer-link { font-size: 12px; color: #919188; text-decoration: none; letter-spacing: -.01em; transition: color .15s; }
     .footer-link:hover { color: #383833; }
@@ -1047,7 +1047,8 @@
   <div class="container">
     <p class="section-eyebrow">· TEAM</p>
     <h2 class="section-title">B개발구역</h2>
-    <p class="section-desc">기술이 환경과 사람 사이의 거리를 좁힐 수 있다고 믿는 팀입니다.<br>작은 넛지 하나가 습관을 바꾸고, 습관이 모여 임팩트가 된다는 방향으로 그루를 만들고 있어요.</p>
+    <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low_3d.png" alt="푸리" class="team-puri" />
+    <p class="section-desc">우리는 AI 시대의 새로운 사용자 경험을 고민하는 팀입니다.<br><br>전원 비개발자로 시작했지만, AI 사용이 일상이 된 시대에 사용자가 자신의 사용 습관을 돌아볼 수 있는 경험이 필요하다고 생각했습니다. 우리는 AI 사용의 편리함뿐 아니라 그 이면의 환경적 영향까지 함께 인식할 수 있어야 합니다. 그루는 이러한 문제의식에서 시작된 서비스이며, 더 나은 AI 사용 경험과 지속가능한 디지털 문화를 만드는 것을 목표로 하고 있습니다.<br><br>우리는 거창한 변화보다도 사용자의 작은 인식과 행동 변화에서 시작되는 임팩트를 만들고자 합니다.</p>
   </div>
 </section>
 
@@ -1062,13 +1063,6 @@
 <!-- ══════════ FOOTER ══════════ -->
 <footer class="footer">
   <div class="container">
-    <div class="footer-team">
-      <span>채준하 — Design</span>
-      <span>이윤서 — PM · Frontend</span>
-      <span>송지호 — Backend</span>
-      <span>이재원 — Backend</span>
-      <span>장윤진 — Research</span>
-    </div>
     <div class="footer-inner">
       <span class="footer-logo">
         <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/logo_eng.svg" alt="그루 Groo" />
@@ -1094,6 +1088,13 @@
         </a>
       </div>
     </div>
+    <div class="footer-team">
+      <span>채준하 — Design</span>
+      <span>이윤서 — PM · Frontend</span>
+      <span>송지호 — Backend</span>
+      <span>이재원 — Backend</span>
+      <span>장윤진 — Research</span>
+    </div>
   </div>
 </footer>
 
@@ -1106,7 +1107,7 @@
       <button class="modal-close" id="modalClose" aria-label="닫기">×</button>
     </div>
     <a class="modal-download-btn"
-      href="https://github.com/yunxeo/TechforImpact_B-Side-Ground/raw/main/chatpool_ut_v1.zip"
+      href="https://github.com/yunxeo/TechforImpact_B-Side-Ground/archive/refs/heads/main.zip"
       download>⬇ zip 파일 다운로드</a>
     <ol class="modal-steps">
       <li><span class="step-num">1</span><span>위 버튼으로 zip 파일을 다운로드한 후 압축을 풀어주세요.</span></li>
