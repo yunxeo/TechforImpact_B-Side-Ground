@@ -336,9 +336,11 @@
     .impact-desc { font-size: 13px; color: var(--gray-600); line-height: 1.6; word-break: keep-all; }
 
     /* ─── Team ─── */
-    .section-team { padding: 80px 0; background: var(--gray-50); text-align: center; }
-    .section-desc { font-size: 15px; color: var(--gray-600); line-height: 1.75; word-break: keep-all; margin-top: 16px; }
-    .team-puri { width: 120px; height: auto; display: block; margin: 0 auto 24px; }
+    .section-team { padding: 80px 0; background: var(--gray-50); }
+    .section-team-inner { display: grid; grid-template-columns: 1fr auto; gap: 80px; align-items: center; }
+    .section-desc { font-size: 15px; color: var(--gray-600); line-height: 1.75; word-break: keep-all; margin-top: 16px; max-width: 540px; }
+    .team-puri { flex-shrink: 0; animation: float 4s ease-in-out infinite; }
+    .team-puri img { width: 240px; max-width: 100%; height: auto; object-fit: contain; display: block; filter: drop-shadow(0 16px 32px rgba(0,0,0,.12)); }
     .team { padding: 100px 0; background: var(--gray-50); }
     .team-inner { display: grid; grid-template-columns: 1fr 1.2fr; gap: 80px; align-items: start; }
     .team-intro h2 { font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; line-height: 1.2; color: var(--dark); margin-bottom: 16px; word-break: keep-all; }
@@ -374,9 +376,10 @@
     .footer-icons a:hover { color: var(--white); border-color: rgba(255,255,255,.35); }
     .footer-icons svg { width: 14px; height: 14px; }
     .footer-team {
-      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      display: flex; flex-wrap: wrap; gap: 10px 28px; justify-content: center;
       font-size: 12px; color: #919188;
-      margin-top: 20px;
+      padding: 16px 0; margin-bottom: 4px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
     }
     .footer-link { font-size: 12px; color: #919188; text-decoration: none; letter-spacing: -.01em; transition: color .15s; }
     .footer-link:hover { color: #383833; }
@@ -1044,11 +1047,15 @@
 
 <!-- ══════════ TEAM ══════════ -->
 <section id="team" class="section-team">
-  <div class="container">
-    <p class="section-eyebrow">· TEAM</p>
-    <h2 class="section-title">B개발구역</h2>
-    <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low_3d.png" alt="푸리" class="team-puri" />
-    <p class="section-desc">우리는 AI 시대의 새로운 사용자 경험을 고민하는 팀입니다.<br><br>전원 비개발자로 시작했지만, AI 사용이 일상이 된 시대에 사용자가 자신의 사용 습관을 돌아볼 수 있는 경험이 필요하다고 생각했습니다. 우리는 AI 사용의 편리함뿐 아니라 그 이면의 환경적 영향까지 함께 인식할 수 있어야 합니다. 그루는 이러한 문제의식에서 시작된 서비스이며, 더 나은 AI 사용 경험과 지속가능한 디지털 문화를 만드는 것을 목표로 하고 있습니다.<br><br>우리는 거창한 변화보다도 사용자의 작은 인식과 행동 변화에서 시작되는 임팩트를 만들고자 합니다.</p>
+  <div class="container section-team-inner">
+    <div>
+      <p class="section-eyebrow">· TEAM</p>
+      <h2 class="section-title">B개발구역</h2>
+      <p class="section-desc">우리는 AI 시대의 새로운 사용자 경험을 고민하는 팀입니다.<br><br>전원 비개발자로 시작했지만, AI 사용이 일상이 된 시대에 사용자가 자신의 사용 습관을 돌아볼 수 있는 경험이 필요하다고 생각했습니다. 우리는 AI 사용의 편리함뿐 아니라 그 이면의 환경적 영향까지 함께 인식할 수 있어야 합니다. 그루는 이러한 문제의식에서 시작된 서비스이며, 더 나은 AI 사용 경험과 지속가능한 디지털 문화를 만드는 것을 목표로 하고 있습니다.<br><br>우리는 거창한 변화보다도 사용자의 작은 인식과 행동 변화에서 시작되는 임팩트를 만들고자 합니다.</p>
+    </div>
+    <div class="team-puri">
+      <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/puri_low_3d.png" alt="푸리" />
+    </div>
   </div>
 </section>
 
@@ -1063,6 +1070,13 @@
 <!-- ══════════ FOOTER ══════════ -->
 <footer class="footer">
   <div class="container">
+    <div class="footer-team">
+      <span>채준하 — Design</span>
+      <span>이윤서 — PM · Frontend</span>
+      <span>송지호 — Backend</span>
+      <span>이재원 — Backend</span>
+      <span>장윤진 — Research</span>
+    </div>
     <div class="footer-inner">
       <span class="footer-logo">
         <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/logo_eng.svg" alt="그루 Groo" />
@@ -1087,13 +1101,6 @@
           </svg>
         </a>
       </div>
-    </div>
-    <div class="footer-team">
-      <span>채준하 — Design</span>
-      <span>이윤서 — PM · Frontend</span>
-      <span>송지호 — Backend</span>
-      <span>이재원 — Backend</span>
-      <span>장윤진 — Research</span>
     </div>
   </div>
 </footer>
