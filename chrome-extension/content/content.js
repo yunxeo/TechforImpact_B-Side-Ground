@@ -3453,14 +3453,14 @@
         color: var(--level-deep, var(--green-900));
       }
       .cp-bubble strong.text-status {
-        font-size: calc(20px * var(--cp-nudge-scale, 0.8));
+        font-size: calc(24px * var(--cp-nudge-scale, 0.8));
         font-weight: 700;
         line-height: 130%;
       }
       .cp-bubble span {
         display: block;
         color: var(--gray-800);
-        font-size: calc(17px * var(--cp-nudge-scale, 0.8));
+        font-size: calc(21px * var(--cp-nudge-scale, 0.8));
         font-weight: 400;
         line-height: 130%;
       }
