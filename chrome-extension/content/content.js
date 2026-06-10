@@ -1189,7 +1189,7 @@
           </div>
         </div>
         <div class="cp-badge-actions">
-          <button class="cp-focus-btn${settings.focusMode ? " active" : ""}" title="집중 모드"><img src="${chrome.runtime.getURL("assets/focus_icon1.svg")}" width="16" height="16" alt="" draggable="false" /></button>
+          <button class="cp-focus-btn${settings.focusMode ? " active" : ""}" title="집중 모드"><svg width="16" height="16" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M76.7252 44.9629H60.4103C58.3237 44.9629 56.7815 43.0332 57.2048 40.9971L65.022 3.98257C65.7327 0.594129 61.4234 -1.45717 59.2612 1.2475L20.7195 49.6885C19.0109 51.8462 20.5381 55.0371 23.2749 55.0371H39.5897C41.6763 55.0371 43.2185 56.9668 42.7952 59.0029L34.978 96.0174C34.2673 99.4059 38.5766 101.457 40.7388 98.7525L79.2805 50.3115C80.9891 48.1538 79.4619 44.9629 76.7252 44.9629Z" fill="currentColor"/></svg></button>
           <button class="cp-more-btn" title="더보기">⋮</button>
         </div>
       </div>
