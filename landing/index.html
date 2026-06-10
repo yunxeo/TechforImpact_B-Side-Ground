@@ -336,6 +336,8 @@
     .impact-desc { font-size: 13px; color: var(--gray-600); line-height: 1.6; word-break: keep-all; }
 
     /* ─── Team ─── */
+    .section-team { padding: 80px 0; background: var(--gray-50); text-align: center; }
+    .section-desc { font-size: 15px; color: var(--gray-600); line-height: 1.75; word-break: keep-all; margin-top: 16px; }
     .team { padding: 100px 0; background: var(--gray-50); }
     .team-inner { display: grid; grid-template-columns: 1fr 1.2fr; gap: 80px; align-items: start; }
     .team-intro h2 { font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; line-height: 1.2; color: var(--dark); margin-bottom: 16px; word-break: keep-all; }
@@ -370,6 +372,14 @@
     .footer-icons a { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,.12); display: grid; place-items: center; color: rgba(255,255,255,.4); transition: color .15s, border-color .15s; }
     .footer-icons a:hover { color: var(--white); border-color: rgba(255,255,255,.35); }
     .footer-icons svg { width: 14px; height: 14px; }
+    .footer-team {
+      display: flex; flex-wrap: wrap; gap: 16px 32px; justify-content: center;
+      font-size: 12px; color: #919188;
+      margin-bottom: 20px; padding-bottom: 20px;
+      border-bottom: 1px solid #e5e5d8;
+    }
+    .footer-link { font-size: 12px; color: #919188; text-decoration: none; letter-spacing: -.01em; transition: color .15s; }
+    .footer-link:hover { color: #383833; }
 
     /* ─── Install Modal ─── */
     .modal-overlay { display: none; position: fixed; inset: 0; z-index: 500; align-items: center; justify-content: center; padding: 16px; }
@@ -1033,35 +1043,11 @@
 </section>
 
 <!-- ══════════ TEAM ══════════ -->
-<section class="team" id="team">
-  <div class="container team-inner">
-    <div class="team-intro">
-      <p class="section-eyebrow" data-animate>· Team</p>
-      <h2 data-animate data-delay="1">그루를 만들다,<br>B개발구역</h2>
-      <p data-animate data-delay="2">그루는 AI 시대의 지속가능한 사용 문화를 고민하며 시작된 프로젝트입니다. 우리는 사용 제안이 아닌 행동 변화를 통해 새로운 가능성을 제안합니다.</p>
-    </div>
-    <div class="team-members">
-      <div class="member" data-animate data-delay="1">
-        <div class="member-name">채준하</div>
-        <div class="member-desc">디자인 시스템과 브랜딩을 담당하며 챗풀의 시각적 정체성을 만들어갑니다.</div>
-      </div>
-      <div class="member" data-animate data-delay="2">
-        <div class="member-name">이윤서</div>
-        <div class="member-desc">서비스 기획과 프론트엔드 개발을 담당하며 챗풀의 인터랙션과 시각화를 구현합니다.</div>
-      </div>
-      <div class="member" data-animate data-delay="2">
-        <div class="member-name">송지호</div>
-        <div class="member-desc">익스텐션 아키텍처 설계와 토큰 분석 로직 개발을 이끌고 있습니다.</div>
-      </div>
-      <div class="member" data-animate data-delay="3">
-        <div class="member-name">이재원</div>
-        <div class="member-desc">익스텐션 아키텍처 설계와 토큰 분석 로직 개발을 이끌고 있습니다.</div>
-      </div>
-      <div class="member" data-animate data-delay="3">
-        <div class="member-name">장윤진</div>
-        <div class="member-desc">데이터 기반 의사결정으로, 더 직관적인 챗풀을 만들어갑니다.</div>
-      </div>
-    </div>
+<section id="team" class="section-team">
+  <div class="container">
+    <p class="section-eyebrow">· TEAM</p>
+    <h2 class="section-title">B개발구역</h2>
+    <p class="section-desc">기술이 환경과 사람 사이의 거리를 좁힐 수 있다고 믿는 팀입니다.<br>작은 넛지 하나가 습관을 바꾸고, 습관이 모여 임팩트가 된다는 방향으로 그루를 만들고 있어요.</p>
   </div>
 </section>
 
@@ -1075,29 +1061,42 @@
 
 <!-- ══════════ FOOTER ══════════ -->
 <footer class="footer">
-  <div class="container footer-inner">
-    <span class="footer-logo">
-      <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/logo_eng.svg" alt="그루 Groo" />
-    </span>
-    <span class="footer-copy">© 2026 Groo. B개발구역.</span>
-    <div class="footer-icons">
-      <a href="mailto:chatpull@gmail.com" aria-label="이메일">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/>
-        </svg>
-      </a>
-      <a href="https://github.com/yunxeo/TechforImpact_B-Side-Ground" aria-label="GitHub" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844a9.59 9.59 0 012.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-        </svg>
-      </a>
-      <a href="https://instagram.com" aria-label="Instagram" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <rect x="2" y="2" width="20" height="20" rx="5"/>
-          <circle cx="12" cy="12" r="4"/>
-          <circle cx="17.5" cy="6.5" r=".5" fill="currentColor" stroke="none"/>
-        </svg>
-      </a>
+  <div class="container">
+    <div class="footer-team">
+      <span>채준하 — Design</span>
+      <span>이윤서 — PM · Frontend</span>
+      <span>송지호 — Backend</span>
+      <span>이재원 — Backend</span>
+      <span>장윤진 — Research</span>
+    </div>
+    <div class="footer-inner">
+      <span class="footer-logo">
+        <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/logo_eng.svg" alt="그루 Groo" />
+      </span>
+      <span class="footer-copy">© 2026 Groo. B개발구역.</span>
+      <div style="display:flex;gap:16px;align-items:center;">
+        <a href="mailto:bsideground@gmail.com" class="footer-link">bsideground@gmail.com</a>
+        <a href="https://instagram.com/groo.for.ai" target="_blank" rel="noopener" class="footer-link">@groo.for.ai</a>
+      </div>
+      <div class="footer-icons">
+        <a href="mailto:bsideground@gmail.com" aria-label="이메일">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/>
+          </svg>
+        </a>
+        <a href="https://github.com/yunxeo/TechforImpact_B-Side-Ground" aria-label="GitHub" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844a9.59 9.59 0 012.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+        </a>
+        <a href="https://instagram.com/groo.for.ai" aria-label="Instagram" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <rect x="2" y="2" width="20" height="20" rx="5"/>
+            <circle cx="12" cy="12" r="4"/>
+            <circle cx="17.5" cy="6.5" r=".5" fill="currentColor" stroke="none"/>
+          </svg>
+        </a>
+      </div>
     </div>
   </div>
 </footer>

@@ -3453,14 +3453,14 @@
         color: var(--level-deep, var(--green-900));
       }
       .cp-bubble strong.text-status {
-        font-size: calc(14px * var(--cp-nudge-scale, 0.8));
+        font-size: calc(16px * var(--cp-nudge-scale, 0.8));
         font-weight: 700;
         line-height: 130%;
       }
       .cp-bubble span {
         display: block;
         color: var(--gray-800);
-        font-size: calc(11px * var(--cp-nudge-scale, 0.8));
+        font-size: calc(13px * var(--cp-nudge-scale, 0.8));
         font-weight: 400;
         line-height: 130%;
       }
@@ -3502,14 +3502,14 @@
       .cp-tip-bar strong.text-status {
         flex-shrink: 0;
         white-space: nowrap;
-        font-size: 15px;
+        font-size: 17px;
         font-weight: 700;
         line-height: 130%;
         color: var(--level-deep, var(--green-900));
       }
       .cp-tip-bar-text {
         flex: 0 0 auto;
-        font-size: 14px;
+        font-size: 16px;
         font-weight: 500;
         line-height: 140%;
         color: #1a1a16;
@@ -3627,7 +3627,7 @@
         user-select: none;
         flex-shrink: 0;
       }
-      .cp-focus-btn { width: 28px; height: 28px; font-size: 15px; }
+      .cp-focus-btn { width: 28px; height: 28px; font-size: 15px; color: rgba(0, 0, 0, 0.3); }
       .cp-focus-btn:hover, .cp-more-btn:hover {
         background: rgba(0,0,0,0.06);
         color: #1a1a16;
