@@ -358,10 +358,8 @@ button.secondary {
 }
 
 .week-bars {
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  height: 48px;
+  display: block;
+  width: 100%;
 }
 
 .week-bar-wrap {
@@ -631,8 +629,8 @@ button.secondary {
 .tip-scale-row { display: flex; align-items: center; gap: 8px; }
 .tip-scale-row input[type="range"] { flex: 1; accent-color: #d1d600; }
 #tipBarScaleValue { font-size: 11px; font-weight: 700; color: #383833; min-width: 32px; text-align: right; }
-.tip-scale-markers { display: flex; justify-content: space-between; font-size: 10px; color: #919188; margin-top: 2px; }
-.default-marker { color: #d1d600; font-weight: 700; }
+.tip-scale-markers { position: relative; display: flex; justify-content: space-between; font-size: 10px; color: #919188; margin-top: 2px; height: 14px; }
+.default-marker { position: absolute; left: 20%; transform: translateX(-50%); color: #a8ac00; font-weight: 700; white-space: nowrap; }
 .tip-scale-reset {
   margin-top: 6px; font-size: 11px; color: #919188;
   background: transparent; border: 1px solid #e5e5d8; border-radius: 6px;
@@ -643,16 +641,23 @@ button.secondary {
 .tip-preview-wrap { margin-top: 12px; }
 .tip-preview-label { font-size: 10px; font-weight: 700; color: #919188; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
 .tip-preview-badge {
-  border: 1.5px solid #e5e5d8; border-radius: 10px; padding: 6px 10px;
-  background: #fafaf5; display: inline-block; width: 100%; box-sizing: border-box;
+  display: inline-flex;
+  border: 2px solid #d1d600;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  overflow: hidden;
+  max-width: 100%;
+  transform-origin: left center;
 }
-.tip-preview-badge-inner { display: flex; align-items: center; gap: 6px; }
+.tip-preview-badge-inner { display: flex; align-items: center; gap: 4px; padding: 5px 10px 5px 6px; }
 .tip-preview-badge-text { display: flex; flex-direction: column; gap: 1px; }
-.tip-preview-badge-text strong { font-size: 11px; font-weight: 700; color: #84cc16; }
-.tip-preview-badge-text span { font-size: 10px; color: #919188; }
+.tip-preview-badge-text strong { font-size: 11px; font-weight: 700; color: #4e5000; line-height: 1.2; }
+.tip-preview-badge-text span { font-size: 10px; color: #919188; line-height: 1.2; }
 .tip-preview-bar {
-  font-size: 11px; color: #5e5e57; margin-left: 4px; flex: 1;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 11px; color: #5e5e57; margin-left: 6px; padding-left: 8px;
+  border-left: 1px solid #e5e5d8;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;
 }
 
 .custom-desc { font-size: 11px; color: #5e5e57; line-height: 1.5; margin-bottom: 12px; }
