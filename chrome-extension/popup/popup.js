@@ -664,8 +664,7 @@ function getPuriComment(stat) {
             `${n}번 채팅 중 낮음 ${lo}번, 높음 ${hi}번이었어요. 긴 것도 있었지만 잘 활용했어요!`
           ])
         : pick([
-            `오늘 총 ${n}번 중 낮음 ${lo}번, 높음 ${hi}번이에요. 낮음이 많아서 좋아요! 높음 입력도 조금씩 줄여봐요 🌿`,
-            `오늘 ${n}번 보냈는데 낮음 ${lo}번, 높음 ${hi}번! 좋은 흐름이에요, 높음을 줄이면 더 좋아요.`,
+            `오늘 총 ${n}번 중 낮음 ${lo}번, 높음 ${hi}번이에요. 낮음이 많아서 좋아요! 높음도 조금씩 줄여봐요 🌿`,
             `오늘 ${n}번 채팅 중 낮음 ${lo}번, 높음 ${hi}번이에요. 낮음 비중이 높아서 좋지만 높음도 줄여봐요!`
           ])
     };
@@ -766,244 +765,173 @@ async function downloadShareImage() {
   nodes.shareImageBtn.textContent = "생성 중…";
 
   try {
-    // ── Compute values ──────────────────────────────────────
-    const totalCharsReduced = Math.round((stat.avgReducedChars || 0) * stat.submitCount);
-    const tokensReduced     = Math.round(totalCharsReduced / CHARS_PER_TOKEN);
-    const waterMl           = Math.round(tokensReduced * WATER_ML_PER_1K_TOKEN / 1000 * 10) / 10;
-    const whSaved           = Math.round(tokensReduced * WH_PER_1K_TOKEN / 1000 * 100) / 100;
-
+    // ── Compute "어제 대비" values ───────────────────────────
     const reportDate = new Date();
     reportDate.setDate(reportDate.getDate() + reportOffset);
     const yDate = new Date(reportDate);
     yDate.setDate(yDate.getDate() - 1);
-    const ydKey  = formatDateKey(yDate);
-    const ydData = latestDaily[ydKey] || {};
-    const ydAvg  = Math.round(ydData.avgFinalChars || 0);
-    const todayAvg = stat.avgFinalChars || 0;
-    const charDiff = ydAvg > 0 ? ydAvg - todayAvg : null;
+    const ydData   = latestDaily[formatDateKey(yDate)] || {};
+    const ydAvg    = Math.round(ydData.avgFinalChars || 0);
+    const todayAvg = Math.round(stat.avgFinalChars || 0);
+    const charDiff = ydAvg > 0 ? ydAvg - todayAvg : null;   // positive = improved
+
+    // Environmental impact based on chars saved vs yesterday
+    const totalSaved    = charDiff !== null && charDiff > 0 ? charDiff * stat.submitCount : 0;
+    const tokensSaved   = Math.round(totalSaved / CHARS_PER_TOKEN);
+    const waterMl       = Math.round(tokensSaved * WATER_ML_PER_1K_TOKEN / 1000 * 10) / 10;
+    const whSaved       = Math.round(tokensSaved * WH_PER_1K_TOKEN / 1000 * 100) / 100;
 
     const dateLabel = `${reportDate.getFullYear()}.${String(reportDate.getMonth()+1).padStart(2,"0")}.${String(reportDate.getDate()).padStart(2,"0")}`;
 
     // ── Canvas setup ────────────────────────────────────────
     const W = 1080, H = 1080;
     const canvas = document.createElement("canvas");
-    canvas.width = W;
-    canvas.height = H;
+    canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext("2d");
 
-    const KO   = "'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
+    const KO    = "'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
     const BRAND = "#d1d600";
     const DEEP  = "#4e5000";
     const DARK  = "#1a1a16";
-    const SUB   = "#5e5e57";
     const MUTED = "#919188";
     const PAD   = 72;
-    const IW    = W - PAD * 2;   // inner width: 936px
+    const IW    = W - PAD * 2;   // 936px inner width
 
     // ── Load assets ─────────────────────────────────────────
     const imgKey = puri?.imgKey || "low";
-    const puriSrc = imgKey === "high"
-      ? "../assets/puri_high_3d.png"
-      : "../assets/puri_low_3d.png";
-    const [puriImg, logoImg] = await Promise.all([
-      loadImg(puriSrc),
-      loadImg("../assets/logo_eng.svg")
-    ]);
+    const puriSrc = imgKey === "high" ? "../assets/puri_high_3d.png" : "../assets/puri_low_3d.png";
+    const [puriImg, logoImg] = await Promise.all([loadImg(puriSrc), loadImg("../assets/logo_eng.svg")]);
 
     // ── Background ──────────────────────────────────────────
     const bg = ctx.createLinearGradient(0, 0, W, H);
-    bg.addColorStop(0,    "#f2f47a");
-    bg.addColorStop(0.5,  "#fafbcc");
-    bg.addColorStop(1,    "#ffffff");
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
+    bg.addColorStop(0, "#f0f27a"); bg.addColorStop(0.5, "#fafbcc"); bg.addColorStop(1, "#ffffff");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
 
-    // Soft glow circle behind puri
-    const grd = ctx.createRadialGradient(W/2, 340, 40, W/2, 340, 280);
-    grd.addColorStop(0,   "rgba(255,255,255,0.65)");
-    grd.addColorStop(1,   "rgba(255,255,255,0)");
-    ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, W, H);
+    // Radial glow behind puri
+    const grd = ctx.createRadialGradient(W/2, 300, 20, W/2, 300, 260);
+    grd.addColorStop(0, "rgba(255,255,255,0.7)"); grd.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
 
-    // ── Helper: shadow on/off ────────────────────────────────
-    function shadow(on) {
-      if (on) {
-        ctx.shadowColor   = "rgba(0,0,0,0.09)";
-        ctx.shadowBlur    = 28;
-        ctx.shadowOffsetY = 6;
-      } else {
-        ctx.shadowColor   = "transparent";
-        ctx.shadowBlur    = 0;
-        ctx.shadowOffsetY = 0;
-      }
+    // ── Helpers ──────────────────────────────────────────────
+    function divider(y) {
+      ctx.strokeStyle = "rgba(26,26,22,0.12)";
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath(); ctx.moveTo(PAD, y); ctx.lineTo(W - PAD, y); ctx.stroke();
     }
 
-    // ── Header ──────────────────────────────────────────────
-    // "AI 사용 리포트"  ·  date
-    ctx.font      = `700 28px ${KO}`;
-    ctx.fillStyle = DEEP;
-    ctx.textAlign = "left";
-    ctx.fillText("AI 사용 리포트", PAD, 76);
+    // ── Y cursor ────────────────────────────────────────────
+    let y = 0;
 
-    ctx.font      = `500 26px ${KO}`;
-    ctx.fillStyle = SUB;
-    ctx.textAlign = "right";
-    ctx.fillText(dateLabel, W - PAD, 76);
+    // Header
+    y = 78;
+    ctx.font = `700 28px ${KO}`; ctx.fillStyle = DEEP; ctx.textAlign = "left";
+    ctx.fillText("AI 사용 리포트", PAD, y);
+    ctx.font = `500 24px ${KO}`; ctx.fillStyle = MUTED; ctx.textAlign = "right";
+    ctx.fillText(dateLabel, W - PAD, y);
 
-    // ── Puri image (280 × 280) ──────────────────────────────
-    const PURI_SZ = 280;
-    const puriX   = (W - PURI_SZ) / 2;
-    const puriY   = 110;
-    if (puriImg) ctx.drawImage(puriImg, puriX, puriY, PURI_SZ, PURI_SZ);
+    // Puri image
+    const PURI_SZ = 260;
+    y = 114;
+    if (puriImg) ctx.drawImage(puriImg, (W - PURI_SZ) / 2, y, PURI_SZ, PURI_SZ);
+    y += PURI_SZ + 20;   // y = 394
 
-    // ── Message text (no box – just clean centered text) ────
-    const MSG_FONT_SZ = 30;
-    const MSG_LINE_H  = 44;
-    ctx.font = `600 ${MSG_FONT_SZ}px ${KO}`;
-    const rawMsg   = puri?.msg || "";
-    const msgLines = wrapCanvasText(ctx, rawMsg, IW).slice(0, 3);
+    // Puri message (max 2 lines, 28px)
+    ctx.font = `600 28px ${KO}`;
+    const msgLines = wrapCanvasText(ctx, puri?.msg || "", IW).slice(0, 2);
+    ctx.fillStyle = DARK; ctx.textAlign = "center";
+    msgLines.forEach((line, i) => ctx.fillText(line, W / 2, y + 28 + 40 * i));
+    y += 28 + 40 * (msgLines.length - 1) + 20;   // ~462 (2 lines)
 
-    const msgTop = puriY + PURI_SZ + 24;
-    ctx.fillStyle = DARK;
-    ctx.textAlign = "center";
-    msgLines.forEach((line, i) => {
-      ctx.fillText(line, W / 2, msgTop + MSG_FONT_SZ + MSG_LINE_H * i);
-    });
+    // Divider
+    y += 20; divider(y); y += 32;   // ~514
 
-    const msgBottom = msgTop + MSG_FONT_SZ + MSG_LINE_H * (msgLines.length - 1) + 12;
+    // ── Hero: 어제 대비 입력 길이 ──────────────────────────
+    ctx.font = `500 22px ${KO}`; ctx.fillStyle = MUTED; ctx.textAlign = "center";
+    ctx.fillText("어제 대비 평균 입력 길이", W / 2, y + 22); y += 38;
 
-    // ── Divider ──────────────────────────────────────────────
-    const DIV_Y = msgBottom + 28;
-    ctx.strokeStyle = "rgba(26,26,22,0.10)";
-    ctx.lineWidth   = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(PAD, DIV_Y);
-    ctx.lineTo(W - PAD, DIV_Y);
-    ctx.stroke();
-
-    // ── Stat items ───────────────────────────────────────────
-    // Helper: draws a labeled stat row
-    // valueText  – big, brand deep color
-    // labelText  – small, muted
-    function drawStatRow(valueText, labelText, y) {
-      // label
-      ctx.font      = `500 22px ${KO}`;
-      ctx.fillStyle = MUTED;
-      ctx.textAlign = "left";
-      ctx.fillText(labelText, PAD, y);
-      // value
-      ctx.font      = `700 44px ${KO}`;
-      ctx.fillStyle = DEEP;
-      // measure to avoid overflow
-      let vText = valueText;
-      while (ctx.measureText(vText).width > IW && vText.length > 4) {
-        vText = vText.slice(0, -1);
-      }
-      ctx.fillText(vText, PAD, y + 48);
-    }
-
-    let rowY = DIV_Y + 36;
-
-    // 1. 절감 토큰
-    drawStatRow(
-      `${formatNumber(tokensReduced)}개`,
-      "오늘 절감한 토큰",
-      rowY
-    );
-    rowY += 48 + 40;  // value height + gap
-
-    // 2. 어제 대비
-    let compText;
+    ctx.font = `800 62px ${KO}`;
+    let heroText, heroColor;
     if (charDiff === null) {
-      compText = `평균 ${formatNumber(Math.round(todayAvg))}자 작성했어요`;
+      heroText = `평균 ${formatNumber(todayAvg)}자`; heroColor = DEEP;
     } else if (charDiff > 0) {
-      compText = `어제보다 ${formatNumber(charDiff)}자 줄였어요`;
+      heroText = `${formatNumber(charDiff)}자 줄였어요`; heroColor = DEEP;
     } else if (charDiff < 0) {
-      compText = `어제보다 ${formatNumber(Math.abs(charDiff))}자 늘었어요`;
+      heroText = `${formatNumber(Math.abs(charDiff))}자 늘었어요`; heroColor = "#c05000";
     } else {
-      compText = "어제와 입력 길이가 같아요";
+      heroText = "어제와 동일해요"; heroColor = DEEP;
     }
-    drawStatRow(compText, "어제 대비 평균 입력 길이", rowY);
-    rowY += 48 + 40;
-
-    // ── Divider ──────────────────────────────────────────────
-    const DIV2_Y = rowY;
-    ctx.strokeStyle = "rgba(26,26,22,0.10)";
-    ctx.lineWidth   = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(PAD, DIV2_Y);
-    ctx.lineTo(W - PAD, DIV2_Y);
-    ctx.stroke();
-
-    // ── Environmental mini-cards (2-col) ─────────────────────
-    const ENV_Y    = DIV2_Y + 28;
-    const ENV_GAP  = 20;
-    const ENV_W    = (IW - ENV_GAP) / 2;
-    const ENV_H    = 130;
-    const ENV_R    = 20;
-
-    function drawEnvCard(x, emoji, valueText, labelText) {
-      // card bg
-      shadow(true);
-      canvasRR(ctx, x, ENV_Y, ENV_W, ENV_H, ENV_R);
-      ctx.fillStyle = "rgba(255,255,255,0.90)";
-      ctx.fill();
-      shadow(false);
-
-      // emoji
-      ctx.font      = `48px serif`;
-      ctx.textAlign = "left";
-      ctx.fillText(emoji, x + 22, ENV_Y + 58);
-
-      // value
-      ctx.font      = `700 34px ${KO}`;
-      ctx.fillStyle = DEEP;
-      ctx.textAlign = "left";
-      // clamp if too wide
-      let v = valueText;
-      const maxV = ENV_W - 30;
-      while (ctx.measureText(v).width > maxV && v.length > 2) v = v.slice(0,-1);
-      ctx.fillText(v, x + 22, ENV_Y + 98);
-
-      // label
-      ctx.font      = `500 20px ${KO}`;
-      ctx.fillStyle = MUTED;
-      ctx.fillText(labelText, x + 22, ENV_Y + 122);
+    // scale down if too wide
+    let heroSize = 62;
+    ctx.font = `800 ${heroSize}px ${KO}`;
+    while (ctx.measureText(heroText).width > IW && heroSize > 36) {
+      heroSize -= 2; ctx.font = `800 ${heroSize}px ${KO}`;
     }
+    ctx.fillStyle = heroColor; ctx.textAlign = "center";
+    ctx.fillText(heroText, W / 2, y + heroSize); y += heroSize + 28;   // ~666
 
-    drawEnvCard(PAD,               "💧", `${waterMl}ml`,  "물 절약");
-    drawEnvCard(PAD + ENV_W + ENV_GAP, "⚡", `${whSaved}Wh`, "전기 절약");
+    // Divider
+    divider(y); y += 32;   // ~698
 
-    // ── Groo logo ────────────────────────────────────────────
-    const LOGO_Y = ENV_Y + ENV_H + 36;
+    // ── Environmental section ────────────────────────────────
+    ctx.font = `500 22px ${KO}`; ctx.fillStyle = MUTED; ctx.textAlign = "center";
+    const envLabel = charDiff !== null && charDiff > 0
+      ? "AI 입력을 줄여 어제보다 아낀 것들"
+      : "어제 대비 절감 데이터";
+    ctx.fillText(envLabel, W / 2, y + 22); y += 48;   // ~746
+
+    // Two-column: 💧 물 / ⚡ 전기 — no cards, large text
+    const lcx = W / 4;   // 270
+    const rcx = W * 3 / 4;   // 810
+
+    // Emoji row
+    ctx.font = `54px serif`; ctx.textAlign = "center";
+    ctx.fillText("💧", lcx, y + 54);
+    ctx.fillText("⚡", rcx, y + 54);
+    y += 54 + 14;   // ~814
+
+    // Value row
+    ctx.font = `800 52px ${KO}`; ctx.fillStyle = DEEP; ctx.textAlign = "center";
+    const waterStr = waterMl > 0 ? `${waterMl}ml` : "–";
+    const whStr    = whSaved > 0 ? `${whSaved}Wh` : "–";
+    ctx.fillText(waterStr, lcx, y + 52);
+    ctx.fillText(whStr,    rcx, y + 52);
+    y += 52 + 12;   // ~878
+
+    // Label row
+    ctx.font = `500 24px ${KO}`; ctx.fillStyle = MUTED; ctx.textAlign = "center";
+    ctx.fillText("물 절약", lcx, y + 24);
+    ctx.fillText("전기 절약", rcx, y + 24);
+    y += 24 + 20;   // ~922
+
+    // Estimate note
+    ctx.font = `400 18px ${KO}`; ctx.fillStyle = "#c8c8ba"; ctx.textAlign = "center";
+    ctx.fillText("* 환경 절감 수치는 추정값이에요", W / 2, y + 18);
+
+    // ── Groo logo (pinned near bottom) ───────────────────────
+    const LOGO_H = 32;
+    const LOGO_TOP = H - 14 - 20 - LOGO_H;   // 1014
     if (logoImg) {
-      const lh = 34;
-      const lw = lh * (361 / 95);
-      ctx.drawImage(logoImg, (W - lw) / 2, LOGO_Y, lw, lh);
+      const lw = LOGO_H * (361 / 95);
+      ctx.drawImage(logoImg, (W - lw) / 2, LOGO_TOP, lw, LOGO_H);
     } else {
-      ctx.font      = `700 34px ${KO}`;
-      ctx.fillStyle = DEEP;
-      ctx.textAlign = "center";
-      ctx.fillText("Groo", W / 2, LOGO_Y + 30);
+      ctx.font = `700 32px ${KO}`; ctx.fillStyle = DEEP; ctx.textAlign = "center";
+      ctx.fillText("Groo", W / 2, LOGO_TOP + 28);
     }
 
-    // ── Brand bottom strip ────────────────────────────────────
-    ctx.fillStyle = BRAND;
-    ctx.fillRect(0, H - 14, W, 14);
+    // ── Brand strip ──────────────────────────────────────────
+    ctx.fillStyle = BRAND; ctx.fillRect(0, H - 14, W, 14);
 
     // ── Export ───────────────────────────────────────────────
     canvas.toBlob((blob) => {
       const url = URL.createObjectURL(blob);
-      const a   = document.createElement("a");
-      a.href     = url;
-      a.download = `그루_리포트_${dateLabel}.png`;
-      a.click();
+      const a = document.createElement("a");
+      a.href = url; a.download = `그루_리포트_${dateLabel}.png`; a.click();
       URL.revokeObjectURL(url);
     }, "image/png");
 
   } finally {
     nodes.shareImageBtn.disabled  = false;
-    nodes.shareImageBtn.textContent = "공유 이미지 저장";
+    nodes.shareImageBtn.textContent = "공유 이미지 저장 (베타)";
   }
 }
 
