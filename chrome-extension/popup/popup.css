@@ -624,3 +624,21 @@ button.secondary {
 .landing-link-btn:hover {
   color: #383833;
 }
+
+.prompt-preview {
+  background: #f7f7f0;
+  border: 1.5px solid #e5e5d8;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.prompt-preview-text {
+  font-size: 11px;
+  color: #5e5e57;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
