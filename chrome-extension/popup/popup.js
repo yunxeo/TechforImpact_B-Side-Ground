@@ -110,6 +110,7 @@ const nodes = {
   levelMixNote: $("#levelMixNote"),
   weekBars: $("#weekBars"),
   weekDaysLabel: $("#weekDaysLabel"),
+  downloadLogBtn: $("#downloadLogBtn"),
   openGuide: $("#openGuide"),
   personaTabs: $("#personaTabs"),
   promptFulltext: $("#promptFulltext"),
@@ -329,6 +330,7 @@ function bindEvents(settings) {
   fillHowDemoAll();
   nodes.refreshReport.addEventListener("click", loadAndRenderReport);
   nodes.openGuide.addEventListener("click", openOnboardingOnActiveTab);
+  nodes.downloadLogBtn.addEventListener("click", downloadLog);
 
   nodes.prevDay.addEventListener("click", () => {
     reportOffset--;
@@ -656,9 +658,9 @@ function getPuriComment(stat) {
             `${n}번 채팅 중 낮음 ${lo}번, 높음 ${hi}번이었어요. 긴 것도 있었지만 잘 활용했어요!`
           ])
         : pick([
-            `오늘 총 ${n}번 중 낮음 ${lo}번, 높음 ${hi}번이에요. 대부분 간결하게 잘 쓰셨어요! 👍`,
-            `오늘 ${n}번 보냈는데 낮음 ${lo}번, 높음 ${hi}번! 좋은 습관을 유지하고 있어요 🌿`,
-            `오늘 ${n}번 채팅 중 낮음 ${lo}번, 높음 ${hi}번이에요. 훌륭해요!`
+            `오늘 총 ${n}번 중 낮음 ${lo}번, 높음 ${hi}번이에요. 낮음이 많아서 좋아요! 높음 입력도 조금씩 줄여봐요 🌿`,
+            `오늘 ${n}번 보냈는데 낮음 ${lo}번, 높음 ${hi}번! 좋은 흐름이에요, 높음을 줄이면 더 좋아요.`,
+            `오늘 ${n}번 채팅 중 낮음 ${lo}번, 높음 ${hi}번이에요. 낮음 비중이 높아서 좋지만 높음도 줄여봐요!`
           ])
     };
   }
@@ -694,6 +696,35 @@ function getPuriComment(stat) {
           `오늘 ${n}번 채팅 중 낮음이 ${lo}번이에요. 입력 길이가 딱 좋았어요. 덕분에 답변도 빨랐을 거예요 ✨`
         ])
   };
+}
+
+function downloadLog() {
+  const daily = latestDaily;
+  const keys = Object.keys(daily).sort();
+  if (!keys.length) {
+    alert("다운로드할 로그 데이터가 없어요.");
+    return;
+  }
+  const header = "날짜,전송횟수,낮음,중간,높음,평균글자수";
+  const rows = keys.map((k) => {
+    const d = daily[k] || {};
+    return [
+      k,
+      d.submitCount || 0,
+      d.lowCount || 0,
+      d.mediumCount || 0,
+      d.highCount || 0,
+      Math.round(d.avgFinalChars || 0)
+    ].join(",");
+  });
+  const csv = [header, ...rows].join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `그루_로그_${formatDateKey(new Date())}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function renderWeekCalendar(daily) {

@@ -288,6 +288,7 @@
     window.setTimeout(() => {
       if (!settings.enabled || !currentEditor) return;
       if (onboardingGuideActive || isOnboardingOpen()) return;
+      if (badgeHoverActive) return;
       reportNudgeShownThisPage = true;
       showBubble(buildSnapshot(), {
         title: "오늘의 리포트",
@@ -317,6 +318,7 @@
     window.setTimeout(() => {
       if (!settings.enabled || !currentEditor) return;
       if (onboardingGuideActive || isOnboardingOpen()) return;
+      if (badgeHoverActive) return;
       reportNudgeShownThisPage = true;
       showBubble(buildSnapshot(), {
         title: "오늘의 리포트",
@@ -330,6 +332,7 @@
   async function loadSettings() {
     const saved = await storageGet(STORAGE_KEYS.SETTINGS);
     settings = sanitizeSettings(deepMerge(DEFAULT_SETTINGS, saved || {}));
+    settings.focusMode = false;
     await storageSet({ [STORAGE_KEYS.SETTINGS]: settings });
   }
 
