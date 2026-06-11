@@ -3453,16 +3453,19 @@
         color: var(--level-deep, var(--green-900));
       }
       .cp-bubble strong.text-status {
-        font-size: calc(24px * var(--cp-nudge-scale, 0.8));
+        font-size: calc(20px * var(--cp-nudge-scale, 0.8));
         font-weight: 700;
         line-height: 130%;
       }
       .cp-bubble span {
         display: block;
         color: var(--gray-800);
-        font-size: calc(21px * var(--cp-nudge-scale, 0.8));
+        font-size: 12px;
         font-weight: 400;
         line-height: 130%;
+      }
+      .cp-bubble .text-body-m {
+        font-size: 12px;
       }
       .variant-tree-status-badge {
         display: flex;
@@ -3502,14 +3505,14 @@
       .cp-tip-bar strong.text-status {
         flex-shrink: 0;
         white-space: nowrap;
-        font-size: 21px;
+        font-size: 17px;
         font-weight: 700;
         line-height: 130%;
         color: var(--level-deep, var(--green-900));
       }
       .cp-tip-bar-text {
         flex: 0 0 auto;
-        font-size: 20px;
+        font-size: 16px;
         font-weight: 500;
         line-height: 140%;
         color: #1a1a16;
