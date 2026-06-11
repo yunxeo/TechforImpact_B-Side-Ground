@@ -638,6 +638,16 @@
   }
 
   function pickHoverContent(snapshot) {
+    if (snapshot.level === "idle") {
+      return {
+        title: "그루 뱃지 클릭하면",
+        message: randomOf([
+          "리포트 · 사용 가이드 · 맞춤형 지침을 바로 볼 수 있어요",
+          "오늘의 AI 사용 리포트와 맞춤형 프롬프트 지침을 확인해보세요",
+          "리포트, 그루 사용 가이드, 맞춤형 지침이 팝업에서 기다리고 있어요"
+        ])
+      };
+    }
     const titleMap = { low: "딱 좋은 길이예요", medium: "조금 길어요", high: "많이 길어요" };
     return {
       title: titleMap[snapshot.level] || "환경 넛지",
@@ -2354,8 +2364,8 @@
         htmlBody: `<p style="font-size:12px;color:#5e5e57;line-height:1.5;margin-bottom:8px">AI에게 나의 상황과 원하는 답변 방식을 미리 알려두는 설정이에요.<br>한 번 설정하면 매번 설명하지 않아도 돼요.</p><div class="ob-example-box"><p style="font-size:11px;color:#919188;margin-bottom:4px">예시</p><div style="font-size:11px;color:#383833;line-height:1.6;max-height:72px;overflow-y:auto;white-space:pre-wrap">"나는 대학생이고 주로 과제와 발표 준비에 AI를 활용해.\n핵심만 간결하게 정리해줘.\n질문이 명확하면 추가 질문 없이 바로 결과물을 보여줘."</div></div><p style="font-size:12px;color:#5e5e57;margin:10px 0 6px">그루 팝업에서 지침을 복사 후 아래 경로에 붙여넣으세요</p><div class="ob-how-tabs"><button class="ob-how-tab active" data-tab="chatgpt">ChatGPT</button><button class="ob-how-tab" data-tab="claude">Claude</button><button class="ob-how-tab" data-tab="gemini">Gemini</button></div><div class="ob-how-panels"><div class="ob-how-panel active" data-panel="chatgpt"><div class="ob-how-step"><span class="ob-how-num">1</span><span>좌하단 프로필 → <b>개인 맞춤 설정</b></span></div><div class="ob-how-step"><span class="ob-how-num">2</span><span><b>맞춤형 지침</b> 클릭</span></div><div class="ob-how-step"><span class="ob-how-num">3</span><span>하단 칸에 붙여넣기</span></div></div><div class="ob-how-panel" data-panel="claude"><div class="ob-how-step"><span class="ob-how-num">1</span><span>좌하단 프로필 → <b>설정</b></span></div><div class="ob-how-step"><span class="ob-how-num">2</span><span>일반 → <b>Claude 지침</b></span></div><div class="ob-how-step"><span class="ob-how-num">3</span><span>입력란에 붙여넣기</span></div></div><div class="ob-how-panel" data-panel="gemini"><div class="ob-how-step"><span class="ob-how-num">1</span><span>좌하단 프로필 → <b>설정</b></span></div><div class="ob-how-step"><span class="ob-how-num">2</span><span><b>Gemini 요청 사항</b> → 추가</span></div><div class="ob-how-step"><span class="ob-how-num">3</span><span>붙여넣기</span></div></div></div>`
       },
       {
-        title: "💡 사용 팁을 다시 보고 싶다면?",
-        htmlBody: `<p class="onboarding-restart-hint">그루 뱃지 클릭 → 설정 → 처음 사용팁 다시 열기</p><div class="onboarding-tip-card"><div class="tip-card-title">처음 사용팁</div><div class="tip-card-desc">ChatGPT · Claude · Gemini 입력창 위 그루 배지와 팁 사용법을 다시 볼 수 있어요.</div><button class="tip-restart-btn">처음 사용팁 다시 열기</button></div>`
+        title: "💡 그루 사용 가이드를 다시 보고 싶다면?",
+        htmlBody: `<p class="onboarding-restart-hint">그루 뱃지 클릭 → 그루 사용 가이드 다시 열기</p><div class="onboarding-tip-card"><div class="tip-card-title">그루 사용 가이드</div><div class="tip-card-desc">ChatGPT · Claude · Gemini 입력창 위 그루 배지와 팁 사용법을 다시 볼 수 있어요.</div><button class="tip-restart-btn">그루 사용 가이드 다시 열기</button></div>`
       }
     ];
 
