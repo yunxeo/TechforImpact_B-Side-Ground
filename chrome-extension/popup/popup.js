@@ -232,12 +232,6 @@ function renderCustomPrompts() {
   nodes.presetList.querySelectorAll(".preset-item").forEach((item) => {
     item.addEventListener("click", () => {
       selectedPresetIdx = Number(item.dataset.idx);
-      if (nodes.copyPromptBtn) {
-        nodes.copyPromptBtn.disabled = false;
-        nodes.copyPromptBtn.textContent = "지침 복사하기";
-        nodes.copyPromptBtn.classList.remove("copied");
-      }
-      renderCustomPrompts();
 
       const preview = document.getElementById("promptPreview");
       const previewText = document.getElementById("promptPreviewText");
@@ -250,6 +244,13 @@ function renderCustomPrompts() {
           preview.style.display = "none";
         }
       }
+
+      if (nodes.copyPromptBtn) {
+        nodes.copyPromptBtn.disabled = false;
+        nodes.copyPromptBtn.textContent = "지침 복사하기";
+        nodes.copyPromptBtn.classList.remove("copied");
+      }
+      renderCustomPrompts();
     });
   });
 }
