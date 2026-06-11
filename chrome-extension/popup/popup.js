@@ -598,27 +598,6 @@ function getPuriComment(stat) {
   };
 }
 
-function buildLineChart(days, values) {
-  const w = 220, h = 60, pad = 8;
-  const max = Math.max(...values, 1);
-  const n = days.length;
-  const points = values.map((v, i) => {
-    const x = pad + (i / (n - 1)) * (w - pad * 2);
-    const y = h - pad - (v / max) * (h - pad * 2);
-    return `${x},${y}`;
-  }).join(" ");
-  const circles = values.map((v, i) => {
-    const x = pad + (i / (n - 1)) * (w - pad * 2);
-    const y = h - pad - (v / max) * (h - pad * 2);
-    const isTodayDay = days[i]?.isToday;
-    return `<circle cx="${x}" cy="${y}" r="${isTodayDay ? 4 : 3}" fill="${isTodayDay ? "#a8ac00" : "#d1d600"}"/>`;
-  }).join("");
-  return `<svg width="100%" viewBox="0 0 ${w} ${h}">
-    <polyline points="${points}" fill="none" stroke="#d1d600" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    ${circles}
-  </svg>`;
-}
-
 function renderWeekCalendar(daily) {
   if (!nodes.weekBars || !nodes.weekDaysLabel) return;
 
@@ -627,17 +606,40 @@ function renderWeekCalendar(daily) {
     const date = new Date();
     date.setDate(date.getDate() - i);
     const key = formatDateKey(date);
-    const count = (daily[key] || {}).submitCount || 0;
+    const d = daily[key] || {};
     days.push({
       key,
-      count,
+      count: d.submitCount || 0,
+      low:   d.lowCount   || 0,
+      medium: d.mediumCount || 0,
+      high:  d.highCount  || 0,
       isToday: i === 0,
       dayLabel: ["일", "월", "화", "수", "목", "금", "토"][date.getDay()]
     });
   }
 
-  const values = days.map((d) => d.count);
-  nodes.weekBars.innerHTML = buildLineChart(days, values);
+  const maxCount = Math.max(...days.map((d) => d.count), 1);
+
+  nodes.weekBars.innerHTML = days.map((day) => {
+    const heightPct = day.count > 0 ? Math.max((day.count / maxCount) * 100, 8) : 0;
+    const total = day.low + day.medium + day.high || 1;
+    const lowPct    = (day.low    / total) * 100;
+    const mediumPct = (day.medium / total) * 100;
+    const highPct   = (day.high   / total) * 100;
+    const todayClass = day.isToday ? " today" : "";
+    const segments = day.count > 0
+      ? `<div class="week-seg low"    style="flex:${lowPct}"></div>
+         <div class="week-seg medium" style="flex:${mediumPct}"></div>
+         <div class="week-seg high"   style="flex:${highPct}"></div>`
+      : "";
+    return `
+      <div class="week-bar-wrap">
+        <div class="week-bar-count">${day.count > 0 ? day.count : ""}</div>
+        <div class="week-bar-bg">
+          <div class="week-bar-fill${todayClass}" style="height:${heightPct}%">${segments}</div>
+        </div>
+      </div>`;
+  }).join("");
 
   nodes.weekDaysLabel.innerHTML = days.map((day) => {
     const todayClass = day.isToday ? " today" : "";
