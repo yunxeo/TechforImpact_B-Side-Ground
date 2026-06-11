@@ -1087,7 +1087,10 @@
   }
 
   function getTipBarWidthCap() {
-    return Math.min(640, Math.max(240, window.innerWidth - 80));
+    const base = Math.max(240, window.innerWidth - 80);
+    // replay 태그가 추가되면 콘텐츠가 더 넓어지므로 캡을 넓게 허용
+    const limit = inlinePromptTip.isReplay ? 780 : 640;
+    return Math.min(limit, base);
   }
 
   function measureTipBarTargetWidth(tipBar) {
@@ -1213,9 +1216,12 @@
 
     if ((!inlinePromptTip.visible && !inlinePromptTip.closing) || !inlinePromptTip.message) return status;
 
+    const replayTag = inlinePromptTip.isReplay
+      ? `<span class="cp-tip-replay-tag">팁 다시 보기</span>`
+      : "";
     return `
       <div class="cp-tip-bar" aria-live="polite">
-        <strong class="text-status">${esc(inlinePromptTip.title || "프롬프트 팁")}</strong>
+        ${replayTag}<strong class="text-status">${esc(inlinePromptTip.title || "프롬프트 팁")}</strong>
         <span class="cp-tip-bar-text text-body-l">${esc(inlinePromptTip.message)}</span>
       </div>
       ${status}
@@ -1764,7 +1770,8 @@
       closing: false,
       title,
       message,
-      key: key || tip?.id || ""
+      key: key || tip?.id || "",
+      isReplay: Boolean(options.isHover)
     };
     clearTimeout(inlinePromptTipTimer);
     clearTimeout(inlinePromptTipCloseTimer);
@@ -3623,6 +3630,18 @@
         opacity: 0;
         padding-left: 0;
         padding-right: 0;
+      }
+      .cp-tip-replay-tag {
+        flex-shrink: 0;
+        font-size: calc(10px * var(--cp-tip-scale, 1));
+        font-weight: 600;
+        line-height: 1;
+        color: var(--green-800, #7a7d00);
+        background: var(--green-50, #f9fac0);
+        border: 1px solid var(--green-200, #e8eb3e);
+        border-radius: 999px;
+        padding: 2px 7px;
+        white-space: nowrap;
       }
       .cp-tip-bar strong.text-status {
         flex-shrink: 0;
