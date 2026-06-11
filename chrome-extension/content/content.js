@@ -3613,14 +3613,14 @@
       .cp-tip-bar strong.text-status {
         flex-shrink: 0;
         white-space: nowrap;
-        font-size: calc(15px * var(--cp-tip-scale, 1));
+        font-size: calc(14px * var(--cp-tip-scale, 1));
         font-weight: 700;
         line-height: 130%;
         color: var(--level-deep, var(--green-900));
       }
       .cp-tip-bar-text {
         flex: 0 0 auto;
-        font-size: calc(14px * var(--cp-tip-scale, 1));
+        font-size: calc(13px * var(--cp-tip-scale, 1));
         font-weight: 500;
         line-height: 140%;
         color: #1a1a16;
