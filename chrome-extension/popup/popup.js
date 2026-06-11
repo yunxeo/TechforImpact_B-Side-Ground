@@ -219,6 +219,8 @@ function renderCustomPrompts() {
         nodes.copyPromptBtn.textContent = "지침 복사하기";
         nodes.copyPromptBtn.classList.remove("copied");
       }
+      const preview = document.getElementById("promptPreview");
+      if (preview) preview.style.display = "none";
       renderCustomPrompts();
     });
   });
@@ -233,16 +235,14 @@ function renderCustomPrompts() {
     item.addEventListener("click", () => {
       selectedPresetIdx = Number(item.dataset.idx);
 
+      const currentPresets = CUSTOM_PROMPTS[selectedPersona]?.presets || [];
+      const selectedPreset = currentPresets[selectedPresetIdx];
+
       const preview = document.getElementById("promptPreview");
       const previewText = document.getElementById("promptPreviewText");
-      if (preview && previewText) {
-        const selectedPreset = presets[selectedPresetIdx];
-        if (selectedPreset) {
-          previewText.textContent = selectedPreset.prompt;
-          preview.style.display = "block";
-        } else {
-          preview.style.display = "none";
-        }
+      if (preview && previewText && selectedPreset) {
+        previewText.textContent = selectedPreset.prompt;
+        preview.style.display = "block";
       }
 
       if (nodes.copyPromptBtn) {
