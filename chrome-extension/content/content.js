@@ -2345,9 +2345,8 @@
         htmlBody: `<div class="customize-demo"><div class="customize-examples"><div class="customize-ex default"><img src="${puriMap.low}" alt="기본 푸리" /><span>기본 푸리</span></div><div class="customize-arrow">→</div><div class="customize-ex custom"><div class="customize-placeholder"><span>✦</span><small>내 이미지</small></div><span>나만의 캐릭터</span></div></div><div class="customize-steps"><div class="customize-step"><span class="step-num">1</span><p>그루 뱃지 클릭</p></div><div class="customize-step"><span class="step-num">2</span><p>푸리 캐릭터 클릭 후 연필 아이콘 선택</p></div><div class="customize-step"><span class="step-num">3</span><p>원하는 이미지 업로드</p></div></div></div><input type="file" accept="image/*" class="ob-char-upload-input" style="display:none" /><button class="ob-try-customize-btn">지금 바꿔보기</button>`
       },
       {
-        slideImg: obAssets.report,
         title: "📊 오늘 얼마나 썼는지 확인해봐요",
-        htmlBody: `<span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block">뱃지 클릭 → 리포트 바로 열기<br>또는 <img src="${obAssets.puzzle}" width="16" height="16" style="vertical-align:middle;margin:0 2px" alt="" /> 퍼즐 아이콘 → 그루 선택</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">플랫폼별 전송 횟수, 평균 입력 길이를 확인하고<br>이전보다 얼마나 줄였는지 확인해보세요!</span>`
+        htmlBody: `<p style="font-size:13px;color:#5e5e57;line-height:1.6;margin-bottom:12px">뱃지 클릭 또는 퍼즐 아이콘 → 그루 선택</p><div class="ob-browser-mockup"><div class="ob-browser-bar"><div class="ob-browser-dot"></div><div class="ob-browser-dot"></div><div class="ob-browser-dot"></div><span class="ob-browser-url">그루 리포트</span></div><div class="ob-browser-content"><div class="ob-mock-popup-card"><div class="ob-mini-puri-row"><img src="${chrome.runtime.getURL("assets/puri_low.svg")}" alt="푸리" /><div class="ob-mini-puri-bubble">오늘도 간결하게 잘 쓰고 있어요! 🌱</div></div><div class="ob-mini-stat-section"><p class="ob-mini-stat-sentence">오늘 <strong>ChatGPT에 7번</strong>, <strong>Claude에 1번</strong> 보냈어요.</p><p class="ob-mini-stat-sentence">한 번 보낼 때 평균 <strong>1,619자</strong> 정도 썼어요.</p></div></div></div></div>`
       },
       {
         title: "맞춤형 지침 설정하는 법",
@@ -3295,6 +3294,39 @@
       .onboarding-tip-card .tip-restart-btn:hover {
         background: #f2f47a;
       }
+      .ob-browser-mockup {
+        background: #f5f5f3; border-radius: 10px; overflow: hidden;
+        box-shadow: 0 4px 16px rgba(0,0,0,.12); margin-top: 4px;
+      }
+      .ob-browser-bar {
+        background: #e8e8e6; padding: 7px 12px;
+        display: flex; align-items: center; gap: 5px;
+      }
+      .ob-browser-dot {
+        width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      }
+      .ob-browser-dot:nth-child(1) { background: #ff5f57; }
+      .ob-browser-dot:nth-child(2) { background: #febc2e; }
+      .ob-browser-dot:nth-child(3) { background: #28c840; }
+      .ob-browser-url {
+        flex: 1; text-align: center; font-size: 9px; color: #919188;
+        background: rgba(255,255,255,.7); border-radius: 4px; padding: 2px 8px;
+      }
+      .ob-browser-content { background: #ffffff; padding: 8px; }
+      .ob-mock-popup-card {
+        border: 1px solid #e5e5d8; border-radius: 10px; overflow: hidden;
+      }
+      .ob-mini-puri-row {
+        display: flex; align-items: center; gap: 8px;
+        background: #f9fac0; padding: 8px 10px;
+      }
+      .ob-mini-puri-row img { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
+      .ob-mini-puri-bubble { font-size: 10px; color: #383833; line-height: 1.4; }
+      .ob-mini-stat-section {
+        padding: 7px 10px 8px; display: flex; flex-direction: column; gap: 3px;
+      }
+      .ob-mini-stat-sentence { font-size: 10px; color: #5e5e57; line-height: 1.5; margin: 0; }
+      .ob-mini-stat-sentence strong { color: #1a1a16; font-weight: 700; }
       .ob-try-customize-btn {
         display: block; width: 100%; margin-top: 14px;
         padding: 9px; border-radius: 8px;
