@@ -375,7 +375,7 @@ button.secondary {
 
 .week-bar-bg {
   width: 100%;
-  height: 40px;
+  flex: 1;
   background: #f0f0f0;
   border-radius: 4px;
   display: flex;
@@ -396,7 +396,7 @@ button.secondary {
 
 .week-bar-fill.today { outline: 2px solid #a8ac00; }
 
-.week-seg { width: 100%; min-height: 2px; }
+.week-seg { width: 100%; }
 .week-seg.low    { background: #d1d600; }
 .week-seg.medium { background: #f97316; }
 .week-seg.high   { background: #ef4444; }
