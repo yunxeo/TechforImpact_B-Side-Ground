@@ -573,28 +573,71 @@ function getDailyReportNudge(stat) {
 
 function getPuriComment(stat) {
   const isPast = reportOffset < 0;
-  if (!stat || stat.submitCount === 0) {
+  const n = stat?.submitCount || 0;
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+  if (!stat || n === 0) {
     return {
       imgKey: "idle",
-      msg: isPast ? "전송 기록이 없어요." : "아직 오늘 전송 기록이 없어요. 간결하게 써봐요!"
+      msg: isPast
+        ? "이날은 전송 기록이 없어요."
+        : pick([
+            "아직 오늘 전송 기록이 없어요. 첫 질문을 간결하게 시작해보세요!",
+            "오늘의 첫 채팅을 기다리고 있어요. 짧고 명확하게 질문해봐요!",
+            "아직 아무것도 없어요. AI에게 간결하게 물어보는 하루를 만들어봐요!"
+          ])
     };
   }
-  const highRatio = stat.highCount / stat.submitCount;
+
+  const highRatio = stat.highCount / n;
+
   if (highRatio > 0.5) {
     return {
       imgKey: "high",
-      msg: `${stat.submitCount}번 중 ${stat.highCount}번은 길었어요.${isPast ? "" : " 나눠 물어보면 답이 더 또렷해질 수 있어요."}`
+      msg: isPast
+        ? pick([
+            `총 ${n}번 전송했고, 그 중 ${stat.highCount}번은 길었어요.`,
+            `${n}번 보냈는데 절반 이상이 긴 입력이었어요.`,
+            `${n}번 전송 중 ${stat.highCount}번이 길었네요. 나눠 물었다면 어땠을까요?`
+          ])
+        : pick([
+            `${n}번 중 ${stat.highCount}번이 꽤 길었어요. 다음엔 주제를 나눠서 물어봐요!`,
+            `총 ${n}번 전송했고, 절반 이상이 긴 입력이었어요. 짧게 쪼개면 답이 더 또렷해져요.`,
+            `${n}번 보냈는데 길었던 게 많았어요. 한 번에 하나씩 물어보는 연습을 해봐요!`
+          ])
     };
   }
+
   if (highRatio > 0.2) {
     return {
       imgKey: "medium",
-      msg: `${stat.submitCount}번 보냈어요.${isPast ? "" : " 조금만 더 줄이면 더 빠른 답을 받기 쉬워요."}`
+      msg: isPast
+        ? pick([
+            `${n}번 전송했어요. 조금 긴 입력도 섞여 있었네요.`,
+            `총 ${n}번 보냈고, 일부는 길었지만 전반적으로 무난한 하루였어요.`,
+            `${n}번 채팅했어요. 길었던 것들을 다음엔 좀 더 줄여보면 좋겠어요.`
+          ])
+        : pick([
+            `${n}번 전송했어요. 조금만 더 줄이면 더 빠른 답을 받기 쉬워요!`,
+            `총 ${n}번 보냈는데, 긴 입력이 조금 섞였어요. 핵심만 남겨보면 어떨까요?`,
+            `${n}번 채팅했어요. 중간 길이가 많았으니 다음엔 한 단계 더 줄여봐요 🌿`
+          ])
     };
   }
+
   return {
     imgKey: "low",
-    msg: `${stat.submitCount}번 보냈는데, 대부분 간결했어요.${isPast ? "" : " 잘하고 있어요!"}`
+    msg: isPast
+      ? pick([
+          `${n}번 전송했고, 대부분 짧고 간결했어요.`,
+          `총 ${n}번 보냈는데, 입력 길이가 전반적으로 잘 정돈돼 있었네요.`,
+          `${n}번 채팅했어요. 이날은 간결하게 잘 쓴 하루였어요.`
+        ])
+      : pick([
+          `${n}번 전송했는데 대부분 간결했어요. 오늘도 훌륭한 습관이에요! 🌱`,
+          `총 ${n}번 보냈고, 짧고 명확한 질문들이 많았어요. 이 페이스 유지해요!`,
+          `${n}번 채팅했는데, 입력 길이가 딱 좋았어요. 덕분에 답변도 빨랐을 거예요 ✨`
+        ])
   };
 }
 
