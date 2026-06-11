@@ -239,8 +239,7 @@ function updatePromptFulltext() {
   const presets = CUSTOM_PROMPTS[selectedPersona]?.presets || [];
   const prompt = presets[0]?.prompt || "";
   nodes.promptFulltext.textContent = prompt;
-  const HOW_DEMO_IDS = { "chatgpt-path": "popupChatgptTyping", "claude-path": "popupClaudeTyping", "gemini-path": "popupGeminiTyping" };
-  Object.values(HOW_DEMO_IDS).forEach((id) => {
+  ["popupChatgptTyping", "popupClaudeTyping", "popupGeminiTyping"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.textContent = prompt;
   });
@@ -303,25 +302,13 @@ function bindEvents(settings) {
     });
   }
 
-  let howDemoTimer = null;
   const HOW_DEMO_IDS = { "chatgpt-path": "popupChatgptTyping", "claude-path": "popupClaudeTyping", "gemini-path": "popupGeminiTyping" };
 
-  function startHowDemoTyping(pathId) {
-    const el = document.getElementById(HOW_DEMO_IDS[pathId]);
-    if (!el) return;
-    const text = CUSTOM_PROMPTS[selectedPersona]?.presets?.[0]?.prompt || "";
-    el.textContent = "";
-    if (howDemoTimer) clearInterval(howDemoTimer);
-    let i = 0;
-    howDemoTimer = setInterval(() => {
-      if (i < text.length) { el.textContent += text[i++]; } else { clearInterval(howDemoTimer); }
-    }, 18);
-  }
-
-  function initHowDemoAll() {
-    Object.keys(HOW_DEMO_IDS).forEach((pathId) => {
-      const el = document.getElementById(HOW_DEMO_IDS[pathId]);
-      if (el) el.textContent = CUSTOM_PROMPTS[selectedPersona]?.presets?.[0]?.prompt || "";
+  function fillHowDemoAll() {
+    const prompt = CUSTOM_PROMPTS[selectedPersona]?.presets?.[0]?.prompt || "";
+    Object.values(HOW_DEMO_IDS).forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = prompt;
     });
   }
 
@@ -335,13 +322,11 @@ function bindEvents(settings) {
         const section = btn.closest(".how-to-inline");
         section.querySelectorAll(".how-tab-sm").forEach((t) => t.classList.toggle("active", t.dataset.target === key));
         section.querySelectorAll(".how-path").forEach((p) => p.classList.toggle("active", p.id === key));
-        startHowDemoTyping(key);
       }
     });
   });
 
-  initHowDemoAll();
-  startHowDemoTyping("chatgpt-path");
+  fillHowDemoAll();
   nodes.refreshReport.addEventListener("click", loadAndRenderReport);
   nodes.openGuide.addEventListener("click", openOnboardingOnActiveTab);
 
