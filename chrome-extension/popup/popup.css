@@ -69,6 +69,13 @@ body {
   color: var(--color-text);
 }
 
+.header-logo {
+  height: 24px;
+  width: auto;
+  display: block;
+  margin-bottom: 3px;
+}
+
 .header .text-body-m {
   color: var(--color-text-sub);
 }
@@ -582,7 +589,7 @@ button.secondary {
 .copy-btn {
   width: 100%;
   padding: 9px;
-  border-radius: 10px;
+  border-radius: 14px;
   border: none;
   background: #d1d600;
   color: #1a1a16;
@@ -612,20 +619,66 @@ button.secondary {
   line-height: 1.4;
 }
 
-.landing-link-bar {
-  padding: 10px 16px 14px;
+.download-log-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 0;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  color: var(--color-text-sub);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, color 0.15s;
+}
+.download-log-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.feedback-bar {
+  padding: 12px 16px 8px;
   border-top: 1px solid #e5e5d8;
   text-align: center;
+}
+
+.feedback-btn {
+  display: block;
+  width: 100%;
+  padding: 10px 0;
+  background: var(--color-primary);
+  border: none;
+  border-radius: 14px;
+  color: var(--color-primary-deep);
+  text-decoration: none;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: -0.01em;
+  transition: background 0.15s, opacity 0.15s;
+}
+.feedback-btn:hover {
+  background: var(--green-200);
+  opacity: 0.9;
+}
+
+.landing-link-bar {
+  padding: 8px 16px 14px;
+  text-align: center;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 6px;
 }
 
 .landing-link-pre {
   font-size: 10px;
   color: #c8c8ba;
   font-weight: 400;
+  white-space: nowrap;
 }
 
 .landing-link-btn {

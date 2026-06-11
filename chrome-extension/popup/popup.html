@@ -10,7 +10,7 @@
     <main class="wrap">
       <header class="header">
         <div>
-          <h1 class="text-h1">그루Groo</h1>
+          <img src="../assets/logo_eng.svg" alt="그루" class="header-logo" />
           <p class="text-body-m">ChatGPT · Gemini · Claude 지원</p>
         </div>
         <label class="switch" title="확장 프로그램 켜기/끄기">
@@ -79,6 +79,8 @@
           <div class="week-bars" id="weekBars"></div>
           <div class="week-days-label" id="weekDaysLabel"></div>
         </div>
+
+        <button class="download-log-btn text-body-l" id="downloadLogBtn" type="button">로그 다운로드</button>
       </section>
 
       <section class="card usage-card">
@@ -89,8 +91,8 @@
       </section>
 
       <section class="card custom-prompt-section">
-        <p class="section-label">CUSTOM INSTRUCTIONS</p>
-        <h2 class="text-h2 section-title">맞춤형 지침 추천</h2>
+        <span class="eyebrow text-body-s">Custom Instructions</span>
+        <h2 class="text-h2">맞춤형 지침 추천</h2>
         <p class="custom-desc">맞춤형 지침은 AI에게 나의 상황과 원하는 답변 방식을 미리 알려주는 설정이에요. 한 번 설정하면 매번 설명하지 않아도 돼요.</p>
         <div class="persona-tabs" id="personaTabs"></div>
         <div class="prompt-fulltext" id="promptFulltext"></div>
@@ -157,6 +159,11 @@
 
 
     </main>
+    <div class="feedback-bar">
+      <a href="https://forms.gle/placeholder" target="_blank" class="feedback-btn" id="feedbackBtn">
+        💬 그루에게 의견 보내기
+      </a>
+    </div>
     <div class="landing-link-bar">
       <span class="landing-link-pre">그루가 더 궁금하다면?</span>
       <a href="https://b-side-ground.vercel.app/" target="_blank" class="landing-link-btn">
