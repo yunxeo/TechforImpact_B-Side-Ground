@@ -11,6 +11,7 @@ const DEFAULT_SETTINGS = {
   enabled: true,
   designVariant: "tree-status-badge",
   nudgeTextScale: 80,
+  tipBarScale: 100,
   floatingLogoScale: 80,
   floatingLogoPlacement: "top-right",
   dragEnabled: false,
@@ -112,7 +113,9 @@ const nodes = {
   openGuide: $("#openGuide"),
   personaTabs: $("#personaTabs"),
   promptFulltext: $("#promptFulltext"),
-  copyPromptBtn: $("#copyPromptBtn")
+  copyPromptBtn: $("#copyPromptBtn"),
+  tipBarScale: $("#tipBarScale"),
+  tipBarScaleValue: $("#tipBarScaleValue")
 };
 
 let customCharacterUrl = null;
@@ -256,6 +259,22 @@ function bindCopyBtn() {
 function bindEvents(settings) {
   nodes.enabled.addEventListener("change", () => updateSetting({ enabled: nodes.enabled.checked }));
   if (nodes.focusMode) nodes.focusMode.addEventListener("change", () => updateSetting({ focusMode: nodes.focusMode.checked }));
+  if (nodes.tipBarScale) {
+    nodes.tipBarScale.value = String(settings.tipBarScale ?? 100);
+    if (nodes.tipBarScaleValue) nodes.tipBarScaleValue.textContent = `${settings.tipBarScale ?? 100}%`;
+    nodes.tipBarScale.addEventListener("input", () => {
+      const v = Number(nodes.tipBarScale.value);
+      if (nodes.tipBarScaleValue) nodes.tipBarScaleValue.textContent = `${v}%`;
+      updateSetting({ tipBarScale: v });
+    });
+  }
+  document.querySelectorAll(".popup-how-tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.tab;
+      document.querySelectorAll(".popup-how-tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === key));
+      document.querySelectorAll(".popup-how-panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === key));
+    });
+  });
   nodes.refreshReport.addEventListener("click", loadAndRenderReport);
   nodes.openGuide.addEventListener("click", openOnboardingOnActiveTab);
 
@@ -432,8 +451,8 @@ function buildInsightItems(stat) {
   if (geminiCount > 0) platforms.push(`Gemini에 <strong class="text-display">${formatNumber(geminiCount)}번</strong>`);
 
   const platformLine = platforms.length > 0
-    ? `${day} ${platforms.join(", ")} 보냈어요.`
-    : `${day} <strong class="text-display">${formatNumber(stat.submitCount)}번</strong> AI에 보냈어요.`;
+    ? `${platforms.join(", ")} 보냈어요.`
+    : `<strong class="text-display">${formatNumber(stat.submitCount)}번</strong> AI에 보냈어요.`;
 
   const items = [
     insightHtml(platformLine),
@@ -445,7 +464,7 @@ function buildInsightItems(stat) {
       insightHtml(`처음 쓴 글보다 평균 <strong class="text-display">${formatNumber(stat.avgReducedChars)}자</strong> 정도 줄이고 보냈어요.`)
     );
   } else {
-    items.push(insightHtml(`${day}은 거의 다듬지 않고 그대로 보내셨네요.`));
+    items.push(insightHtml("거의 다듬지 않고 그대로 보냈어요."));
   }
 
   return items;
@@ -482,46 +501,47 @@ function getDailyReportNudge(stat) {
   if (!stat || stat.submitCount === 0) return null;
 
   const highRatio = stat.highCount / stat.submitCount;
+  const isPast = reportOffset < 0;
   const messages = [];
 
-  const day = getDayLabel();
   if (highRatio > 0.5) {
-    messages.push(`${day} ${stat.submitCount}번 중 ${stat.highCount}번이 길었어요. 리포트 확인해볼까요?`);
-    messages.push("긴 입력이 많았던 하루예요. 팝업에서 자세히 볼 수 있어요 📊");
+    messages.push(`${stat.submitCount}번 중 ${stat.highCount}번이 길었어요.`);
+    if (!isPast) messages.push("긴 입력이 많았던 하루예요. 팝업에서 자세히 볼 수 있어요 📊");
   } else if (highRatio > 0.2) {
-    messages.push(`${day} ${stat.submitCount}번 전송했어요. ${day} 프롬프트 패턴 확인해볼까요?`);
-    messages.push(`조금씩 나아지고 있어요! ${day} 리포트 확인해봐요 🌿`);
+    messages.push(`${stat.submitCount}번 전송했어요.`);
+    if (!isPast) messages.push("조금씩 나아지고 있어요! 🌿");
   } else {
-    messages.push(`${day}도 간결하게 잘 쓰고 있어요! 리포트에서 확인해봐요 🌱`);
-    messages.push(`${day} ${stat.submitCount}번 전송했는데 대부분 짧았어요. 최고예요 ✨`);
+    messages.push(`${stat.submitCount}번 전송했는데 대부분 짧았어요.`);
+    if (!isPast) messages.push("간결하게 잘 쓰고 있어요! 🌱");
   }
 
   return messages[Math.floor(Math.random() * messages.length)];
 }
 
 function getPuriComment(stat) {
+  const isPast = reportOffset < 0;
   if (!stat || stat.submitCount === 0) {
     return {
       imgKey: "idle",
-      msg: `아직 ${getDayLabel()} 전송 기록이 없어요. ${getDayLabel()}도 간결하게 써봐요!`
+      msg: isPast ? "전송 기록이 없어요." : "아직 오늘 전송 기록이 없어요. 간결하게 써봐요!"
     };
   }
   const highRatio = stat.highCount / stat.submitCount;
   if (highRatio > 0.5) {
     return {
       imgKey: "high",
-      msg: `${getDayLabel()} ${stat.submitCount}번 중 ${stat.highCount}번은 길었어요. 나눠 물어보면 답이 더 또렷해질 수 있어요.`
+      msg: `${stat.submitCount}번 중 ${stat.highCount}번은 길었어요.${isPast ? "" : " 나눠 물어보면 답이 더 또렷해질 수 있어요."}`
     };
   }
   if (highRatio > 0.2) {
     return {
       imgKey: "medium",
-      msg: `${getDayLabel()} ${stat.submitCount}번 보냈어요. 조금만 더 줄이면 더 빠른 답을 받기 쉬워요.`
+      msg: `${stat.submitCount}번 보냈어요.${isPast ? "" : " 조금만 더 줄이면 더 빠른 답을 받기 쉬워요."}`
     };
   }
   return {
     imgKey: "low",
-    msg: `${getDayLabel()} ${stat.submitCount}번 보냈는데, 대부분 간결했어요. 잘하고 있어요!`
+    msg: `${stat.submitCount}번 보냈는데, 대부분 간결했어요.${isPast ? "" : " 잘하고 있어요!"}`
   };
 }
 

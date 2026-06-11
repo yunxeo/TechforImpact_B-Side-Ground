@@ -15,6 +15,7 @@
     enabled: true,
     designVariant: FIXED_DESIGN_VARIANT,
     nudgeTextScale: 80,
+    tipBarScale: 100,
     floatingLogoScale: 80,
     floatingLogoPlacement: "top-right",
     dragEnabled: false,
@@ -1022,6 +1023,7 @@
   function updateOverlay(snapshot) {
     overlay = ensureOverlay();
     overlay.host.style.setProperty("--cp-nudge-scale", `${settings.nudgeTextScale / 100}`);
+    overlay.host.style.setProperty("--cp-tip-scale", `${(settings.tipBarScale ?? 100) / 100}`);
     overlay.host.style.setProperty("--cp-logo-scale", `${settings.floatingLogoScale / 100}`);
     const card = overlay.card;
     const promptTipVisible = (inlinePromptTip.visible || inlinePromptTip.closing) && Boolean(inlinePromptTip.message);
@@ -2340,12 +2342,16 @@
       },
       {
         title: "내가 좋아하는 캐릭터로 뱃지를 꾸며보세요",
-        htmlBody: `<div class="customize-demo"><div class="customize-examples"><div class="customize-ex default"><img src="${puriMap.low}" alt="기본 푸리" /><span>기본 푸리</span></div><div class="customize-arrow">→</div><div class="customize-ex custom"><div class="customize-placeholder"><span>✦</span><small>내 이미지</small></div><span>나만의 캐릭터</span></div></div><div class="customize-steps"><div class="customize-step"><span class="step-num">1</span><p>그루 뱃지 클릭</p></div><div class="customize-step"><span class="step-num">2</span><p>푸리 캐릭터 클릭 후 연필 아이콘 선택</p></div><div class="customize-step"><span class="step-num">3</span><p>원하는 이미지 업로드</p>`
+        htmlBody: `<div class="customize-demo"><div class="customize-examples"><div class="customize-ex default"><img src="${puriMap.low}" alt="기본 푸리" /><span>기본 푸리</span></div><div class="customize-arrow">→</div><div class="customize-ex custom"><div class="customize-placeholder"><span>✦</span><small>내 이미지</small></div><span>나만의 캐릭터</span></div></div><div class="customize-steps"><div class="customize-step"><span class="step-num">1</span><p>그루 뱃지 클릭</p></div><div class="customize-step"><span class="step-num">2</span><p>푸리 캐릭터 클릭 후 연필 아이콘 선택</p></div><div class="customize-step"><span class="step-num">3</span><p>원하는 이미지 업로드</p></div></div></div><input type="file" accept="image/*" class="ob-char-upload-input" style="display:none" /><button class="ob-try-customize-btn">지금 바꿔보기</button>`
       },
       {
         slideImg: obAssets.report,
         title: "📊 오늘 얼마나 썼는지 확인해봐요",
         htmlBody: `<span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block">뱃지 클릭 → 리포트 바로 열기<br>또는 <img src="${obAssets.puzzle}" width="16" height="16" style="vertical-align:middle;margin:0 2px" alt="" /> 퍼즐 아이콘 → 그루 선택</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">플랫폼별 전송 횟수, 평균 입력 길이를 확인하고<br>이전보다 얼마나 줄였는지 확인해보세요!</span>`
+      },
+      {
+        title: "맞춤형 지침 설정하는 법",
+        htmlBody: `<p style="font-size:13px;color:#5e5e57;margin-bottom:12px">그루 팝업에서 복사한 지침을 아래 경로에 붙여넣으세요</p><div class="ob-how-tabs"><button class="ob-how-tab active" data-tab="chatgpt">ChatGPT</button><button class="ob-how-tab" data-tab="claude">Claude</button><button class="ob-how-tab" data-tab="gemini">Gemini</button></div><div class="ob-how-panels"><div class="ob-how-panel active" data-panel="chatgpt"><div class="ob-how-step"><span class="ob-how-num">1</span><span>좌측 하단 프로필 → <b>개인 맞춤 설정</b></span></div><div class="ob-how-step"><span class="ob-how-num">2</span><span><b>맞춤형 지침</b> 클릭</span></div><div class="ob-how-step"><span class="ob-how-num">3</span><span>하단 칸에 붙여넣기</span></div></div><div class="ob-how-panel" data-panel="claude"><div class="ob-how-step"><span class="ob-how-num">1</span><span>좌측 하단 프로필 → <b>설정</b></span></div><div class="ob-how-step"><span class="ob-how-num">2</span><span>일반 → <b>Claude 지침</b></span></div><div class="ob-how-step"><span class="ob-how-num">3</span><span>입력란에 붙여넣기</span></div></div><div class="ob-how-panel" data-panel="gemini"><div class="ob-how-step"><span class="ob-how-num">1</span><span>좌측 하단 프로필 → <b>설정</b></span></div><div class="ob-how-step"><span class="ob-how-num">2</span><span><b>Gemini 요청 사항</b> → 새 페이지</span></div><div class="ob-how-step"><span class="ob-how-num">3</span><span>추가 버튼 → 붙여넣기</span></div></div></div>`
       },
       {
         title: "💡 사용 팁을 다시 보고 싶다면?",
@@ -2777,6 +2783,30 @@
             requestAnimationFrame(() => slideArea.classList.remove("cp-ob-enter-rev"));
           });
         }, 150);
+      }
+      if (e.target.classList.contains("ob-how-tab")) {
+        const key = e.target.dataset.tab;
+        slideArea.querySelectorAll(".ob-how-tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === key));
+        slideArea.querySelectorAll(".ob-how-panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === key));
+      }
+      if (e.target.classList.contains("ob-try-customize-btn")) {
+        const fileInput = slideArea.querySelector(".ob-char-upload-input");
+        if (fileInput) {
+          fileInput.onchange = async (ev) => {
+            const file = ev.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (re) => {
+              const dataUrl = re.target.result;
+              await new Promise((res) => chrome.storage.local.set({ "chatpool.customCharacter": dataUrl }, res));
+              customCharacterUrl = dataUrl;
+              refreshAllCharacterIcons();
+              e.target.textContent = "변경됐어요! ✓";
+            };
+            reader.readAsDataURL(file);
+          };
+          fileInput.click();
+        }
       }
     });
 
@@ -3265,6 +3295,39 @@
       .onboarding-tip-card .tip-restart-btn:hover {
         background: #f2f47a;
       }
+      .ob-try-customize-btn {
+        display: block; width: 100%; margin-top: 14px;
+        padding: 9px; border-radius: 8px;
+        border: 1.5px solid #d1d600; background: transparent;
+        color: #4e5000; font-size: 13px; font-weight: 700;
+        cursor: pointer; font-family: inherit; letter-spacing: inherit;
+        transition: background 0.15s;
+      }
+      .ob-try-customize-btn:hover { background: #f2f47a; }
+      .ob-how-tabs {
+        display: flex; gap: 6px; margin-bottom: 10px;
+      }
+      .ob-how-tab {
+        font-size: 11px; font-weight: 600; padding: 4px 10px;
+        border-radius: 99px; border: 1.5px solid #e5e5d8;
+        background: transparent; color: #5e5e57;
+        cursor: pointer; font-family: inherit;
+        transition: all 0.15s;
+      }
+      .ob-how-tab.active { background: #d1d600; border-color: #d1d600; color: #1a1a16; }
+      .ob-how-panel { display: none; flex-direction: column; gap: 8px; }
+      .ob-how-panel.active { display: flex; }
+      .ob-how-step {
+        display: flex; align-items: flex-start; gap: 10px;
+        font-size: 12px; color: #383833; line-height: 1.5;
+      }
+      .ob-how-num {
+        width: 20px; height: 20px; border-radius: 50%;
+        background: #d1d600; color: #1a1a16;
+        font-size: 11px; font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
     `;
   }
 
@@ -3453,19 +3516,19 @@
         color: var(--level-deep, var(--green-900));
       }
       .cp-bubble strong.text-status {
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 700;
         line-height: 130%;
       }
       .cp-bubble span {
         display: block;
         color: var(--gray-800);
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 400;
         line-height: 130%;
       }
       .cp-bubble .text-body-m {
-        font-size: 11px;
+        font-size: 12px;
       }
       .variant-tree-status-badge {
         display: flex;
@@ -3505,14 +3568,14 @@
       .cp-tip-bar strong.text-status {
         flex-shrink: 0;
         white-space: nowrap;
-        font-size: 17px;
+        font-size: calc(17px * var(--cp-tip-scale, 1));
         font-weight: 700;
         line-height: 130%;
         color: var(--level-deep, var(--green-900));
       }
       .cp-tip-bar-text {
         flex: 0 0 auto;
-        font-size: 16px;
+        font-size: calc(16px * var(--cp-tip-scale, 1));
         font-weight: 500;
         line-height: 140%;
         color: #1a1a16;
