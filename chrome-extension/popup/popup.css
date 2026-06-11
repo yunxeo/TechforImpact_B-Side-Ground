@@ -616,6 +616,16 @@ button.secondary {
   padding: 10px 16px 14px;
   border-top: 1px solid #e5e5d8;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.landing-link-pre {
+  font-size: 10px;
+  color: #c8c8ba;
+  font-weight: 400;
 }
 
 .landing-link-btn {
