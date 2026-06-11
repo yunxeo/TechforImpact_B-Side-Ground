@@ -54,7 +54,7 @@
         <div class="report-insights" id="reportInsights"></div>
 
         <div class="level-mix">
-          <p class="level-mix-title text-h3">오늘 프롬프트 길이 느낌</p>
+          <p class="level-mix-title text-h3">프롬프트 길이 비율</p>
           <div class="level-bar">
             <div class="level-seg low" id="lowRatio"></div>
             <div class="level-seg medium" id="mediumRatio"></div>
@@ -88,6 +88,15 @@
         <button id="openGuide" class="secondary text-body-l" type="button">사용 팁 열기</button>
       </section>
 
+      <section class="card custom-prompt-section">
+        <p class="section-label">CUSTOM INSTRUCTIONS</p>
+        <h2 class="text-h2 section-title">맞춤형 지침 추천</h2>
+        <div class="persona-tabs" id="personaTabs"></div>
+        <div class="prompt-fulltext" id="promptFulltext"></div>
+        <button class="copy-btn" id="copyPromptBtn" type="button">지침 복사하기</button>
+        <p class="copy-hint">복사한 지침을 ChatGPT · Claude · Gemini 맞춤형 지침에 붙여넣어 보세요</p>
+      </section>
+
       <section class="card settings-card">
         <span class="eyebrow text-body-s">Settings</span>
         <h2 class="text-h2">설정</h2>
@@ -101,14 +110,43 @@
             <span></span>
           </label>
         </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <p class="text-body-l setting-label">팁 크기</p>
+          </div>
+          <div class="setting-control">
+            <input type="range" id="tipBarScale" min="70" max="120" step="5" value="100" />
+            <span id="tipBarScaleValue" class="text-body-m">100%</span>
+          </div>
+        </div>
       </section>
 
-      <section class="card custom-prompt-section">
-        <h2 class="text-h2 section-title">맞춤형 지침 추천</h2>
-        <div class="persona-tabs" id="personaTabs"></div>
-        <div class="prompt-fulltext" id="promptFulltext"></div>
-        <button class="copy-btn" id="copyPromptBtn" type="button">지침 복사하기</button>
-        <p class="copy-hint">복사한 지침을 ChatGPT · Claude · Gemini 맞춤형 지침에 붙여넣어 보세요</p>
+      <section class="card how-to-set-card">
+        <p class="section-label">HOW TO SET</p>
+        <h2 class="text-h2">맞춤 지침 설정하는 법</h2>
+        <p class="text-body-m how-to-set-desc">복사한 지침을 아래 경로에 붙여넣으세요</p>
+        <div class="popup-how-tabs">
+          <button class="popup-how-tab active" data-tab="chatgpt">ChatGPT</button>
+          <button class="popup-how-tab" data-tab="claude">Claude</button>
+          <button class="popup-how-tab" data-tab="gemini">Gemini</button>
+        </div>
+        <div class="popup-how-panels">
+          <div class="popup-how-panel active" data-panel="chatgpt">
+            <div class="popup-how-step"><span class="popup-how-num">1</span><span>좌측 하단 프로필 → <strong>개인 맞춤 설정</strong></span></div>
+            <div class="popup-how-step"><span class="popup-how-num">2</span><span><strong>맞춤형 지침</strong> 클릭</span></div>
+            <div class="popup-how-step"><span class="popup-how-num">3</span><span>하단 칸에 붙여넣기</span></div>
+          </div>
+          <div class="popup-how-panel" data-panel="claude">
+            <div class="popup-how-step"><span class="popup-how-num">1</span><span>좌측 하단 프로필 → <strong>설정</strong></span></div>
+            <div class="popup-how-step"><span class="popup-how-num">2</span><span>일반 → <strong>Claude 지침</strong></span></div>
+            <div class="popup-how-step"><span class="popup-how-num">3</span><span>입력란에 붙여넣기</span></div>
+          </div>
+          <div class="popup-how-panel" data-panel="gemini">
+            <div class="popup-how-step"><span class="popup-how-num">1</span><span>좌측 하단 프로필 → <strong>설정</strong></span></div>
+            <div class="popup-how-step"><span class="popup-how-num">2</span><span><strong>Gemini 요청 사항</strong> → 새 페이지</span></div>
+            <div class="popup-how-step"><span class="popup-how-num">3</span><span>추가 버튼 → 붙여넣기</span></div>
+          </div>
+        </div>
       </section>
     </main>
     <div class="landing-link-bar">
