@@ -111,6 +111,7 @@ const nodes = {
   weekDaysLabel: $("#weekDaysLabel"),
   openGuide: $("#openGuide"),
   personaTabs: $("#personaTabs"),
+  promptFulltext: $("#promptFulltext"),
   copyPromptBtn: $("#copyPromptBtn")
 };
 
@@ -215,27 +216,30 @@ function renderCustomPrompts() {
         nodes.copyPromptBtn.textContent = "지침 복사하기";
         nodes.copyPromptBtn.classList.remove("copied");
       }
+      updatePromptFulltext();
       renderCustomPrompts();
     });
   });
 
-  const presets = CUSTOM_PROMPTS[selectedPersona]?.presets || [];
-  const prompt = presets[0]?.prompt || "";
-  const fulltext = document.getElementById("promptFulltext");
-  if (fulltext) fulltext.textContent = prompt;
+  updatePromptFulltext();
 
   if (nodes.copyPromptBtn) {
     nodes.copyPromptBtn.disabled = false;
   }
 }
 
+function updatePromptFulltext() {
+  if (!nodes.promptFulltext) return;
+  const presets = CUSTOM_PROMPTS[selectedPersona]?.presets || [];
+  nodes.promptFulltext.textContent = presets[0]?.prompt || "";
+}
+
 function bindCopyBtn() {
   if (!nodes.copyPromptBtn) return;
   nodes.copyPromptBtn.addEventListener("click", async () => {
-    const fulltext = document.getElementById("promptFulltext");
-    if (!fulltext?.textContent) return;
+    if (!nodes.promptFulltext?.textContent) return;
     try {
-      await navigator.clipboard.writeText(fulltext.textContent);
+      await navigator.clipboard.writeText(nodes.promptFulltext.textContent);
       nodes.copyPromptBtn.textContent = "복사됐어요! ✓";
       nodes.copyPromptBtn.classList.add("copied");
       setTimeout(() => {
