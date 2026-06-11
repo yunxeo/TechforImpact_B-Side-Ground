@@ -614,16 +614,68 @@ button.secondary {
 
 .landing-link-btn {
   font-size: 12px;
-  font-weight: 600;
-  color: #919188;
+  font-weight: 700;
+  color: #5e5e00;
   text-decoration: none;
-  letter-spacing: -0.01em;
-  transition: color 0.15s;
+  background: #f2f47a;
+  border: 1.5px solid #d1d600;
+  border-radius: 8px;
+  padding: 7px 14px;
+  display: inline-block;
+  transition: all 0.15s;
 }
 
 .landing-link-btn:hover {
-  color: #383833;
+  background: #d1d600;
+  color: #1a1a16;
 }
+
+.setting-group { margin-top: 12px; }
+.setting-group-label { font-size: 11px; font-weight: 600; color: #5e5e57; margin-bottom: 6px; }
+
+.tip-scale-row { display: flex; align-items: center; gap: 8px; }
+.tip-scale-row input[type="range"] { flex: 1; accent-color: #d1d600; }
+#tipBarScaleValue { font-size: 11px; font-weight: 700; color: #383833; min-width: 32px; text-align: right; }
+.tip-scale-markers { display: flex; justify-content: space-between; font-size: 10px; color: #919188; margin-top: 2px; }
+.default-marker { color: #d1d600; font-weight: 700; }
+.tip-scale-reset {
+  margin-top: 6px; font-size: 11px; color: #919188;
+  background: transparent; border: 1px solid #e5e5d8; border-radius: 6px;
+  padding: 3px 8px; cursor: pointer; display: block; font-family: inherit;
+}
+.tip-scale-reset:hover { border-color: #d1d600; color: #383833; }
+
+.tip-preview-wrap { margin-top: 12px; }
+.tip-preview-label { font-size: 10px; font-weight: 700; color: #919188; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.tip-preview-badge {
+  border: 1.5px solid #e5e5d8; border-radius: 10px; padding: 6px 10px;
+  background: #fafaf5; display: inline-block; width: 100%; box-sizing: border-box;
+}
+.tip-preview-badge-inner { display: flex; align-items: center; gap: 6px; }
+.tip-preview-badge-text { display: flex; flex-direction: column; gap: 1px; }
+.tip-preview-badge-text strong { font-size: 11px; font-weight: 700; color: #84cc16; }
+.tip-preview-badge-text span { font-size: 10px; color: #919188; }
+.tip-preview-bar {
+  font-size: 11px; color: #5e5e57; margin-left: 4px; flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.custom-desc { font-size: 11px; color: #5e5e57; line-height: 1.5; margin-bottom: 12px; }
+
+.how-to-inline {
+  margin-top: 10px; padding: 10px 12px;
+  background: #f7f7f0; border: 1.5px solid #e5e5d8; border-radius: 10px;
+}
+.how-to-title { font-size: 11px; font-weight: 700; color: #383833; margin-bottom: 8px; }
+.how-to-tabs-inline { display: flex; gap: 4px; margin-bottom: 8px; }
+.how-tab-sm {
+  font-size: 10px; font-weight: 600; padding: 3px 8px;
+  border-radius: 99px; border: 1px solid #e5e5d8;
+  background: transparent; color: #5e5e57; cursor: pointer; font-family: inherit;
+}
+.how-tab-sm.active { background: #d1d600; border-color: #d1d600; color: #1a1a16; }
+.how-path { display: none; font-size: 11px; color: #5e5e57; line-height: 1.5; }
+.how-path.active { display: block; }
 
 .section-label {
   font-size: 10px;

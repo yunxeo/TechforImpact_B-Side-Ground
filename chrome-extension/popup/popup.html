@@ -21,7 +21,7 @@
 
       <section class="card report-card">
         <span class="eyebrow text-body-s">Prompting Report</span>
-        <h2 class="text-h2">오늘의 프롬프팅 리포트</h2>
+        <h2 class="text-h2">AI 사용 습관 리포트</h2>
 
         <div class="report-header">
           <button class="date-nav text-body-s" id="prevDay" type="button">&#8249;</button>
@@ -54,7 +54,7 @@
         <div class="report-insights" id="reportInsights"></div>
 
         <div class="level-mix">
-          <p class="level-mix-title text-h3">프롬프트 길이 비율</p>
+          <p class="level-mix-title text-h3">입력한 채팅 길이 비율</p>
           <div class="level-bar">
             <div class="level-seg low" id="lowRatio"></div>
             <div class="level-seg medium" id="mediumRatio"></div>
@@ -91,10 +91,22 @@
       <section class="card custom-prompt-section">
         <p class="section-label">CUSTOM INSTRUCTIONS</p>
         <h2 class="text-h2 section-title">맞춤형 지침 추천</h2>
+        <p class="custom-desc">맞춤형 지침은 AI에게 나의 상황과 원하는 답변 방식을 미리 알려주는 설정이에요. 한 번 설정하면 매번 설명하지 않아도 돼요.</p>
         <div class="persona-tabs" id="personaTabs"></div>
         <div class="prompt-fulltext" id="promptFulltext"></div>
         <button class="copy-btn" id="copyPromptBtn" type="button">지침 복사하기</button>
         <p class="copy-hint">복사한 지침을 ChatGPT · Claude · Gemini 맞춤형 지침에 붙여넣어 보세요</p>
+        <div class="how-to-inline">
+          <p class="how-to-title">📌 붙여넣는 곳</p>
+          <div class="how-to-tabs-inline">
+            <button class="how-tab-sm active" data-target="chatgpt-path" type="button">ChatGPT</button>
+            <button class="how-tab-sm" data-target="claude-path" type="button">Claude</button>
+            <button class="how-tab-sm" data-target="gemini-path" type="button">Gemini</button>
+          </div>
+          <div class="how-path active" id="chatgpt-path">좌하단 프로필 → 개인 맞춤 설정 → 맞춤형 지침</div>
+          <div class="how-path" id="claude-path">좌하단 프로필 → 설정 → 일반 → Claude 지침</div>
+          <div class="how-path" id="gemini-path">좌하단 프로필 → 설정 → Gemini 요청 사항 → 추가</div>
+        </div>
       </section>
 
       <section class="card settings-card">
@@ -110,13 +122,34 @@
             <span></span>
           </label>
         </div>
-        <div class="setting-row">
-          <div class="setting-info">
-            <p class="text-body-l setting-label">팁 크기</p>
+        <div class="setting-group">
+          <p class="setting-group-label">팁 크기</p>
+          <div class="tip-scale-control">
+            <div class="tip-scale-row">
+              <input type="range" id="tipBarScale" min="70" max="120" step="5" value="80" />
+              <span id="tipBarScaleValue">80%</span>
+            </div>
+            <div class="tip-scale-markers">
+              <span>70%</span>
+              <span class="default-marker">↑ 기본(80%)</span>
+              <span>120%</span>
+            </div>
+            <button class="tip-scale-reset" id="tipScaleReset" type="button">80%로 초기화</button>
           </div>
-          <div class="setting-control">
-            <input type="range" id="tipBarScale" min="70" max="120" step="5" value="100" />
-            <span id="tipBarScaleValue" class="text-body-m">100%</span>
+          <div class="tip-preview-wrap">
+            <p class="tip-preview-label">미리보기</p>
+            <div class="tip-preview-badge" id="tipPreviewBadge">
+              <div class="tip-preview-badge-inner">
+                <img id="tipPreviewPuri" src="" width="24" height="24" alt="" />
+                <div class="tip-preview-badge-text">
+                  <strong id="tipPreviewLevel">낮음</strong>
+                  <span id="tipPreviewCount">42자 / 약 11토큰</span>
+                </div>
+                <div class="tip-preview-bar" id="tipPreviewBar">
+                  <span>💡 핵심만 담아 질문하면 더 빠른 답변을 받을 수 있어요</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -151,7 +184,7 @@
     </main>
     <div class="landing-link-bar">
       <a href="https://b-side-ground.vercel.app/" target="_blank" class="landing-link-btn">
-        그루 소개 페이지 보기 →
+        그루 소개 페이지 보러가기
       </a>
     </div>
     <script src="popup.js"></script>

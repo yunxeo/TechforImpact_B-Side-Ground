@@ -2342,7 +2342,7 @@
       },
       {
         title: "내가 좋아하는 캐릭터로 뱃지를 꾸며보세요",
-        htmlBody: `<div class="customize-demo"><div class="customize-examples"><div class="customize-ex default"><img src="${puriMap.low}" alt="기본 푸리" /><span>기본 푸리</span></div><div class="customize-arrow">→</div><div class="customize-ex custom"><div class="customize-placeholder"><span>✦</span><small>내 이미지</small></div><span>나만의 캐릭터</span></div></div><div class="customize-steps"><div class="customize-step"><span class="step-num">1</span><p>그루 뱃지 클릭</p></div><div class="customize-step"><span class="step-num">2</span><p>푸리 캐릭터 클릭 후 연필 아이콘 선택</p></div><div class="customize-step"><span class="step-num">3</span><p>원하는 이미지 업로드</p></div></div></div><input type="file" accept="image/*" class="ob-char-upload-input" style="display:none" /><button class="ob-try-customize-btn">지금 바꿔보기</button>`
+        htmlBody: `<p style="font-size:13px;color:#5e5e57;line-height:1.6;margin-bottom:8px">좋아하는 캐릭터 이미지를 검색하고<br>배경을 제거한 다음 업로드하면 돼요.</p><div class="ob-example-box" style="margin-bottom:10px"><p style="font-size:12px;color:#383833;line-height:1.5">지금 이미지가 있으면 바로 바꿔보세요!<br>없으면 나중에 언제든지 바꿀 수 있어요.</p></div><div class="customize-steps"><div class="customize-step"><span class="step-num">1</span><p>그루 뱃지 클릭</p></div><div class="customize-step"><span class="step-num">2</span><p>푸리 캐릭터 클릭 후 연필 아이콘 선택</p></div><div class="customize-step"><span class="step-num">3</span><p>원하는 이미지 업로드</p></div></div><input type="file" accept="image/*" class="ob-char-upload-input" style="display:none" /><button class="ob-upload-btn" id="obCustomizeUpload">🖼 지금 이미지 업로드하기</button><p class="ob-upload-skip">나중에 할게요 →</p>`
       },
       {
         title: "📊 오늘 얼마나 썼는지 확인해봐요",
@@ -2350,7 +2350,7 @@
       },
       {
         title: "맞춤형 지침 설정하는 법",
-        htmlBody: `<p style="font-size:13px;color:#5e5e57;margin-bottom:12px">그루 팝업에서 복사한 지침을 아래 경로에 붙여넣으세요</p><div class="ob-how-tabs"><button class="ob-how-tab active" data-tab="chatgpt">ChatGPT</button><button class="ob-how-tab" data-tab="claude">Claude</button><button class="ob-how-tab" data-tab="gemini">Gemini</button></div><div class="ob-how-panels"><div class="ob-how-panel active" data-panel="chatgpt"><div class="ob-how-step"><span class="ob-how-num">1</span><span>좌측 하단 프로필 → <b>개인 맞춤 설정</b></span></div><div class="ob-how-step"><span class="ob-how-num">2</span><span><b>맞춤형 지침</b> 클릭</span></div><div class="ob-how-step"><span class="ob-how-num">3</span><span>하단 칸에 붙여넣기</span></div></div><div class="ob-how-panel" data-panel="claude"><div class="ob-how-step"><span class="ob-how-num">1</span><span>좌측 하단 프로필 → <b>설정</b></span></div><div class="ob-how-step"><span class="ob-how-num">2</span><span>일반 → <b>Claude 지침</b></span></div><div class="ob-how-step"><span class="ob-how-num">3</span><span>입력란에 붙여넣기</span></div></div><div class="ob-how-panel" data-panel="gemini"><div class="ob-how-step"><span class="ob-how-num">1</span><span>좌측 하단 프로필 → <b>설정</b></span></div><div class="ob-how-step"><span class="ob-how-num">2</span><span><b>Gemini 요청 사항</b> → 새 페이지</span></div><div class="ob-how-step"><span class="ob-how-num">3</span><span>추가 버튼 → 붙여넣기</span></div></div></div>`
+        htmlBody: `<p style="font-size:12px;color:#5e5e57;line-height:1.5;margin-bottom:8px">AI에게 나의 상황과 원하는 답변 방식을 미리 알려두는 설정이에요. 한 번 설정하면 매번 설명하지 않아도 돼요.</p><div class="ob-example-box"><p style="font-size:11px;color:#919188;margin-bottom:4px">예시</p><p style="font-size:12px;color:#383833;line-height:1.5">"나는 대학생이고 과제 도우미로 AI를 써.<br>핵심만 간결하게 정리해줘."</p></div><p style="font-size:12px;color:#5e5e57;margin:10px 0 6px">그루 팝업에서 지침을 복사 후 아래 경로에 붙여넣으세요</p><div class="ob-how-tabs"><button class="ob-how-tab active" data-tab="chatgpt">ChatGPT</button><button class="ob-how-tab" data-tab="claude">Claude</button><button class="ob-how-tab" data-tab="gemini">Gemini</button></div><div class="ob-how-panels"><div class="ob-how-panel active" data-panel="chatgpt"><div class="ob-how-step"><span class="ob-how-num">1</span><span>좌하단 프로필 → <b>개인 맞춤 설정</b></span></div><div class="ob-how-step"><span class="ob-how-num">2</span><span><b>맞춤형 지침</b> 클릭</span></div><div class="ob-how-step"><span class="ob-how-num">3</span><span>하단 칸에 붙여넣기</span></div></div><div class="ob-how-panel" data-panel="claude"><div class="ob-how-step"><span class="ob-how-num">1</span><span>좌하단 프로필 → <b>설정</b></span></div><div class="ob-how-step"><span class="ob-how-num">2</span><span>일반 → <b>Claude 지침</b></span></div><div class="ob-how-step"><span class="ob-how-num">3</span><span>입력란에 붙여넣기</span></div></div><div class="ob-how-panel" data-panel="gemini"><div class="ob-how-step"><span class="ob-how-num">1</span><span>좌하단 프로필 → <b>설정</b></span></div><div class="ob-how-step"><span class="ob-how-num">2</span><span><b>Gemini 요청 사항</b> → 추가</span></div><div class="ob-how-step"><span class="ob-how-num">3</span><span>붙여넣기</span></div></div></div>`
       },
       {
         title: "💡 사용 팁을 다시 보고 싶다면?",
@@ -2788,7 +2788,7 @@
         slideArea.querySelectorAll(".ob-how-tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === key));
         slideArea.querySelectorAll(".ob-how-panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === key));
       }
-      if (e.target.classList.contains("ob-try-customize-btn")) {
+      if (e.target.classList.contains("ob-upload-btn") || e.target.id === "obCustomizeUpload") {
         const fileInput = slideArea.querySelector(".ob-char-upload-input");
         if (fileInput) {
           fileInput.onchange = async (ev) => {
@@ -2800,7 +2800,8 @@
               await new Promise((res) => chrome.storage.local.set({ "chatpool.customCharacter": dataUrl }, res));
               customCharacterUrl = dataUrl;
               refreshAllCharacterIcons();
-              e.target.textContent = "변경됐어요! ✓";
+              const btn = slideArea.querySelector(".ob-upload-btn");
+              if (btn) btn.textContent = "변경됐어요! ✓";
             };
             reader.readAsDataURL(file);
           };
@@ -3327,15 +3328,23 @@
       }
       .ob-mini-stat-sentence { font-size: 10px; color: #5e5e57; line-height: 1.5; margin: 0; }
       .ob-mini-stat-sentence strong { color: #1a1a16; font-weight: 700; }
-      .ob-try-customize-btn {
-        display: block; width: 100%; margin-top: 14px;
-        padding: 9px; border-radius: 8px;
-        border: 1.5px solid #d1d600; background: transparent;
-        color: #4e5000; font-size: 13px; font-weight: 700;
+      .ob-example-box {
+        background: #f7f7f0; border: 1px solid #e5e5d8;
+        border-radius: 8px; padding: 8px 10px; margin-bottom: 8px;
+      }
+      .ob-upload-btn {
+        display: block; width: 100%; margin-top: 12px;
+        padding: 10px; border-radius: 10px;
+        background: #d1d600; border: none;
+        font-size: 13px; font-weight: 700; color: #1a1a16;
         cursor: pointer; font-family: inherit; letter-spacing: inherit;
         transition: background 0.15s;
       }
-      .ob-try-customize-btn:hover { background: #f2f47a; }
+      .ob-upload-btn:hover { background: #c4c900; }
+      .ob-upload-skip {
+        text-align: center; font-size: 11px; color: #919188;
+        margin-top: 8px; cursor: pointer;
+      }
       .ob-how-tabs {
         display: flex; gap: 6px; margin-bottom: 10px;
       }

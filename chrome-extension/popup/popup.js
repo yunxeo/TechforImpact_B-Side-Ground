@@ -115,7 +115,10 @@ const nodes = {
   promptFulltext: $("#promptFulltext"),
   copyPromptBtn: $("#copyPromptBtn"),
   tipBarScale: $("#tipBarScale"),
-  tipBarScaleValue: $("#tipBarScaleValue")
+  tipBarScaleValue: $("#tipBarScaleValue"),
+  tipScaleReset: $("#tipScaleReset"),
+  tipPreviewBadge: $("#tipPreviewBadge"),
+  tipPreviewPuri: $("#tipPreviewPuri")
 };
 
 let customCharacterUrl = null;
@@ -259,20 +262,52 @@ function bindCopyBtn() {
 function bindEvents(settings) {
   nodes.enabled.addEventListener("change", () => updateSetting({ enabled: nodes.enabled.checked }));
   if (nodes.focusMode) nodes.focusMode.addEventListener("change", () => updateSetting({ focusMode: nodes.focusMode.checked }));
+  function updateTipPreview(scale) {
+    if (nodes.tipBarScaleValue) nodes.tipBarScaleValue.textContent = `${scale}%`;
+    if (nodes.tipPreviewBadge) {
+      const s = scale / 100;
+      nodes.tipPreviewBadge.style.transform = `scale(${s})`;
+      nodes.tipPreviewBadge.style.transformOrigin = "left center";
+      nodes.tipPreviewBadge.style.marginBottom = `${(s - 1) * 40}px`;
+    }
+  }
+
   if (nodes.tipBarScale) {
-    nodes.tipBarScale.value = String(settings.tipBarScale ?? 100);
-    if (nodes.tipBarScaleValue) nodes.tipBarScaleValue.textContent = `${settings.tipBarScale ?? 100}%`;
+    const savedScale = settings.tipBarScale ?? 80;
+    nodes.tipBarScale.value = String(savedScale);
+    updateTipPreview(savedScale);
     nodes.tipBarScale.addEventListener("input", () => {
       const v = Number(nodes.tipBarScale.value);
-      if (nodes.tipBarScaleValue) nodes.tipBarScaleValue.textContent = `${v}%`;
+      updateTipPreview(v);
       updateSetting({ tipBarScale: v });
     });
   }
-  document.querySelectorAll(".popup-how-tab").forEach((btn) => {
+  if (nodes.tipScaleReset) {
+    nodes.tipScaleReset.addEventListener("click", () => {
+      if (nodes.tipBarScale) nodes.tipBarScale.value = "80";
+      updateTipPreview(80);
+      updateSetting({ tipBarScale: 80 });
+    });
+  }
+  if (nodes.tipPreviewPuri) {
+    storageGet([STORAGE_KEYS.SETTINGS]).then((data) => {
+      const s = data[STORAGE_KEYS.SETTINGS] || {};
+      nodes.tipPreviewPuri.src = s.customLogoUrl ||
+        (typeof chrome !== "undefined" ? chrome.runtime.getURL("assets/puri_low.svg") : "");
+    });
+  }
+
+  document.querySelectorAll(".popup-how-tab, .how-tab-sm").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const key = btn.dataset.tab;
-      document.querySelectorAll(".popup-how-tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === key));
-      document.querySelectorAll(".popup-how-panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === key));
+      const key = btn.dataset.tab || btn.dataset.target;
+      if (btn.classList.contains("popup-how-tab")) {
+        document.querySelectorAll(".popup-how-tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === key));
+        document.querySelectorAll(".popup-how-panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === key));
+      } else {
+        const section = btn.closest(".how-to-inline");
+        section.querySelectorAll(".how-tab-sm").forEach((t) => t.classList.toggle("active", t.dataset.target === key));
+        section.querySelectorAll(".how-path").forEach((p) => p.classList.toggle("active", p.id === key));
+      }
     });
   });
   nodes.refreshReport.addEventListener("click", loadAndRenderReport);
@@ -433,10 +468,11 @@ function renderReport(report) {
 
 function buildInsightItems(stat) {
   const day = getDayLabel();
+  const isPast = reportOffset < 0;
   if (!stat.submitCount) {
     return [
-      insightHtml(`아직 ${day} AI를 사용하지 않았어요.`),
-      insightHtml("평균 글자 수와 다듬은 양은 전송 후에 볼 수 있어요.")
+      insightHtml(isPast ? "이날 AI 사용 기록이 없어요." : `아직 ${day} AI를 사용하지 않았어요.`),
+      insightHtml("평균 글자 수와 다듬은 양은 채팅 전송 후에 볼 수 있어요.")
     ];
   }
 
@@ -476,7 +512,7 @@ function insightHtml(text) {
 
 function buildLevelMixNote(stat) {
   if (!stat.submitCount) {
-    return "전송 기록이 생기면 낮음·중간·높음 비율을 보여드릴게요.";
+    return "전송 기록이 생기면 입력 채팅 길이의 낮음·중간·높음 비율을 보여드릴게요.";
   }
 
   const parts = [];
@@ -545,6 +581,27 @@ function getPuriComment(stat) {
   };
 }
 
+function buildLineChart(days, values) {
+  const w = 220, h = 60, pad = 8;
+  const max = Math.max(...values, 1);
+  const n = days.length;
+  const points = values.map((v, i) => {
+    const x = pad + (i / (n - 1)) * (w - pad * 2);
+    const y = h - pad - (v / max) * (h - pad * 2);
+    return `${x},${y}`;
+  }).join(" ");
+  const circles = values.map((v, i) => {
+    const x = pad + (i / (n - 1)) * (w - pad * 2);
+    const y = h - pad - (v / max) * (h - pad * 2);
+    const isTodayDay = days[i]?.isToday;
+    return `<circle cx="${x}" cy="${y}" r="${isTodayDay ? 4 : 3}" fill="${isTodayDay ? "#a8ac00" : "#d1d600"}"/>`;
+  }).join("");
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <polyline points="${points}" fill="none" stroke="#d1d600" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${circles}
+  </svg>`;
+}
+
 function renderWeekCalendar(daily) {
   if (!nodes.weekBars || !nodes.weekDaysLabel) return;
 
@@ -562,20 +619,8 @@ function renderWeekCalendar(daily) {
     });
   }
 
-  const maxCount = Math.max(...days.map((d) => d.count), 1);
-
-  nodes.weekBars.innerHTML = days.map((day) => {
-    const heightPct = day.count > 0 ? Math.max((day.count / maxCount) * 100, 10) : 0;
-    const todayClass = day.isToday ? " today" : "";
-    return `
-      <div class="week-bar-wrap">
-        <div class="week-bar-bg">
-          <div class="week-bar-fill${todayClass}" style="height:${heightPct}%"></div>
-        </div>
-        <div class="week-bar-count">${day.count}</div>
-      </div>
-    `;
-  }).join("");
+  const values = days.map((d) => d.count);
+  nodes.weekBars.innerHTML = buildLineChart(days, values);
 
   nodes.weekDaysLabel.innerHTML = days.map((day) => {
     const todayClass = day.isToday ? " today" : "";
