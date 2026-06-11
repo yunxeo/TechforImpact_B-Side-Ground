@@ -596,7 +596,7 @@ function buildLineChart(days, values) {
     const isTodayDay = days[i]?.isToday;
     return `<circle cx="${x}" cy="${y}" r="${isTodayDay ? 4 : 3}" fill="${isTodayDay ? "#a8ac00" : "#d1d600"}"/>`;
   }).join("");
-  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  return `<svg width="100%" viewBox="0 0 ${w} ${h}">
     <polyline points="${points}" fill="none" stroke="#d1d600" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
     ${circles}
   </svg>`;
