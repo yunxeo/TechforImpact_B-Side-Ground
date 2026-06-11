@@ -715,16 +715,17 @@ function loadImg(src) {
 }
 
 function canvasRR(ctx, x, y, w, h, r) {
+  const R = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.moveTo(x + R, y);
+  ctx.lineTo(x + w - R, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + R);
+  ctx.lineTo(x + w, y + h - R);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - R, y + h);
+  ctx.lineTo(x + R, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - R);
+  ctx.lineTo(x, y + R);
+  ctx.quadraticCurveTo(x, y, x + R, y);
   ctx.closePath();
 }
 
@@ -732,17 +733,25 @@ function wrapCanvasText(ctx, text, maxWidth) {
   const lines = [];
   let cur = "";
   for (const ch of text) {
-    const candidate = cur + ch;
-    if (ctx.measureText(candidate).width > maxWidth && cur) {
+    const test = cur + ch;
+    if (ctx.measureText(test).width > maxWidth && cur) {
       lines.push(cur);
       cur = ch;
     } else {
-      cur = candidate;
+      cur = test;
     }
   }
   if (cur) lines.push(cur);
   return lines;
 }
+
+// Conversions (rough estimates for illustration)
+// 1 token ≈ 2 Korean characters
+// Water: ~50ml saved per 1,000 tokens reduced (cooling overhead)
+// Electricity: ~1 Wh saved per 1,000 tokens reduced
+const CHARS_PER_TOKEN = 2;
+const WATER_ML_PER_1K_TOKEN = 50;
+const WH_PER_1K_TOKEN = 1;
 
 async function downloadShareImage() {
   const stat = lastRenderedStat;
@@ -757,23 +766,41 @@ async function downloadShareImage() {
   nodes.shareImageBtn.textContent = "생성 중…";
 
   try {
+    // ── Compute values ──────────────────────────────────────
+    const totalCharsReduced = Math.round((stat.avgReducedChars || 0) * stat.submitCount);
+    const tokensReduced     = Math.round(totalCharsReduced / CHARS_PER_TOKEN);
+    const waterMl           = Math.round(tokensReduced * WATER_ML_PER_1K_TOKEN / 1000 * 10) / 10;
+    const whSaved           = Math.round(tokensReduced * WH_PER_1K_TOKEN / 1000 * 100) / 100;
+
+    const reportDate = new Date();
+    reportDate.setDate(reportDate.getDate() + reportOffset);
+    const yDate = new Date(reportDate);
+    yDate.setDate(yDate.getDate() - 1);
+    const ydKey  = formatDateKey(yDate);
+    const ydData = latestDaily[ydKey] || {};
+    const ydAvg  = Math.round(ydData.avgFinalChars || 0);
+    const todayAvg = stat.avgFinalChars || 0;
+    const charDiff = ydAvg > 0 ? ydAvg - todayAvg : null;
+
+    const dateLabel = `${reportDate.getFullYear()}.${String(reportDate.getMonth()+1).padStart(2,"0")}.${String(reportDate.getDate()).padStart(2,"0")}`;
+
+    // ── Canvas setup ────────────────────────────────────────
     const W = 1080, H = 1080;
     const canvas = document.createElement("canvas");
     canvas.width = W;
     canvas.height = H;
     const ctx = canvas.getContext("2d");
 
-    const KO = "'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
-    const BRAND   = "#d1d600";
-    const DEEP    = "#4e5000";
-    const DARK    = "#1a1a16";
-    const SUB     = "#5e5e57";
-    const C_LOW   = "#d1d600";
-    const C_MED   = "#f97316";
-    const C_HIGH  = "#ef4444";
-    const PAD     = 72;
+    const KO   = "'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
+    const BRAND = "#d1d600";
+    const DEEP  = "#4e5000";
+    const DARK  = "#1a1a16";
+    const SUB   = "#5e5e57";
+    const MUTED = "#919188";
+    const PAD   = 72;
+    const IW    = W - PAD * 2;   // inner width: 936px
 
-    // — Load assets —
+    // ── Load assets ─────────────────────────────────────────
     const imgKey = puri?.imgKey || "low";
     const puriSrc = imgKey === "high"
       ? "../assets/puri_high_3d.png"
@@ -783,194 +810,199 @@ async function downloadShareImage() {
       loadImg("../assets/logo_eng.svg")
     ]);
 
-    // — Background —
+    // ── Background ──────────────────────────────────────────
     const bg = ctx.createLinearGradient(0, 0, W, H);
-    bg.addColorStop(0, "#f2f47a");
-    bg.addColorStop(0.55, "#fafbcc");
-    bg.addColorStop(1, "#ffffff");
+    bg.addColorStop(0,    "#f2f47a");
+    bg.addColorStop(0.5,  "#fafbcc");
+    bg.addColorStop(1,    "#ffffff");
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
 
-    // Decorative circle behind puri
-    ctx.beginPath();
-    ctx.arc(W / 2, 370, 310, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255,255,255,0.5)";
-    ctx.fill();
+    // Soft glow circle behind puri
+    const grd = ctx.createRadialGradient(W/2, 340, 40, W/2, 340, 280);
+    grd.addColorStop(0,   "rgba(255,255,255,0.65)");
+    grd.addColorStop(1,   "rgba(255,255,255,0)");
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
 
-    // — Header —
-    const dateLabel = reportOffset === 0
-      ? (() => { const d = new Date(); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`; })()
-      : (() => { const d = new Date(); d.setDate(d.getDate() + reportOffset); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`; })();
-
-    ctx.font = `700 30px ${KO}`;
-    ctx.fillStyle = DEEP;
-    ctx.textAlign = "left";
-    ctx.fillText("AI 사용 리포트", PAD, 78);
-
-    ctx.font = `500 28px ${KO}`;
-    ctx.fillStyle = SUB;
-    ctx.textAlign = "right";
-    ctx.fillText(dateLabel, W - PAD, 78);
-
-    // — Puri image —
-    const puriSize = 360;
-    const puriX = (W - puriSize) / 2;
-    const puriY = 110;
-    if (puriImg) {
-      ctx.drawImage(puriImg, puriX, puriY, puriSize, puriSize);
+    // ── Helper: shadow on/off ────────────────────────────────
+    function shadow(on) {
+      if (on) {
+        ctx.shadowColor   = "rgba(0,0,0,0.09)";
+        ctx.shadowBlur    = 28;
+        ctx.shadowOffsetY = 6;
+      } else {
+        ctx.shadowColor   = "transparent";
+        ctx.shadowBlur    = 0;
+        ctx.shadowOffsetY = 0;
+      }
     }
 
-    // — Message bubble —
-    const msgText = puri?.msg || "";
-    const bubblePad = 40;
-    const bubbleW = W - PAD * 2;
-    const bubbleX = PAD;
-    const bubbleY = puriY + puriSize + 16;
+    // ── Header ──────────────────────────────────────────────
+    // "AI 사용 리포트"  ·  date
+    ctx.font      = `700 28px ${KO}`;
+    ctx.fillStyle = DEEP;
+    ctx.textAlign = "left";
+    ctx.fillText("AI 사용 리포트", PAD, 76);
 
-    ctx.font = `600 34px ${KO}`;
-    const msgLines = wrapCanvasText(ctx, msgText, bubbleW - bubblePad * 2);
-    const lineH = 50;
-    const bubbleH = bubblePad * 2 + lineH * msgLines.length;
+    ctx.font      = `500 26px ${KO}`;
+    ctx.fillStyle = SUB;
+    ctx.textAlign = "right";
+    ctx.fillText(dateLabel, W - PAD, 76);
 
-    // bubble shadow
-    ctx.shadowColor = "rgba(0,0,0,0.08)";
-    ctx.shadowBlur = 24;
-    ctx.shadowOffsetY = 6;
-    canvasRR(ctx, bubbleX, bubbleY, bubbleW, bubbleH, 28);
-    ctx.fillStyle = "#ffffff";
-    ctx.fill();
-    ctx.shadowColor = "transparent";
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
+    // ── Puri image (280 × 280) ──────────────────────────────
+    const PURI_SZ = 280;
+    const puriX   = (W - PURI_SZ) / 2;
+    const puriY   = 110;
+    if (puriImg) ctx.drawImage(puriImg, puriX, puriY, PURI_SZ, PURI_SZ);
 
+    // ── Message text (no box – just clean centered text) ────
+    const MSG_FONT_SZ = 30;
+    const MSG_LINE_H  = 44;
+    ctx.font = `600 ${MSG_FONT_SZ}px ${KO}`;
+    const rawMsg   = puri?.msg || "";
+    const msgLines = wrapCanvasText(ctx, rawMsg, IW).slice(0, 3);
+
+    const msgTop = puriY + PURI_SZ + 24;
     ctx.fillStyle = DARK;
     ctx.textAlign = "center";
     msgLines.forEach((line, i) => {
-      ctx.fillText(line, W / 2, bubbleY + bubblePad + 34 + lineH * i);
+      ctx.fillText(line, W / 2, msgTop + MSG_FONT_SZ + MSG_LINE_H * i);
     });
 
-    // — Stats card —
-    const cardY = bubbleY + bubbleH + 28;
-    const cardW = W - PAD * 2;
-    const cardH = 246;
+    const msgBottom = msgTop + MSG_FONT_SZ + MSG_LINE_H * (msgLines.length - 1) + 12;
 
-    ctx.shadowColor = "rgba(0,0,0,0.07)";
-    ctx.shadowBlur = 20;
-    ctx.shadowOffsetY = 4;
-    canvasRR(ctx, PAD, cardY, cardW, cardH, 28);
-    ctx.fillStyle = "rgba(255,255,255,0.95)";
-    ctx.fill();
-    ctx.shadowColor = "transparent";
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
+    // ── Divider ──────────────────────────────────────────────
+    const DIV_Y = msgBottom + 28;
+    ctx.strokeStyle = "rgba(26,26,22,0.10)";
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(PAD, DIV_Y);
+    ctx.lineTo(W - PAD, DIV_Y);
+    ctx.stroke();
 
-    const cx = PAD + 40;
-    const cy = cardY + 44;
-
-    // Total sends
-    ctx.font = `700 52px ${KO}`;
-    ctx.fillStyle = DARK;
-    ctx.textAlign = "left";
-    const bigText = `총 ${stat.submitCount}번`;
-    const bigW = ctx.measureText(bigText).width;
-    ctx.fillText(bigText, cx, cy);
-
-    ctx.font = `500 26px ${KO}`;
-    ctx.fillStyle = SUB;
-    ctx.fillText("AI에 보냈어요", cx + bigW + 14, cy - 4);
-
-    // Level bar
-    const barY = cy + 24;
-    const barH = 18;
-    const barW = cardW - 80;
-    const barX = PAD + 40;
-
-    canvasRR(ctx, barX, barY, barW, barH, 9);
-    ctx.fillStyle = "#e5e5d8";
-    ctx.fill();
-
-    // Draw filled segments clipped to the rounded bar shape
-    ctx.save();
-    canvasRR(ctx, barX, barY, barW, barH, 9);
-    ctx.clip();
-    let bx = barX;
-    [
-      { pct: stat.lowRatioPct, color: C_LOW },
-      { pct: stat.mediumRatioPct, color: C_MED },
-      { pct: stat.highRatioPct, color: C_HIGH }
-    ].forEach(({ pct, color }) => {
-      if (!pct) return;
-      const sw = Math.round(barW * pct / 100);
-      ctx.fillStyle = color;
-      ctx.fillRect(bx, barY, sw, barH);
-      bx += sw;
-    });
-    ctx.restore();
-
-    // Level legend
-    ctx.font = `500 22px ${KO}`;
-    const legendY = barY + barH + 24;
-    const legendItems = [
-      { label: `낮음 ${stat.lowRatioPct}%`, color: C_LOW, pct: stat.lowRatioPct },
-      { label: `중간 ${stat.mediumRatioPct}%`, color: C_MED, pct: stat.mediumRatioPct },
-      { label: `높음 ${stat.highRatioPct}%`, color: C_HIGH, pct: stat.highRatioPct }
-    ].filter(l => l.pct > 0);
-
-    let lx = barX;
-    legendItems.forEach(({ label, color }) => {
-      // dot
-      ctx.beginPath();
-      ctx.arc(lx + 8, legendY - 7, 7, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.fill();
-      ctx.fillStyle = SUB;
+    // ── Stat items ───────────────────────────────────────────
+    // Helper: draws a labeled stat row
+    // valueText  – big, brand deep color
+    // labelText  – small, muted
+    function drawStatRow(valueText, labelText, y) {
+      // label
+      ctx.font      = `500 22px ${KO}`;
+      ctx.fillStyle = MUTED;
       ctx.textAlign = "left";
-      ctx.fillText(label, lx + 22, legendY);
-      lx += ctx.measureText(label).width + 50;
-    });
-
-    // Platform line
-    const pc = stat.platformCounts || {};
-    const platParts = [];
-    if (pc.chatgpt) platParts.push(`ChatGPT ${pc.chatgpt}번`);
-    if (pc.claude)  platParts.push(`Claude ${pc.claude}번`);
-    if (pc.gemini)  platParts.push(`Gemini ${pc.gemini}번`);
-    if (platParts.length > 0) {
-      ctx.font = `500 22px ${KO}`;
-      ctx.fillStyle = SUB;
-      ctx.textAlign = "left";
-      ctx.fillText(platParts.join("  ·  "), barX, legendY + 38);
+      ctx.fillText(labelText, PAD, y);
+      // value
+      ctx.font      = `700 44px ${KO}`;
+      ctx.fillStyle = DEEP;
+      // measure to avoid overflow
+      let vText = valueText;
+      while (ctx.measureText(vText).width > IW && vText.length > 4) {
+        vText = vText.slice(0, -1);
+      }
+      ctx.fillText(vText, PAD, y + 48);
     }
 
-    // — Groo logo —
-    const logoY = cardY + cardH + 32;
-    if (logoImg) {
-      const lh = 38;
-      const lw = lh * (361 / 95);
-      ctx.drawImage(logoImg, (W - lw) / 2, logoY, lw, lh);
+    let rowY = DIV_Y + 36;
+
+    // 1. 절감 토큰
+    drawStatRow(
+      `${formatNumber(tokensReduced)}개`,
+      "오늘 절감한 토큰",
+      rowY
+    );
+    rowY += 48 + 40;  // value height + gap
+
+    // 2. 어제 대비
+    let compText;
+    if (charDiff === null) {
+      compText = `평균 ${formatNumber(Math.round(todayAvg))}자 작성했어요`;
+    } else if (charDiff > 0) {
+      compText = `어제보다 ${formatNumber(charDiff)}자 줄였어요`;
+    } else if (charDiff < 0) {
+      compText = `어제보다 ${formatNumber(Math.abs(charDiff))}자 늘었어요`;
     } else {
-      ctx.font = `700 38px ${KO}`;
+      compText = "어제와 입력 길이가 같아요";
+    }
+    drawStatRow(compText, "어제 대비 평균 입력 길이", rowY);
+    rowY += 48 + 40;
+
+    // ── Divider ──────────────────────────────────────────────
+    const DIV2_Y = rowY;
+    ctx.strokeStyle = "rgba(26,26,22,0.10)";
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(PAD, DIV2_Y);
+    ctx.lineTo(W - PAD, DIV2_Y);
+    ctx.stroke();
+
+    // ── Environmental mini-cards (2-col) ─────────────────────
+    const ENV_Y    = DIV2_Y + 28;
+    const ENV_GAP  = 20;
+    const ENV_W    = (IW - ENV_GAP) / 2;
+    const ENV_H    = 130;
+    const ENV_R    = 20;
+
+    function drawEnvCard(x, emoji, valueText, labelText) {
+      // card bg
+      shadow(true);
+      canvasRR(ctx, x, ENV_Y, ENV_W, ENV_H, ENV_R);
+      ctx.fillStyle = "rgba(255,255,255,0.90)";
+      ctx.fill();
+      shadow(false);
+
+      // emoji
+      ctx.font      = `48px serif`;
+      ctx.textAlign = "left";
+      ctx.fillText(emoji, x + 22, ENV_Y + 58);
+
+      // value
+      ctx.font      = `700 34px ${KO}`;
+      ctx.fillStyle = DEEP;
+      ctx.textAlign = "left";
+      // clamp if too wide
+      let v = valueText;
+      const maxV = ENV_W - 30;
+      while (ctx.measureText(v).width > maxV && v.length > 2) v = v.slice(0,-1);
+      ctx.fillText(v, x + 22, ENV_Y + 98);
+
+      // label
+      ctx.font      = `500 20px ${KO}`;
+      ctx.fillStyle = MUTED;
+      ctx.fillText(labelText, x + 22, ENV_Y + 122);
+    }
+
+    drawEnvCard(PAD,               "💧", `${waterMl}ml`,  "물 절약");
+    drawEnvCard(PAD + ENV_W + ENV_GAP, "⚡", `${whSaved}Wh`, "전기 절약");
+
+    // ── Groo logo ────────────────────────────────────────────
+    const LOGO_Y = ENV_Y + ENV_H + 36;
+    if (logoImg) {
+      const lh = 34;
+      const lw = lh * (361 / 95);
+      ctx.drawImage(logoImg, (W - lw) / 2, LOGO_Y, lw, lh);
+    } else {
+      ctx.font      = `700 34px ${KO}`;
       ctx.fillStyle = DEEP;
       ctx.textAlign = "center";
-      ctx.fillText("Groo", W / 2, logoY + 36);
+      ctx.fillText("Groo", W / 2, LOGO_Y + 30);
     }
 
-    // — Brand bottom strip —
+    // ── Brand bottom strip ────────────────────────────────────
     ctx.fillStyle = BRAND;
     ctx.fillRect(0, H - 14, W, 14);
 
-    // — Export —
+    // ── Export ───────────────────────────────────────────────
     canvas.toBlob((blob) => {
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
+      const a   = document.createElement("a");
+      a.href     = url;
       a.download = `그루_리포트_${dateLabel}.png`;
       a.click();
       URL.revokeObjectURL(url);
     }, "image/png");
 
   } finally {
-    nodes.shareImageBtn.disabled = false;
+    nodes.shareImageBtn.disabled  = false;
     nodes.shareImageBtn.textContent = "공유 이미지 저장";
   }
 }
