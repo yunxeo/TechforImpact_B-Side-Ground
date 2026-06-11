@@ -238,20 +238,20 @@ function renderCustomPrompts() {
         nodes.copyPromptBtn.classList.remove("copied");
       }
       renderCustomPrompts();
+
+      const preview = document.getElementById("promptPreview");
+      const previewText = document.getElementById("promptPreviewText");
+      if (preview && previewText) {
+        const selectedPreset = presets[selectedPresetIdx];
+        if (selectedPreset) {
+          previewText.textContent = selectedPreset.prompt;
+          preview.style.display = "block";
+        } else {
+          preview.style.display = "none";
+        }
+      }
     });
   });
-
-  const preview = document.getElementById("promptPreview");
-  const previewText = document.getElementById("promptPreviewText");
-  if (preview && previewText) {
-    const selectedPreset = presets[selectedPresetIdx];
-    if (selectedPresetIdx >= 0 && selectedPreset) {
-      previewText.textContent = selectedPreset.prompt;
-      preview.style.display = "block";
-    } else {
-      preview.style.display = "none";
-    }
-  }
 }
 
 function bindCopyBtn() {
