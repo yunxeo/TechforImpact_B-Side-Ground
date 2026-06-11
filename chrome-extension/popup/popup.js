@@ -110,6 +110,7 @@ const nodes = {
   levelMixNote: $("#levelMixNote"),
   weekBars: $("#weekBars"),
   weekDaysLabel: $("#weekDaysLabel"),
+  shareImageBtn: $("#shareImageBtn"),
   downloadLogBtn: $("#downloadLogBtn"),
   openGuide: $("#openGuide"),
   personaTabs: $("#personaTabs"),
@@ -125,6 +126,8 @@ const nodes = {
 let customCharacterUrl = null;
 let reportOffset = 0;
 let selectedPersona = Object.keys(CUSTOM_PROMPTS)[0];
+let lastRenderedStat = null;
+let lastRenderedPuri = null;
 
 boot();
 
@@ -330,6 +333,7 @@ function bindEvents(settings) {
   fillHowDemoAll();
   nodes.refreshReport.addEventListener("click", loadAndRenderReport);
   nodes.openGuide.addEventListener("click", openOnboardingOnActiveTab);
+  nodes.shareImageBtn.addEventListener("click", downloadShareImage);
   nodes.downloadLogBtn.addEventListener("click", downloadLog);
 
   nodes.prevDay.addEventListener("click", () => {
@@ -470,6 +474,8 @@ function renderReport(report) {
   };
 
   const puri = getPuriComment(stat);
+  lastRenderedStat = stat;
+  lastRenderedPuri = puri;
   nodes.puriReportImg.src = customCharacterUrl || PURI_ASSETS[puri.imgKey] || PURI_ASSETS.idle;
   nodes.puriReportImg.alt = "푸리";
   nodes.puriCustomBadge.hidden = !customCharacterUrl;
@@ -696,6 +702,277 @@ function getPuriComment(stat) {
           `오늘 ${n}번 채팅 중 낮음이 ${lo}번이에요. 입력 길이가 딱 좋았어요. 덕분에 답변도 빨랐을 거예요 ✨`
         ])
   };
+}
+
+// ── Share image ──────────────────────────────────────────────
+function loadImg(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+function canvasRR(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function wrapCanvasText(ctx, text, maxWidth) {
+  const lines = [];
+  let cur = "";
+  for (const ch of text) {
+    const candidate = cur + ch;
+    if (ctx.measureText(candidate).width > maxWidth && cur) {
+      lines.push(cur);
+      cur = ch;
+    } else {
+      cur = candidate;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+async function downloadShareImage() {
+  const stat = lastRenderedStat;
+  const puri = lastRenderedPuri;
+
+  if (!stat || !stat.submitCount) {
+    alert("오늘의 AI 사용 기록이 없어요. 먼저 채팅을 보내보세요!");
+    return;
+  }
+
+  nodes.shareImageBtn.disabled = true;
+  nodes.shareImageBtn.textContent = "생성 중…";
+
+  try {
+    const W = 1080, H = 1080;
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d");
+
+    const KO = "'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
+    const BRAND   = "#d1d600";
+    const DEEP    = "#4e5000";
+    const DARK    = "#1a1a16";
+    const SUB     = "#5e5e57";
+    const C_LOW   = "#d1d600";
+    const C_MED   = "#f97316";
+    const C_HIGH  = "#ef4444";
+    const PAD     = 72;
+
+    // — Load assets —
+    const imgKey = puri?.imgKey || "low";
+    const puriSrc = imgKey === "high"
+      ? "../assets/puri_high_3d.png"
+      : "../assets/puri_low_3d.png";
+    const [puriImg, logoImg] = await Promise.all([
+      loadImg(puriSrc),
+      loadImg("../assets/logo_eng.svg")
+    ]);
+
+    // — Background —
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, "#f2f47a");
+    bg.addColorStop(0.55, "#fafbcc");
+    bg.addColorStop(1, "#ffffff");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // Decorative circle behind puri
+    ctx.beginPath();
+    ctx.arc(W / 2, 370, 310, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.fill();
+
+    // — Header —
+    const dateLabel = reportOffset === 0
+      ? (() => { const d = new Date(); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`; })()
+      : (() => { const d = new Date(); d.setDate(d.getDate() + reportOffset); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`; })();
+
+    ctx.font = `700 30px ${KO}`;
+    ctx.fillStyle = DEEP;
+    ctx.textAlign = "left";
+    ctx.fillText("AI 사용 리포트", PAD, 78);
+
+    ctx.font = `500 28px ${KO}`;
+    ctx.fillStyle = SUB;
+    ctx.textAlign = "right";
+    ctx.fillText(dateLabel, W - PAD, 78);
+
+    // — Puri image —
+    const puriSize = 360;
+    const puriX = (W - puriSize) / 2;
+    const puriY = 110;
+    if (puriImg) {
+      ctx.drawImage(puriImg, puriX, puriY, puriSize, puriSize);
+    }
+
+    // — Message bubble —
+    const msgText = puri?.msg || "";
+    const bubblePad = 40;
+    const bubbleW = W - PAD * 2;
+    const bubbleX = PAD;
+    const bubbleY = puriY + puriSize + 16;
+
+    ctx.font = `600 34px ${KO}`;
+    const msgLines = wrapCanvasText(ctx, msgText, bubbleW - bubblePad * 2);
+    const lineH = 50;
+    const bubbleH = bubblePad * 2 + lineH * msgLines.length;
+
+    // bubble shadow
+    ctx.shadowColor = "rgba(0,0,0,0.08)";
+    ctx.shadowBlur = 24;
+    ctx.shadowOffsetY = 6;
+    canvasRR(ctx, bubbleX, bubbleY, bubbleW, bubbleH, 28);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    ctx.fillStyle = DARK;
+    ctx.textAlign = "center";
+    msgLines.forEach((line, i) => {
+      ctx.fillText(line, W / 2, bubbleY + bubblePad + 34 + lineH * i);
+    });
+
+    // — Stats card —
+    const cardY = bubbleY + bubbleH + 28;
+    const cardW = W - PAD * 2;
+    const cardH = 246;
+
+    ctx.shadowColor = "rgba(0,0,0,0.07)";
+    ctx.shadowBlur = 20;
+    ctx.shadowOffsetY = 4;
+    canvasRR(ctx, PAD, cardY, cardW, cardH, 28);
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
+    ctx.fill();
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    const cx = PAD + 40;
+    const cy = cardY + 44;
+
+    // Total sends
+    ctx.font = `700 52px ${KO}`;
+    ctx.fillStyle = DARK;
+    ctx.textAlign = "left";
+    const bigText = `총 ${stat.submitCount}번`;
+    const bigW = ctx.measureText(bigText).width;
+    ctx.fillText(bigText, cx, cy);
+
+    ctx.font = `500 26px ${KO}`;
+    ctx.fillStyle = SUB;
+    ctx.fillText("AI에 보냈어요", cx + bigW + 14, cy - 4);
+
+    // Level bar
+    const barY = cy + 24;
+    const barH = 18;
+    const barW = cardW - 80;
+    const barX = PAD + 40;
+
+    canvasRR(ctx, barX, barY, barW, barH, 9);
+    ctx.fillStyle = "#e5e5d8";
+    ctx.fill();
+
+    // Draw filled segments clipped to the rounded bar shape
+    ctx.save();
+    canvasRR(ctx, barX, barY, barW, barH, 9);
+    ctx.clip();
+    let bx = barX;
+    [
+      { pct: stat.lowRatioPct, color: C_LOW },
+      { pct: stat.mediumRatioPct, color: C_MED },
+      { pct: stat.highRatioPct, color: C_HIGH }
+    ].forEach(({ pct, color }) => {
+      if (!pct) return;
+      const sw = Math.round(barW * pct / 100);
+      ctx.fillStyle = color;
+      ctx.fillRect(bx, barY, sw, barH);
+      bx += sw;
+    });
+    ctx.restore();
+
+    // Level legend
+    ctx.font = `500 22px ${KO}`;
+    const legendY = barY + barH + 24;
+    const legendItems = [
+      { label: `낮음 ${stat.lowRatioPct}%`, color: C_LOW, pct: stat.lowRatioPct },
+      { label: `중간 ${stat.mediumRatioPct}%`, color: C_MED, pct: stat.mediumRatioPct },
+      { label: `높음 ${stat.highRatioPct}%`, color: C_HIGH, pct: stat.highRatioPct }
+    ].filter(l => l.pct > 0);
+
+    let lx = barX;
+    legendItems.forEach(({ label, color }) => {
+      // dot
+      ctx.beginPath();
+      ctx.arc(lx + 8, legendY - 7, 7, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.fillStyle = SUB;
+      ctx.textAlign = "left";
+      ctx.fillText(label, lx + 22, legendY);
+      lx += ctx.measureText(label).width + 50;
+    });
+
+    // Platform line
+    const pc = stat.platformCounts || {};
+    const platParts = [];
+    if (pc.chatgpt) platParts.push(`ChatGPT ${pc.chatgpt}번`);
+    if (pc.claude)  platParts.push(`Claude ${pc.claude}번`);
+    if (pc.gemini)  platParts.push(`Gemini ${pc.gemini}번`);
+    if (platParts.length > 0) {
+      ctx.font = `500 22px ${KO}`;
+      ctx.fillStyle = SUB;
+      ctx.textAlign = "left";
+      ctx.fillText(platParts.join("  ·  "), barX, legendY + 38);
+    }
+
+    // — Groo logo —
+    const logoY = cardY + cardH + 32;
+    if (logoImg) {
+      const lh = 38;
+      const lw = lh * (361 / 95);
+      ctx.drawImage(logoImg, (W - lw) / 2, logoY, lw, lh);
+    } else {
+      ctx.font = `700 38px ${KO}`;
+      ctx.fillStyle = DEEP;
+      ctx.textAlign = "center";
+      ctx.fillText("Groo", W / 2, logoY + 36);
+    }
+
+    // — Brand bottom strip —
+    ctx.fillStyle = BRAND;
+    ctx.fillRect(0, H - 14, W, 14);
+
+    // — Export —
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `그루_리포트_${dateLabel}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }, "image/png");
+
+  } finally {
+    nodes.shareImageBtn.disabled = false;
+    nodes.shareImageBtn.textContent = "공유 이미지 저장";
+  }
 }
 
 function downloadLog() {
