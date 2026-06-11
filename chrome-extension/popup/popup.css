@@ -614,19 +614,14 @@ button.secondary {
 
 .landing-link-btn {
   font-size: 12px;
-  font-weight: 700;
-  color: #5e5e00;
+  font-weight: 600;
+  color: #4e5000;
   text-decoration: none;
-  background: #f2f47a;
-  border: 1.5px solid #d1d600;
-  border-radius: 8px;
-  padding: 7px 14px;
-  display: inline-block;
-  transition: all 0.15s;
+  letter-spacing: -0.01em;
+  transition: color 0.15s;
 }
 
 .landing-link-btn:hover {
-  background: #d1d600;
   color: #1a1a16;
 }
 
