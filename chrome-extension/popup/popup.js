@@ -111,14 +111,12 @@ const nodes = {
   weekDaysLabel: $("#weekDaysLabel"),
   openGuide: $("#openGuide"),
   personaTabs: $("#personaTabs"),
-  presetList: $("#presetList"),
   copyPromptBtn: $("#copyPromptBtn")
 };
 
 let customCharacterUrl = null;
 let reportOffset = 0;
 let selectedPersona = Object.keys(CUSTOM_PROMPTS)[0];
-let selectedPresetIdx = -1;
 
 boot();
 
@@ -200,7 +198,7 @@ function render(state) {
 }
 
 function renderCustomPrompts() {
-  if (!nodes.personaTabs || !nodes.presetList) return;
+  if (!nodes.personaTabs) return;
 
   const personaKeys = Object.keys(CUSTOM_PROMPTS);
 
@@ -213,56 +211,31 @@ function renderCustomPrompts() {
   nodes.personaTabs.querySelectorAll(".persona-tab").forEach((btn) => {
     btn.addEventListener("click", () => {
       selectedPersona = btn.dataset.persona;
-      selectedPresetIdx = -1;
       if (nodes.copyPromptBtn) {
-        nodes.copyPromptBtn.disabled = true;
         nodes.copyPromptBtn.textContent = "지침 복사하기";
         nodes.copyPromptBtn.classList.remove("copied");
       }
-      const preview = document.getElementById("promptPreview");
-      if (preview) preview.style.display = "none";
       renderCustomPrompts();
     });
   });
 
   const presets = CUSTOM_PROMPTS[selectedPersona]?.presets || [];
-  nodes.presetList.innerHTML = presets.map((preset, idx) => {
-    const selected = idx === selectedPresetIdx;
-    return `<div class="preset-item${selected ? " selected" : ""}" data-idx="${idx}">${escapeHtml(preset.label)}</div>`;
-  }).join("");
+  const prompt = presets[0]?.prompt || "";
+  const fulltext = document.getElementById("promptFulltext");
+  if (fulltext) fulltext.textContent = prompt;
 
-  nodes.presetList.querySelectorAll(".preset-item").forEach((item) => {
-    item.addEventListener("click", () => {
-      selectedPresetIdx = Number(item.dataset.idx);
-
-      const currentPresets = CUSTOM_PROMPTS[selectedPersona]?.presets || [];
-      const selectedPreset = currentPresets[selectedPresetIdx];
-
-      const preview = document.getElementById("promptPreview");
-      const previewText = document.getElementById("promptPreviewText");
-      if (preview && previewText && selectedPreset) {
-        previewText.textContent = selectedPreset.prompt;
-        preview.style.display = "block";
-      }
-
-      if (nodes.copyPromptBtn) {
-        nodes.copyPromptBtn.disabled = false;
-        nodes.copyPromptBtn.textContent = "지침 복사하기";
-        nodes.copyPromptBtn.classList.remove("copied");
-      }
-      renderCustomPrompts();
-    });
-  });
+  if (nodes.copyPromptBtn) {
+    nodes.copyPromptBtn.disabled = false;
+  }
 }
 
 function bindCopyBtn() {
   if (!nodes.copyPromptBtn) return;
   nodes.copyPromptBtn.addEventListener("click", async () => {
-    if (selectedPresetIdx < 0) return;
-    const preset = CUSTOM_PROMPTS[selectedPersona]?.presets?.[selectedPresetIdx];
-    if (!preset) return;
+    const fulltext = document.getElementById("promptFulltext");
+    if (!fulltext?.textContent) return;
     try {
-      await navigator.clipboard.writeText(preset.prompt);
+      await navigator.clipboard.writeText(fulltext.textContent);
       nodes.copyPromptBtn.textContent = "복사됐어요! ✓";
       nodes.copyPromptBtn.classList.add("copied");
       setTimeout(() => {
