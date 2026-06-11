@@ -622,22 +622,21 @@ function renderWeekCalendar(daily) {
 
   nodes.weekBars.innerHTML = days.map((day) => {
     const heightPct = day.count > 0 ? Math.max((day.count / maxCount) * 100, 8) : 0;
-    const total = day.low + day.medium + day.high || 1;
-    const lowPct    = (day.low    / total) * 100;
-    const mediumPct = (day.medium / total) * 100;
-    const highPct   = (day.high   / total) * 100;
+    const total = day.low + day.medium + day.high;
     const todayClass = day.isToday ? " today" : "";
-    const segments = day.count > 0
-      ? `<div class="week-seg low"    style="flex:${lowPct}"></div>
-         <div class="week-seg medium" style="flex:${mediumPct}"></div>
-         <div class="week-seg high"   style="flex:${highPct}"></div>`
+    const segments = day.count > 0 && total > 0
+      ? [
+          day.low    > 0 ? `<div class="week-seg low"    style="flex:${day.low}"></div>`    : "",
+          day.medium > 0 ? `<div class="week-seg medium" style="flex:${day.medium}"></div>` : "",
+          day.high   > 0 ? `<div class="week-seg high"   style="flex:${day.high}"></div>`   : ""
+        ].join("")
       : "";
     return `
       <div class="week-bar-wrap">
-        <div class="week-bar-count">${day.count > 0 ? day.count : ""}</div>
         <div class="week-bar-bg">
           <div class="week-bar-fill${todayClass}" style="height:${heightPct}%">${segments}</div>
         </div>
+        <div class="week-bar-count">${day.count}</div>
       </div>`;
   }).join("");
 
