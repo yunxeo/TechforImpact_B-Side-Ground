@@ -471,7 +471,7 @@ function renderReport(report) {
   nodes.puriReportImg.src = customCharacterUrl || PURI_ASSETS[puri.imgKey] || PURI_ASSETS.idle;
   nodes.puriReportImg.alt = "푸리";
   nodes.puriCustomBadge.hidden = !customCharacterUrl;
-  nodes.puriReportMsg.textContent = getDailyReportNudge(stat) || puri.msg;
+  nodes.puriReportMsg.textContent = puri.msg;
 
   nodes.reportInsights.innerHTML = buildInsightItems(stat).join("");
 
