@@ -638,8 +638,9 @@
   }
 
   function pickHoverContent(snapshot) {
+    const titleMap = { low: "딱 좋은 길이예요", medium: "조금 길어요", high: "많이 길어요" };
     return {
-      title: snapshot.level === "idle" ? "환경 넛지" : `${getLevelLabel(snapshot.level)} 환경 넛지`,
+      title: titleMap[snapshot.level] || "환경 넛지",
       message: pickEnvironmentNudge(snapshot.level)
     };
   }
