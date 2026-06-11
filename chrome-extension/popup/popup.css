@@ -662,6 +662,33 @@ button.secondary {
 
 .custom-desc { font-size: 11px; color: #5e5e57; line-height: 1.5; margin-bottom: 12px; }
 
+.how-path-steps { font-size: 11px; color: #5e5e57; line-height: 1.5; margin-bottom: 8px; }
+.how-path-steps strong { color: #383833; }
+
+.popup-how-demo-window {
+  border: 1.5px solid #e5e5d8; border-radius: 10px; overflow: hidden; background: #fafaf5;
+}
+.popup-how-demo-bar {
+  display: flex; align-items: center; gap: 5px;
+  padding: 7px 10px; background: #f0f0e8; border-bottom: 1px solid #e5e5d8;
+}
+.popup-how-demo-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #d8d8cc; flex-shrink: 0;
+}
+.popup-how-demo-dot:nth-child(1) { background: #ff5f57; }
+.popup-how-demo-dot:nth-child(2) { background: #febc2e; }
+.popup-how-demo-dot:nth-child(3) { background: #28c840; }
+.popup-how-demo-title { font-size: 10px; font-weight: 600; color: #919188; margin-left: 4px; }
+.popup-how-demo-body { padding: 10px 12px; }
+.popup-how-demo-label { font-size: 10px; color: #919188; font-weight: 500; margin-bottom: 6px; }
+.popup-how-demo-textarea {
+  min-height: 56px; font-size: 10px; color: #383833; line-height: 1.6;
+  white-space: pre-wrap; word-break: break-all;
+}
+.popup-how-demo-textarea::after {
+  content: '|'; animation: blink 1s infinite; color: #d1d600; font-weight: 700;
+}
+
 .how-to-inline {
   margin-top: 10px; padding: 10px 12px;
   background: #f7f7f0; border: 1.5px solid #e5e5d8; border-radius: 10px;
