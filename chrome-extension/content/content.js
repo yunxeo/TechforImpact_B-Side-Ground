@@ -3453,19 +3453,19 @@
         color: var(--level-deep, var(--green-900));
       }
       .cp-bubble strong.text-status {
-        font-size: calc(20px * var(--cp-nudge-scale, 0.8));
+        font-size: 12px;
         font-weight: 700;
         line-height: 130%;
       }
       .cp-bubble span {
         display: block;
         color: var(--gray-800);
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 400;
         line-height: 130%;
       }
       .cp-bubble .text-body-m {
-        font-size: 12px;
+        font-size: 11px;
       }
       .variant-tree-status-badge {
         display: flex;
