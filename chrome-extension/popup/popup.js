@@ -90,37 +90,42 @@ const $ = (selector) => document.querySelector(selector);
 let latestDaily = {};
 
 const nodes = {
-  enabled: $("#enabled"),
-  focusMode: $("#focusMode"),
-  prevDay: $("#prevDay"),
-  nextDay: $("#nextDay"),
-  reportDate: $("#reportDate"),
-  refreshReport: $("#refreshReport"),
-  reportStatus: $("#reportStatus"),
-  puriReportImg: $("#puriReportImg"),
-  puriImgWrap: $("#puriImgWrap"),
-  puriUploadInput: $("#puriUploadInput"),
-  puriCustomBadge: $("#puriCustomBadge"),
-  puriResetBtn: $("#puriResetBtn"),
-  puriReportMsg: $("#puriReportMsg"),
-  reportInsights: $("#reportInsights"),
-  lowRatio: $("#lowRatio"),
-  mediumRatio: $("#mediumRatio"),
-  highRatio: $("#highRatio"),
-  levelMixNote: $("#levelMixNote"),
-  weekBars: $("#weekBars"),
-  weekDaysLabel: $("#weekDaysLabel"),
-  shareImageBtn: $("#shareImageBtn"),
+  enabled:        $("#enabled"),
+  focusMode:      $("#focusMode"),
+  prevDay:        $("#prevDay"),
+  nextDay:        $("#nextDay"),
+  reportDate:     $("#reportDate"),
+  refreshReport:  $("#refreshReport"),
+  reportStatus:   $("#reportStatus"),
+  puriReportImg:  $("#puriReportImg"),
+  puriReportTitle:$("#puriReportTitle"),
+  puriReportMsg:  $("#puriReportMsg"),
+  puriImgWrap:    $("#puriImgWrap"),
+  puriUploadInput:$("#puriUploadInput"),
+  puriCustomBadge:$("#puriCustomBadge"),
+  puriResetBtn:   $("#puriResetBtn"),
+  avgCharsText:   $("#avgCharsText"),
+  lowRatio:       $("#lowRatio"),
+  mediumRatio:    $("#mediumRatio"),
+  highRatio:      $("#highRatio"),
+  levelMixNote:   $("#levelMixNote"),
+  weekBars:       $("#weekBars"),
+  weekDaysLabel:  $("#weekDaysLabel"),
+  statTotal:      $("#statTotal"),
+  statAvg:        $("#statAvg"),
+  statPlatform:   $("#statPlatform"),
+  statPeak:       $("#statPeak"),
+  shareImageBtn:  $("#shareImageBtn"),
   downloadLogBtn: $("#downloadLogBtn"),
-  openGuide: $("#openGuide"),
-  personaTabs: $("#personaTabs"),
-  promptFulltext: $("#promptFulltext"),
-  copyPromptBtn: $("#copyPromptBtn"),
-  tipBarScale: $("#tipBarScale"),
-  tipBarScaleValue: $("#tipBarScaleValue"),
-  tipScaleReset: $("#tipScaleReset"),
-  tipPreviewBadge: $("#tipPreviewBadge"),
-  tipPreviewPuri: $("#tipPreviewPuri")
+  openGuide:      $("#openGuide"),
+  resetStatsBtn:  $("#resetStatsBtn"),
+  openCustomSheet:$("#openCustomSheet"),
+  customSheet:    $("#customSheet"),
+  sheetBackdrop:  $("#sheetBackdrop"),
+  closeSheet:     $("#closeSheet"),
+  sheetPersonaTabs: $("#sheetPersonaTabs"),
+  sheetPresets:   $("#sheetPresets"),
+  sheetCopyBtn:   $("#sheetCopyBtn"),
 };
 
 let customCharacterUrl = null;
@@ -131,6 +136,9 @@ let lastRenderedPuri = null;
 
 boot();
 
+let sheetSelectedPersona = Object.keys(CUSTOM_PROMPTS)[0];
+let sheetSelectedPreset  = 0;
+
 async function boot() {
   const state = await getState();
   const stored = await storageGet([STORAGE_KEYS.CUSTOM_CHARACTER]);
@@ -138,7 +146,6 @@ async function boot() {
   render(state);
   bindEvents(state.settings);
   bindCharacterUpload();
-  bindCopyBtn();
   await loadAndRenderReport();
 }
 
@@ -205,144 +212,96 @@ function getDayLabel() {
 function render(state) {
   nodes.enabled.checked = Boolean(state.settings.enabled);
   if (nodes.focusMode) nodes.focusMode.checked = Boolean(state.settings.focusMode);
-  renderCustomPrompts();
 }
 
 function renderCustomPrompts() {
-  if (!nodes.personaTabs) return;
-
+  // legacy stub – sheet rendering handled by renderCustomSheet
   const personaKeys = Object.keys(CUSTOM_PROMPTS);
 
-  nodes.personaTabs.innerHTML = personaKeys.map((key) => {
+}
+
+// ── Custom instructions sheet ─────────────────────────────
+function renderCustomSheet() {
+  const personaKeys = Object.keys(CUSTOM_PROMPTS);
+
+  // Persona pills
+  nodes.sheetPersonaTabs.innerHTML = personaKeys.map((key) => {
     const p = CUSTOM_PROMPTS[key];
-    const active = key === selectedPersona;
-    return `<button class="persona-tab${active ? " active" : ""}" data-persona="${escapeHtml(key)}">${p.icon} ${escapeHtml(key)}</button>`;
+    return `<button class="persona-pill${key === sheetSelectedPersona ? " active" : ""}" data-persona="${escapeHtml(key)}" type="button">${p.icon} ${escapeHtml(key)}</button>`;
   }).join("");
 
-  nodes.personaTabs.querySelectorAll(".persona-tab").forEach((btn) => {
+  nodes.sheetPersonaTabs.querySelectorAll(".persona-pill").forEach((btn) => {
     btn.addEventListener("click", () => {
-      selectedPersona = btn.dataset.persona;
-      if (nodes.copyPromptBtn) {
-        nodes.copyPromptBtn.textContent = "지침 복사하기";
-        nodes.copyPromptBtn.classList.remove("copied");
-      }
-      updatePromptFulltext();
-      renderCustomPrompts();
+      sheetSelectedPersona = btn.dataset.persona;
+      sheetSelectedPreset  = 0;
+      renderCustomSheet();
     });
   });
 
-  updatePromptFulltext();
+  // Preset list
+  const presets = CUSTOM_PROMPTS[sheetSelectedPersona]?.presets || [];
+  nodes.sheetPresets.innerHTML = presets.map((preset, idx) => {
+    const active = idx === sheetSelectedPreset;
+    const preview = active
+      ? `<p class="preset-preview-label">지침 미리보기</p><p class="preset-preview-text">${escapeHtml(preset.prompt)}</p>`
+      : "";
+    return `<button class="preset-item${active ? " active" : ""}" data-idx="${idx}" type="button">
+      <p class="preset-label">${escapeHtml(preset.label)}</p>
+      ${preview}
+    </button>`;
+  }).join("");
 
-  if (nodes.copyPromptBtn) {
-    nodes.copyPromptBtn.disabled = false;
-  }
-}
-
-function updatePromptFulltext() {
-  if (!nodes.promptFulltext) return;
-  const presets = CUSTOM_PROMPTS[selectedPersona]?.presets || [];
-  const prompt = presets[0]?.prompt || "";
-  nodes.promptFulltext.textContent = prompt;
-  ["popupChatgptTyping", "popupClaudeTyping", "popupGeminiTyping"].forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = prompt;
+  nodes.sheetPresets.querySelectorAll(".preset-item").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      sheetSelectedPreset = Number(btn.dataset.idx);
+      renderCustomSheet();
+    });
   });
 }
 
-function bindCopyBtn() {
-  if (!nodes.copyPromptBtn) return;
-  nodes.copyPromptBtn.addEventListener("click", async () => {
-    if (!nodes.promptFulltext?.textContent) return;
-    try {
-      await navigator.clipboard.writeText(nodes.promptFulltext.textContent);
-      nodes.copyPromptBtn.textContent = "복사됐어요! ✓";
-      nodes.copyPromptBtn.classList.add("copied");
-      setTimeout(() => {
-        nodes.copyPromptBtn.textContent = "지침 복사하기";
-        nodes.copyPromptBtn.classList.remove("copied");
-      }, 2000);
-    } catch {
-      nodes.copyPromptBtn.textContent = "복사 실패";
-      setTimeout(() => { nodes.copyPromptBtn.textContent = "지침 복사하기"; }, 2000);
-    }
-  });
+function openCustomSheet() {
+  sheetSelectedPreset = 0;
+  nodes.customSheet.hidden = false;
+  renderCustomSheet();
+}
+
+function closeCustomSheet() {
+  nodes.customSheet.hidden = true;
 }
 
 function bindEvents(settings) {
+  async function updateSetting(patch) {
+    const next = sanitizeSettings(merge(settings, patch));
+    Object.assign(settings, next);
+    await storageSet({ [STORAGE_KEYS.SETTINGS]: next });
+    render(await getState());
+  }
+
+  // Enable toggle
   nodes.enabled.addEventListener("change", () => updateSetting({ enabled: nodes.enabled.checked }));
+
+  // Focus mode toggle (settings tab)
   if (nodes.focusMode) nodes.focusMode.addEventListener("change", () => updateSetting({ focusMode: nodes.focusMode.checked }));
-  function updateTipPreview(scale) {
-    if (nodes.tipBarScaleValue) nodes.tipBarScaleValue.textContent = `${scale}%`;
-    if (nodes.tipPreviewBadge) {
-      const s = scale / 100;
-      nodes.tipPreviewBadge.style.transform = `scale(${s})`;
-      nodes.tipPreviewBadge.style.transformOrigin = "left center";
-      nodes.tipPreviewBadge.style.marginBottom = `${(s - 1) * 40}px`;
-    }
-  }
 
-  if (nodes.tipBarScale) {
-    const savedScale = settings.tipBarScale ?? 80;
-    nodes.tipBarScale.value = String(savedScale);
-    updateTipPreview(savedScale);
-    nodes.tipBarScale.addEventListener("input", () => {
-      const v = Number(nodes.tipBarScale.value);
-      updateTipPreview(v);
-      updateSetting({ tipBarScale: v });
-    });
-  }
-  if (nodes.tipScaleReset) {
-    nodes.tipScaleReset.addEventListener("click", () => {
-      if (nodes.tipBarScale) nodes.tipBarScale.value = "80";
-      updateTipPreview(80);
-      updateSetting({ tipBarScale: 80 });
-    });
-  }
-  if (nodes.tipPreviewPuri) {
-    storageGet([STORAGE_KEYS.SETTINGS]).then((data) => {
-      const s = data[STORAGE_KEYS.SETTINGS] || {};
-      nodes.tipPreviewPuri.src = s.customLogoUrl ||
-        (typeof chrome !== "undefined" ? chrome.runtime.getURL("assets/puri_low.svg") : "");
-    });
-  }
-
-  const HOW_DEMO_IDS = { "chatgpt-path": "popupChatgptTyping", "claude-path": "popupClaudeTyping", "gemini-path": "popupGeminiTyping" };
-
-  function fillHowDemoAll() {
-    const prompt = CUSTOM_PROMPTS[selectedPersona]?.presets?.[0]?.prompt || "";
-    Object.values(HOW_DEMO_IDS).forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = prompt;
-    });
-  }
-
-  document.querySelectorAll(".popup-how-tab, .how-tab-sm").forEach((btn) => {
+  // Tab switching
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const key = btn.dataset.tab || btn.dataset.target;
-      if (btn.classList.contains("popup-how-tab")) {
-        document.querySelectorAll(".popup-how-tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === key));
-        document.querySelectorAll(".popup-how-panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === key));
-      } else {
-        const section = btn.closest(".how-to-inline");
-        section.querySelectorAll(".how-tab-sm").forEach((t) => t.classList.toggle("active", t.dataset.target === key));
-        section.querySelectorAll(".how-path").forEach((p) => p.classList.toggle("active", p.id === key));
-      }
+      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const tab = btn.dataset.tab;
+      document.getElementById("tabReport").hidden   = tab !== "report";
+      document.getElementById("tabSettings").hidden = tab !== "settings";
     });
   });
 
-  fillHowDemoAll();
+  // Date nav
   nodes.refreshReport.addEventListener("click", loadAndRenderReport);
-  nodes.openGuide.addEventListener("click", openOnboardingOnActiveTab);
-  nodes.shareImageBtn.addEventListener("click", downloadShareImage);
-  nodes.downloadLogBtn.addEventListener("click", downloadLog);
-
   nodes.prevDay.addEventListener("click", () => {
     reportOffset--;
     nodes.nextDay.disabled = false;
     nodes.reportDate.textContent = getDateLabel(reportOffset);
     loadAndRenderReportForOffset(reportOffset);
   });
-
   nodes.nextDay.addEventListener("click", () => {
     if (reportOffset >= 0) return;
     reportOffset++;
@@ -351,12 +310,37 @@ function bindEvents(settings) {
     loadAndRenderReportForOffset(reportOffset);
   });
 
-  async function updateSetting(patch) {
-    const next = sanitizeSettings(merge(settings, patch));
-    Object.assign(settings, next);
-    await storageSet({ [STORAGE_KEYS.SETTINGS]: next });
-    render(await getState());
-  }
+  // Share image
+  nodes.shareImageBtn.addEventListener("click", downloadShareImage);
+
+  // Custom sheet open/close
+  nodes.openCustomSheet.addEventListener("click", openCustomSheet);
+  nodes.closeSheet.addEventListener("click", closeCustomSheet);
+  nodes.sheetBackdrop.addEventListener("click", closeCustomSheet);
+
+  // Sheet copy button
+  nodes.sheetCopyBtn.addEventListener("click", async () => {
+    const presets = CUSTOM_PROMPTS[sheetSelectedPersona]?.presets || [];
+    const prompt  = presets[sheetSelectedPreset]?.prompt || "";
+    if (!prompt) return;
+    try {
+      await navigator.clipboard.writeText(prompt);
+      nodes.sheetCopyBtn.textContent = "복사됐어요! ✓";
+      nodes.sheetCopyBtn.classList.add("copied");
+      setTimeout(() => {
+        nodes.sheetCopyBtn.textContent = "지침 복사하기";
+        nodes.sheetCopyBtn.classList.remove("copied");
+      }, 2000);
+    } catch {
+      nodes.sheetCopyBtn.textContent = "복사 실패";
+      setTimeout(() => { nodes.sheetCopyBtn.textContent = "지침 복사하기"; }, 2000);
+    }
+  });
+
+  // Settings actions
+  nodes.openGuide.addEventListener("click", openOnboardingOnActiveTab);
+  nodes.downloadLogBtn.addEventListener("click", downloadLog);
+  nodes.resetStatsBtn.addEventListener("click", resetStats);
 }
 
 function bindCharacterUpload() {
@@ -461,34 +445,90 @@ function sendRuntimeMessage(message) {
 
 function renderReport(report) {
   const stat = {
-    submitCount: report?.totalSent || 0,
-    highCount: report?.highCount || 0,
-    lowCount: report?.lowCount || 0,
-    mediumCount: report?.mediumCount || 0,
-    avgFinalChars: Math.round(Number(report?.avgFinalChars) || 0),
-    avgReducedChars: Math.round(Number(report?.avgReducedChars) || 0),
-    lowRatioPct: report?.lowRatioPct || 0,
+    submitCount:    report?.totalSent    || 0,
+    highCount:      report?.highCount    || 0,
+    lowCount:       report?.lowCount     || 0,
+    mediumCount:    report?.mediumCount  || 0,
+    avgFinalChars:  Math.round(Number(report?.avgFinalChars)  || 0),
+    avgReducedChars:Math.round(Number(report?.avgReducedChars)|| 0),
+    lowRatioPct:    report?.lowRatioPct    || 0,
     mediumRatioPct: report?.mediumRatioPct || 0,
-    highRatioPct: report?.highRatioPct || 0,
+    highRatioPct:   report?.highRatioPct   || 0,
     platformCounts: report?.platformCounts || {}
   };
 
   const puri = getPuriComment(stat);
   lastRenderedStat = stat;
   lastRenderedPuri = puri;
+
+  // Puri image
   nodes.puriReportImg.src = customCharacterUrl || PURI_ASSETS[puri.imgKey] || PURI_ASSETS.idle;
   nodes.puriReportImg.alt = "푸리";
   nodes.puriCustomBadge.hidden = !customCharacterUrl;
-  nodes.puriReportMsg.textContent = puri.msg;
 
-  nodes.reportInsights.innerHTML = buildInsightItems(stat).join("");
+  // Split msg into title (first sentence) + subtitle (rest)
+  const splitIdx = puri.msg.search(/[.!]\s/);
+  if (splitIdx !== -1) {
+    nodes.puriReportTitle.textContent = puri.msg.slice(0, splitIdx + 1);
+    nodes.puriReportMsg.textContent   = puri.msg.slice(splitIdx + 2);
+  } else {
+    nodes.puriReportTitle.textContent = stat.submitCount > 0 ? "오늘도 수고했어요!" : "아직 기록이 없어요!";
+    nodes.puriReportMsg.textContent   = puri.msg;
+  }
 
-  nodes.lowRatio.style.width = `${stat.lowRatioPct}%`;
+  // Avg chars card
+  if (stat.submitCount > 0 && stat.avgFinalChars > 0) {
+    nodes.avgCharsText.textContent = `${formatNumber(stat.avgFinalChars)}자 정도 작성하셨네요.`;
+  } else {
+    nodes.avgCharsText.textContent = "사용을 시작하면 평균 작성 글자 수를 알려드려요.";
+  }
+
+  // Level bar
+  nodes.lowRatio.style.width    = `${stat.lowRatioPct}%`;
   nodes.mediumRatio.style.width = `${stat.mediumRatioPct}%`;
-  nodes.highRatio.style.width = `${stat.highRatioPct}%`;
-  nodes.levelMixNote.textContent = buildLevelMixNote(stat);
+  nodes.highRatio.style.width   = `${stat.highRatioPct}%`;
+  nodes.levelMixNote.innerHTML  = buildLevelMixNote(stat);
+
+  // Stats grid
+  renderStatsGrid(stat);
 
   renderWeekCalendar(latestDaily);
+}
+
+function renderStatsGrid(stat) {
+  // 총 대화 수
+  nodes.statTotal.textContent = stat.submitCount > 0 ? `${formatNumber(stat.submitCount)}건` : "—";
+
+  // 평균 프롬프트 (weekly avg per day)
+  const weekCounts = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const entry = latestDaily[formatDateKey(d)] || {};
+    weekCounts.push(entry.submitCount || 0);
+  }
+  const weekTotal = weekCounts.reduce((s, n) => s + n, 0);
+  const activeDays = weekCounts.filter(n => n > 0).length;
+  const avgPerDay  = activeDays > 0 ? Math.round(weekTotal / activeDays * 10) / 10 : 0;
+  nodes.statAvg.textContent = avgPerDay > 0 ? `${avgPerDay}개/일` : "—";
+
+  // 가장 많이 사용
+  const pc = stat.platformCounts || {};
+  const platforms = { chatgpt: "ChatGPT", claude: "Claude", gemini: "Gemini" };
+  let topName = "—"; let topCount = 0;
+  for (const [key, label] of Object.entries(platforms)) {
+    if ((pc[key] || 0) > topCount) { topCount = pc[key]; topName = label; }
+  }
+  nodes.statPlatform.textContent = topCount > 0 ? topName : "—";
+
+  // 최고 사용 시간대 (데이터 없음)
+  nodes.statPeak.textContent = "—";
+}
+
+async function resetStats() {
+  if (!confirm("통계 데이터를 모두 초기화할까요?\n되돌릴 수 없어요.")) return;
+  await storageSet({ [STORAGE_KEYS.DAILY]: {} });
+  latestDaily = {};
+  await loadAndRenderReport();
 }
 
 function buildInsightItems(stat) {
@@ -536,26 +576,14 @@ function insightHtml(text) {
 }
 
 function buildLevelMixNote(stat) {
-  if (!stat.submitCount) {
-    return "전송 기록이 생기면 입력 채팅 길이의 낮음·중간·높음 비율을 보여드릴게요.";
-  }
-
-  const parts = [];
-  if (stat.lowRatioPct > 0) parts.push(`낮음 ${stat.lowRatioPct}%`);
-  if (stat.mediumRatioPct > 0) parts.push(`중간 ${stat.mediumRatioPct}%`);
-  if (stat.highRatioPct > 0) parts.push(`높음 ${stat.highRatioPct}%`);
-
-  if (!parts.length) {
-    return `${getDayLabel()} 보낸 프롬프트 길이 비율을 정리하는 중이에요.`;
-  }
-
-  const lead = stat.highRatioPct >= 50
-    ? "긴 프롬프트가 조금 많았어요."
-    : stat.lowRatioPct >= 60
-      ? "대체로 짧고 간결하게 잘 쓰셨어요."
-      : "짧은 것과 긴 것이 섞여 있었어요.";
-
-  return `${lead} (${parts.join(" · ")})`;
+  if (!stat.submitCount) return "데이터 없음";
+  const items = [
+    { label: "낮음", pct: stat.lowRatioPct,    cls: "low" },
+    { label: "중간", pct: stat.mediumRatioPct,  cls: "medium" },
+    { label: "높음", pct: stat.highRatioPct,    cls: "high" }
+  ].filter(i => i.pct > 0);
+  if (!items.length) return "데이터 없음";
+  return items.map(i => `<span><span class="level-dot ${i.cls}"></span>${i.label} ${i.pct}%</span>`).join("");
 }
 
 function getDailyReportNudge(stat) {
@@ -987,9 +1015,10 @@ function renderWeekCalendar(daily) {
   const maxCount = Math.max(...days.map((d) => d.count), 1);
 
   nodes.weekBars.innerHTML = days.map((day) => {
-    const heightPct = day.count > 0 ? Math.max((day.count / maxCount) * 100, 8) : 0;
+    const heightPct = day.count > 0 ? Math.max((day.count / maxCount) * 100, 8) : 4;
     const total = day.low + day.medium + day.high;
     const todayClass = day.isToday ? " today" : "";
+    const isEmpty = day.count === 0 ? " empty" : "";
     const segments = day.count > 0 && total > 0
       ? [
           day.low    > 0 ? `<div class="week-seg low"    style="flex:${day.low}"></div>`    : "",
@@ -997,18 +1026,14 @@ function renderWeekCalendar(daily) {
           day.high   > 0 ? `<div class="week-seg high"   style="flex:${day.high}"></div>`   : ""
         ].join("")
       : "";
-    return `
-      <div class="week-bar-wrap">
-        <div class="week-bar-bg">
-          <div class="week-bar-fill${todayClass}" style="height:${heightPct}%">${segments}</div>
-        </div>
-        <div class="week-bar-count">${day.count}</div>
-      </div>`;
+    return `<div class="week-bar-wrap${todayClass}${isEmpty}">
+      <div class="week-bar-inner" style="height:${heightPct}%">${segments}</div>
+    </div>`;
   }).join("");
 
   nodes.weekDaysLabel.innerHTML = days.map((day) => {
     const todayClass = day.isToday ? " today" : "";
-    return `<div class="week-day-label${todayClass}">${escapeHtml(day.dayLabel)}</div>`;
+    return `<div class="week-day-cell${todayClass}">${escapeHtml(day.dayLabel)}</div>`;
   }).join("");
 }
 

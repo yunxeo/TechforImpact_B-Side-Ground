@@ -7,172 +7,173 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <main class="wrap">
-      <header class="header">
-        <div>
-          <img src="../assets/logo_eng.svg" alt="그루" class="header-logo" />
-          <p class="text-body-m">ChatGPT · Gemini · Claude 지원</p>
-        </div>
-        <label class="switch" title="확장 프로그램 켜기/끄기">
-          <input id="enabled" type="checkbox" />
-          <span></span>
-        </label>
-      </header>
+    <header class="header">
+      <img src="../assets/logo_eng.svg" alt="그루" class="header-logo" />
+      <label class="switch" title="확장 프로그램 켜기/끄기">
+        <input id="enabled" type="checkbox" />
+        <span></span>
+      </label>
+    </header>
 
-      <section class="card report-card">
-        <span class="eyebrow text-body-s">Prompting Report</span>
-        <h2 class="text-h2">AI 사용 습관 리포트</h2>
-
-        <div class="report-header">
-          <button class="date-nav text-body-s" id="prevDay" type="button">&#8249;</button>
-          <div class="report-date text-body-s" id="reportDate">오늘</div>
-          <button class="date-nav text-body-s" id="nextDay" type="button" disabled>&#8250;</button>
-          <button class="report-refresh text-body-s" id="refreshReport" type="button">새로고침</button>
-        </div>
-
-        <div id="reportStatus" class="report-status text-body-m" hidden></div>
-
-        <div class="puri-comment">
-          <div class="puri-img-wrap" id="puriImgWrap" title="클릭해서 캐릭터 이미지 변경">
-            <img class="puri-img" id="puriReportImg" alt="" width="44" height="44" />
-            <span class="puri-upload-hint">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </span>
-          </div>
-          <div class="puri-bubble text-body-l">
-            <span id="puriReportMsg">오늘도 간결하게 잘 쓰고 있어요!</span>
-          </div>
-        </div>
-        <input type="file" id="puriUploadInput" accept="image/*" hidden />
-        <div id="puriCustomBadge" class="puri-custom-badge" hidden>
-          <span class="text-body-s">커스텀 이미지 사용 중</span>
-          <button id="puriResetBtn" class="puri-reset-btn text-body-s" type="button">초기화</button>
-        </div>
-
-        <div class="report-insights" id="reportInsights"></div>
-
-        <div class="level-mix">
-          <p class="level-mix-title text-h3">입력한 채팅 길이 비율</p>
-          <div class="level-bar">
-            <div class="level-seg low" id="lowRatio"></div>
-            <div class="level-seg medium" id="mediumRatio"></div>
-            <div class="level-seg high" id="highRatio"></div>
-          </div>
-          <div class="level-legend">
-            <span class="legend-item text-body-m">
-              <span class="legend-dot low-dot"></span>낮음
-            </span>
-            <span class="legend-item text-body-m">
-              <span class="legend-dot medium-dot"></span>중간
-            </span>
-            <span class="legend-item text-body-m">
-              <span class="legend-dot high-dot"></span>높음
-            </span>
-          </div>
-          <p class="level-mix-note text-body-m" id="levelMixNote"></p>
-        </div>
-
-        <div class="week-calendar">
-          <div class="week-label">최근 7일 전송 횟수</div>
-          <div class="week-bars" id="weekBars"></div>
-          <div class="week-days-label" id="weekDaysLabel"></div>
-        </div>
-
-        <div class="report-action-row">
-          <button class="share-image-btn" id="shareImageBtn" type="button">공유 이미지 저장 (베타)</button>
-          <button class="download-log-btn" id="downloadLogBtn" type="button">로그 다운로드</button>
-        </div>
-      </section>
-
-      <section class="card usage-card">
-        <span class="eyebrow text-body-s">Usage Guide</span>
-        <h2 class="text-h2">그루 사용 가이드</h2>
-        <p class="help-text text-body-m">ChatGPT·Claude·Gemini 입력창 위 그루 배지와 팁 사용법을 다시 볼 수 있어요.</p>
-        <button id="openGuide" class="secondary text-body-l" type="button">그루 사용 가이드 열기</button>
-      </section>
-
-      <section class="card custom-prompt-section">
-        <span class="eyebrow text-body-s">Custom Instructions</span>
-        <h2 class="text-h2">맞춤형 지침 추천</h2>
-        <p class="custom-desc">맞춤형 지침은 AI에게 나의 상황과 원하는 답변 방식을 미리 알려주는 설정이에요. 한 번 설정하면 매번 설명하지 않아도 돼요.</p>
-        <div class="persona-tabs" id="personaTabs"></div>
-        <div class="prompt-fulltext" id="promptFulltext"></div>
-        <button class="copy-btn" id="copyPromptBtn" type="button">지침 복사하기</button>
-        <p class="copy-hint">복사한 지침을 ChatGPT · Claude · Gemini 맞춤형 지침에 붙여넣어 보세요</p>
-        <div class="how-to-inline">
-          <p class="how-to-title">📌 붙여넣는 방법</p>
-          <div class="how-to-tabs-inline">
-            <button class="how-tab-sm active" data-target="chatgpt-path" type="button">ChatGPT</button>
-            <button class="how-tab-sm" data-target="claude-path" type="button">Claude</button>
-            <button class="how-tab-sm" data-target="gemini-path" type="button">Gemini</button>
-          </div>
-
-          <div class="how-path active" id="chatgpt-path">
-            <p class="how-path-steps">좌하단 프로필 → <strong>개인 맞춤 설정</strong> → <strong>맞춤형 지침</strong></p>
-            <div class="popup-how-demo-window">
-              <div class="popup-how-demo-bar">
-                <span class="popup-how-demo-dot"></span>
-                <span class="popup-how-demo-dot"></span>
-                <span class="popup-how-demo-dot"></span>
-                <span class="popup-how-demo-title">맞춤형 지침</span>
-              </div>
-              <div class="popup-how-demo-body">
-                <p class="popup-how-demo-label">ChatGPT가 어떻게 응답하길 원하시나요?</p>
-                <div class="popup-how-demo-textarea" id="popupChatgptTyping"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="how-path" id="claude-path">
-            <p class="how-path-steps">좌하단 프로필 → <strong>설정</strong> → 일반 → <strong>Claude 지침</strong></p>
-            <div class="popup-how-demo-window">
-              <div class="popup-how-demo-bar">
-                <span class="popup-how-demo-dot"></span>
-                <span class="popup-how-demo-dot"></span>
-                <span class="popup-how-demo-dot"></span>
-                <span class="popup-how-demo-title">Claude 지침</span>
-              </div>
-              <div class="popup-how-demo-body">
-                <p class="popup-how-demo-label">Claude 지침</p>
-                <div class="popup-how-demo-textarea" id="popupClaudeTyping"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="how-path" id="gemini-path">
-            <p class="how-path-steps">좌하단 프로필 → <strong>설정</strong> → <strong>Gemini 요청 사항</strong> → 추가</p>
-            <div class="popup-how-demo-window">
-              <div class="popup-how-demo-bar">
-                <span class="popup-how-demo-dot"></span>
-                <span class="popup-how-demo-dot"></span>
-                <span class="popup-how-demo-dot"></span>
-                <span class="popup-how-demo-title">Gemini 요청 사항</span>
-              </div>
-              <div class="popup-how-demo-body">
-                <p class="popup-how-demo-label">Gemini가 무엇을 기억하길 원하시나요?</p>
-                <div class="popup-how-demo-textarea" id="popupGeminiTyping"></div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-
-    </main>
-    <div class="feedback-bar">
-      <a href="https://forms.gle/J7vENFcGv5SQjgeB8" target="_blank" class="feedback-btn" id="feedbackBtn">
-        💬 그루에게 의견 보내기
-      </a>
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="report" type="button">Report</button>
+      <button class="tab-btn" data-tab="settings" type="button">Settings</button>
     </div>
-    <div class="landing-link-bar">
-      <span class="landing-link-pre">그루가 더 궁금하다면?</span>
-      <a href="https://b-side-ground.vercel.app/" target="_blank" class="landing-link-btn">
-        그루 소개 페이지 보러가기
-      </a>
+
+    <!-- ── Report panel ── -->
+    <div id="tabReport" class="tab-panel">
+
+      <div class="date-nav-row">
+        <button class="date-arrow" id="prevDay" type="button">&#8249;</button>
+        <span class="date-label" id="reportDate">오늘</span>
+        <button class="date-arrow" id="nextDay" type="button" disabled>&#8250;</button>
+        <button class="refresh-btn" id="refreshReport" type="button">새로고침</button>
+      </div>
+
+      <div id="reportStatus" class="report-status" hidden></div>
+
+      <!-- Puri card -->
+      <div class="puri-card" id="puriCard">
+        <div class="puri-img-wrap" id="puriImgWrap" title="클릭해서 캐릭터 이미지 변경">
+          <img class="puri-img" id="puriReportImg" alt="" width="56" height="56" />
+          <span class="puri-upload-hint">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </div>
+        <div class="puri-text">
+          <p class="puri-title" id="puriReportTitle">아직 기록이 없어요!</p>
+          <p class="puri-sub" id="puriReportMsg">AI와 대화를 시작하면 리포트가 채워져요.</p>
+        </div>
+      </div>
+      <input type="file" id="puriUploadInput" accept="image/*" hidden />
+      <div id="puriCustomBadge" class="puri-custom-badge" hidden>
+        <span>커스텀 이미지 사용 중</span>
+        <button id="puriResetBtn" class="puri-reset-btn" type="button">초기화</button>
+      </div>
+
+      <!-- Avg chars card -->
+      <div class="avg-card">
+        <p class="avg-label">한 번 보낼 때 평균</p>
+        <p class="avg-value" id="avgCharsText">사용을 시작하면 평균 작성 글자 수를 알려드려요.</p>
+      </div>
+
+      <!-- Level bar section -->
+      <div class="section-block">
+        <p class="section-label">오늘 프롬프트 길이</p>
+        <div class="level-bar">
+          <div class="level-seg low" id="lowRatio"></div>
+          <div class="level-seg medium" id="mediumRatio"></div>
+          <div class="level-seg high" id="highRatio"></div>
+        </div>
+        <p class="level-legend-inline" id="levelMixNote">데이터 없음</p>
+      </div>
+
+      <!-- Weekly chart section -->
+      <div class="section-block">
+        <p class="section-label">일별 사용량</p>
+        <div class="week-bars" id="weekBars"></div>
+        <div class="week-days-label" id="weekDaysLabel"></div>
+      </div>
+
+      <!-- Stats grid -->
+      <div class="stats-grid">
+        <div class="stats-row">
+          <span class="stats-label">총 대화 수</span>
+          <span class="stats-value" id="statTotal">—</span>
+        </div>
+        <div class="stats-row">
+          <span class="stats-label">평균 프롬프트</span>
+          <span class="stats-value" id="statAvg">—</span>
+        </div>
+        <div class="stats-row">
+          <span class="stats-label">가장 많이 사용</span>
+          <span class="stats-value" id="statPlatform">—</span>
+        </div>
+        <div class="stats-row">
+          <span class="stats-label">최고 사용 시간대</span>
+          <span class="stats-value" id="statPeak">—</span>
+        </div>
+      </div>
+
+      <!-- Share image CTA -->
+      <button class="share-image-btn" id="shareImageBtn" type="button">리포트 이미지 저장 (Beta)</button>
+
+      <!-- Custom instructions entry -->
+      <button class="custom-entry-card" id="openCustomSheet" type="button">
+        <div class="custom-entry-text">
+          <p class="custom-entry-title">맞춤형 지침 추천</p>
+          <p class="custom-entry-sub">내 사용 패턴에 맞는 프롬프트 지침</p>
+        </div>
+        <span class="custom-entry-pill">추천받기</span>
+      </button>
+
+      <footer class="popup-footer">
+        <span>© 2026 Groo. B개발구역.</span>
+        <a href="https://b-side-ground.vercel.app/" target="_blank">공식 페이지 →</a>
+      </footer>
     </div>
+
+    <!-- ── Settings panel ── -->
+    <div id="tabSettings" class="tab-panel" hidden>
+
+      <p class="settings-section-label">사용 설정</p>
+      <div class="settings-card">
+        <div class="settings-row">
+          <span class="settings-row-label">집중 모드</span>
+          <label class="switch">
+            <input id="focusMode" type="checkbox" />
+            <span></span>
+          </label>
+        </div>
+        <div class="settings-divider"></div>
+        <div class="settings-row">
+          <div>
+            <p class="settings-row-label">처음 사용 팁</p>
+            <p class="settings-row-sub">그루 사용법을 다시 볼 수 있어요.</p>
+          </div>
+          <button class="settings-action-btn" id="openGuide" type="button">열기</button>
+        </div>
+      </div>
+
+      <p class="settings-section-label">데이터</p>
+      <div class="settings-card">
+        <div class="settings-row">
+          <span class="settings-row-label">리포트 내보내기</span>
+          <button class="settings-action-btn" id="downloadLogBtn" type="button">내보내기</button>
+        </div>
+        <div class="settings-divider"></div>
+        <div class="settings-row">
+          <span class="settings-row-label">통계 초기화</span>
+          <button class="settings-action-btn danger" id="resetStatsBtn" type="button">초기화</button>
+        </div>
+      </div>
+
+      <footer class="popup-footer">
+        <span>© 2026 Groo. B개발구역.</span>
+        <a href="https://b-side-ground.vercel.app/" target="_blank">공식 페이지 →</a>
+      </footer>
+    </div>
+
+    <!-- ── Custom instructions sheet ── -->
+    <div id="customSheet" class="sheet-overlay" hidden>
+      <div class="sheet-backdrop" id="sheetBackdrop"></div>
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <span class="sheet-title">맞춤형 지침 추천</span>
+          <button class="sheet-close" id="closeSheet" type="button">✕</button>
+        </div>
+        <div class="sheet-persona-pills" id="sheetPersonaTabs"></div>
+        <div class="sheet-presets" id="sheetPresets"></div>
+        <div class="sheet-cta">
+          <button class="sheet-copy-btn" id="sheetCopyBtn" type="button">지침 복사하기</button>
+          <p class="sheet-copy-hint">복사한 지침을 ChatGPT · Claude · Gemini 맞춤형 지침에 붙여 넣어 보세요</p>
+        </div>
+      </div>
+    </div>
+
     <script src="popup.js"></script>
   </body>
 </html>
