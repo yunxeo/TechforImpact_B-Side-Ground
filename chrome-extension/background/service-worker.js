@@ -442,13 +442,14 @@ function createEmptyDailyStat(dateKey) {
 }
 
 async function getDailyReport(dateKey) {
-  const result = await storageGet([STORAGE_KEYS.DAILY]);
+  const result = await storageGet([STORAGE_KEYS.DAILY, STORAGE_KEYS.EVENTS]);
   const daily = result[STORAGE_KEYS.DAILY] || {};
+  const events = Array.isArray(result[STORAGE_KEYS.EVENTS]) ? result[STORAGE_KEYS.EVENTS] : [];
   const targetDateKey = sanitizeDateKey(dateKey) || getLocalDateKey(Date.now());
-  return buildDailyReport(daily, targetDateKey);
+  return buildDailyReport(daily, targetDateKey, events);
 }
 
-function buildDailyReport(daily, dateKey) {
+function buildDailyReport(daily, dateKey, events = []) {
   const today = normalizeDailyStat(daily[dateKey], dateKey);
   const yesterdayKey = getRelativeDateKey(dateKey, -1);
   const yesterday = normalizeDailyStat(daily[yesterdayKey], yesterdayKey);
@@ -543,7 +544,7 @@ function buildDailyReport(daily, dateKey) {
     diffAvgTokens: avgFinalTokens - yesterdayAvgFinalTokens,
     diffHighRatioPct: highRatioPct - yesterdayHighRatioPct,
 
-    peakHour: calcPeakHour(today.hourlyCounts)
+    peakHour: calcPeakHourFromEvents(events, dateKey) ?? calcPeakHour(today.hourlyCounts)
   };
 
   report.message = buildReportMessage(report);
@@ -644,6 +645,18 @@ function sum(values) {
 
 function toNonNegativeInt(value) {
   return Math.max(0, Math.round(Number(value) || 0));
+}
+
+function calcPeakHourFromEvents(events, dateKey) {
+  if (!Array.isArray(events) || !dateKey) return null;
+  const counts = {};
+  for (const e of events) {
+    if (e.type !== "submit") continue;
+    if (getLocalDateKey(e.timestamp) !== dateKey) continue;
+    const h = new Date(e.timestamp).getHours();
+    counts[h] = (counts[h] || 0) + 1;
+  }
+  return calcPeakHour(counts);
 }
 
 function calcPeakHour(hourlyCounts) {

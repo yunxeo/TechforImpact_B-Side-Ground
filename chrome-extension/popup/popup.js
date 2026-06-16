@@ -891,7 +891,7 @@ function renderWeekCalendar(daily) {
     });
   }
 
-  const maxCount = Math.max(...days.map((d) => d.count), 10); // 최소 10 기준으로 스케일
+  const maxCount = Math.max(...days.map((d) => d.count), 20); // 최소 20 기준으로 스케일
 
   nodes.weekBars.innerHTML = days.map((day) => {
     const hasData = day.count > 0;
