@@ -223,23 +223,6 @@ function renderCustomPrompts() {
 function renderCustomSheet() {
   const personaKeys = Object.keys(CUSTOM_PROMPTS);
 
-  // Persona pills
-  nodes.sheetPersonaTabs.innerHTML = personaKeys.map((key) => {
-    const p = CUSTOM_PROMPTS[key];
-    return `<button class="persona-pill${key === sheetSelectedPersona ? " active" : ""}" data-persona="${escapeHtml(key)}" type="button">${p.icon} ${escapeHtml(key)}</button>`;
-  }).join("");
-
-  nodes.sheetPersonaTabs.querySelectorAll(".persona-pill").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      sheetSelectedPersona = btn.dataset.persona;
-      sheetSelectedPreset  = 0;
-      renderCustomSheet();
-      // 해당 프리셋으로 스크롤
-      const target = nodes.sheetPresets.querySelector(`[data-persona="${btn.dataset.persona}"]`);
-      if (target) target.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    });
-  });
-
   // 모든 페르소나의 프리셋을 플랫 리스트로 표시
   nodes.sheetPresets.innerHTML = personaKeys.flatMap((personaKey) => {
     const p = CUSTOM_PROMPTS[personaKey];
@@ -268,6 +251,47 @@ function openCustomSheet() {
   sheetSelectedPreset = 0;
   nodes.customSheet.hidden = false;
   renderCustomSheet();
+  initSheetDrag();
+}
+
+function initSheetDrag() {
+  const handle = nodes.customSheet.querySelector(".sheet-handle");
+  const sheet  = nodes.customSheet.querySelector(".sheet");
+  if (!handle || !sheet) return;
+
+  let startY = 0;
+  let startH = 0;
+
+  function onMove(e) {
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    const delta = startY - y;
+    const maxH  = window.innerHeight;
+    const newH  = Math.min(maxH, Math.max(160, startH + delta));
+    sheet.style.height = newH + "px";
+  }
+
+  function onUp() {
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup",   onUp);
+    document.removeEventListener("touchmove", onMove);
+    document.removeEventListener("touchend",  onUp);
+    sheet.style.transition = "";
+  }
+
+  handle.onmousedown = (e) => {
+    startY = e.clientY;
+    startH = sheet.offsetHeight;
+    sheet.style.transition = "none";
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup",   onUp);
+  };
+  handle.ontouchstart = (e) => {
+    startY = e.touches[0].clientY;
+    startH = sheet.offsetHeight;
+    sheet.style.transition = "none";
+    document.addEventListener("touchmove", onMove, { passive: true });
+    document.addEventListener("touchend",  onUp);
+  };
 }
 
 function closeCustomSheet() {

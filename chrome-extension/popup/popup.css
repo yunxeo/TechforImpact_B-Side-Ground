@@ -116,9 +116,10 @@ body {
   border: 1px solid rgba(26,26,22,0.08);
   border-radius: 12px;
   background: transparent;
-  font-size: 16px; color: var(--gray-600);
-  cursor: pointer; padding: 0;
+  color: var(--gray-600);
+  cursor: pointer; padding: 0; margin: 0;
   display: flex; align-items: center; justify-content: center;
+  line-height: 1; font-size: 0;
   transition: background 0.12s;
 }
 .date-arrow:hover { background: var(--gray-50); }
@@ -242,12 +243,12 @@ body {
   height: 52px; margin-bottom: 4px;
 }
 .week-bar-wrap {
-  width: 28px; flex-shrink: 0;
+  flex: 1;
   height: 52px; border-radius: 4px;
   background: rgba(229,229,216,0.4);
   position: relative; overflow: hidden;
 }
-.week-bar-wrap.today { background: #e5e5d8; }
+.week-bar-wrap.today    { background: #e5e5d8; }
 .week-bar-wrap.has-count { background: #e5e5d8; }
 .week-bar-inner {
   position: absolute; bottom: 0; left: 0; right: 0;
@@ -262,8 +263,8 @@ body {
 
 .week-days-label { display: flex; gap: 5px; }
 .week-day-cell {
-  width: 28px; flex-shrink: 0;
-  text-align: center; font-size: 10px; font-weight: 500; color: var(--gray-400);
+  flex: 1; text-align: center;
+  font-size: 10px; font-weight: 500; color: var(--gray-400);
 }
 .week-day-cell.today { color: var(--green-900); font-weight: 700; }
 
@@ -324,15 +325,15 @@ body {
   background: #f1f47a;
   border-radius: 8px;
   font-family: "SUIT","Pretendard","Apple SD Gothic Neo",-apple-system,sans-serif;
-  font-size: 10px; font-weight: 600;
+  font-size: 12px; font-weight: 600;
   color: #4e5000; line-height: normal; text-align: center;
 }
 
 /* ── Footer ── */
 .popup-footer {
-  display: flex; justify-content: space-between; align-items: center;
-  padding-top: 4px;
-  font-size: 11px; color: var(--gray-400);
+  display: flex; flex-direction: column; align-items: center;
+  gap: 4px; padding-top: 8px;
+  font-size: 11px; color: var(--gray-400); text-align: center;
 }
 .popup-footer a { color: var(--gray-600); text-decoration: none; }
 .popup-footer a:hover { color: var(--gray-900); }
@@ -369,6 +370,13 @@ body {
   transition: background 0.12s, border-color 0.12s;
 }
 .settings-action-btn:hover { background: var(--gray-100); }
+#downloadLogBtn {
+  border-radius: 8px;
+  border: 1px solid rgba(209,214,0,0.50);
+  background: #f9fac0;
+  color: #4e5000;
+}
+#downloadLogBtn:hover { background: var(--green-100); }
 .settings-action-btn.danger {
   background: #fef2f2; border-color: #fecaca; color: var(--danger);
 }
@@ -387,22 +395,31 @@ body {
   position: relative; z-index: 1;
   background: #fff;
   border-radius: 20px 20px 0 0;
-  max-height: 82vh;
+  height: 60vh;
+  max-height: 100vh;
+  min-height: 200px;
   overflow-y: auto;
   display: flex; flex-direction: column;
+  transition: height 0.05s linear;
+  user-select: none;
 }
 .sheet-handle {
   width: 36px; height: 4px;
   background: var(--gray-200); border-radius: 2px;
   margin: 10px auto 0;
   flex-shrink: 0;
+  cursor: ns-resize;
 }
 .sheet-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 20px 10px;
   flex-shrink: 0;
 }
-.sheet-title { font-size: 16px; font-weight: 700; color: var(--gray-900); }
+.sheet-title {
+  font-family: "SUIT","Pretendard","Apple SD Gothic Neo",-apple-system,sans-serif;
+  font-size: 16px; font-weight: 600;
+  color: #1a1a16; line-height: normal;
+}
 .sheet-close {
   width: 28px; height: 28px; border: none; border-radius: 50%;
   background: var(--gray-100); color: var(--gray-600);
@@ -410,8 +427,8 @@ body {
   display: flex; align-items: center; justify-content: center;
 }
 .sheet-persona-pills {
-  display: flex; gap: 8px; overflow-x: auto;
-  padding: 4px 20px 12px;
+  display: none;
+  padding: 0;
   flex-shrink: 0;
   scrollbar-width: none;
 }
