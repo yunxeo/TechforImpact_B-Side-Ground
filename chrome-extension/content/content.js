@@ -197,7 +197,6 @@
   let badgeClickSuppress = false;
   let reportNudgeShownThisPage = false;
   let onboardingGuideActive = false;
-  let tempDisabled = false;
   let lastOverlayRenderMode = "";
   let lastOverlayPromptTipKey = "";
   let lastTipBarWidthKey = "";
@@ -594,7 +593,7 @@
   }
 
   function triggerHoverBubble() {
-    if (tempDisabled) return;
+    if (!settings.enabled) return;
     if (onboardingGuideActive || isOnboardingOpen()) return;
     if (settings.focusMode) return;
     const snapshot = buildSnapshot();
@@ -1047,8 +1046,8 @@
     const promptTipKey = promptTipVisible ? inlinePromptTip.key : "";
 
     card.className = "cp-widget variant-tree-status-badge";
-    card.dataset.visible = settings.enabled && currentEditor && !tempDisabled ? "true" : "false";
-    card.style.pointerEvents = tempDisabled ? "none" : "";
+    card.dataset.visible = settings.enabled && currentEditor ? "true" : "false";
+    card.style.pointerEvents = settings.enabled ? "" : "none";
     card.dataset.level = snapshot.level;
     card.dataset.promptTipVisible = promptTipVisible ? "true" : "false";
     card.dataset.dragEnabled = settings.dragEnabled ? "true" : "false";
@@ -1771,14 +1770,15 @@
 
     dlg.querySelector(".cp-disable-yes").addEventListener("click", (e) => {
       e.stopPropagation();
-      tempDisabled = true;
+      settings.enabled = false;
+      storageSet({ [STORAGE_KEYS.SETTINGS]: settings });
       hideBubble();
       if (overlay?.card) {
         overlay.card.dataset.visible = "false";
         overlay.card.style.pointerEvents = "none";
       }
-      dlg.innerHTML = `<p class="cp-disable-permanent-hint">완전히 끄고 싶다면 뱃지 클릭 → 설정에서 켜기/끄기 토글을 눌러주세요</p>`;
-      setTimeout(() => { dlg.hidden = true; }, 3500);
+      dlg.innerHTML = `<p class="cp-disable-permanent-hint">완전히 끄고 싶다면 주소창 옆 <img src="${chrome.runtime.getURL("assets/extension-puzzle-outline.svg")}" width="13" height="13" style="vertical-align:middle;margin:0 2px;" alt="" /> 클릭 → Groo 클릭 → 설정에서 켜기/끄기 토글을 눌러주세요</p>`;
+      setTimeout(() => { dlg.hidden = true; }, 6000);
     });
     dlg.querySelector(".cp-disable-no").addEventListener("click", (e) => {
       e.stopPropagation();
@@ -2361,7 +2361,7 @@
     }, true);
 
     document.addEventListener("mousemove", (event) => {
-      if (!overlay || !settings.enabled || !currentEditor || tempDisabled) return;
+      if (!overlay || !settings.enabled || !currentEditor) return;
       const cardRect = overlay.card?.getBoundingClientRect();
       const insideCard = pointInRect(event.clientX, event.clientY, cardRect);
 
@@ -2419,9 +2419,8 @@
         body: "뱃지 오른쪽 ⋮ 버튼을 누르면\n슬라이더로 크기를 바꿀 수 있어요"
       },
       {
-        slideImg: obAssets.prompt,
         title: "프롬프트를 더 잘 쓰도록 도와줘요",
-        body: "입력한 내용에서 특정 패턴이 감지되거나\n뱃지에 마우스를 올리면\n프롬프트를 더 잘 작성할 수 있도록 도와주는 팁이 펼쳐져요"
+        htmlBody: `<p style="font-size:13px;color:#5e5e57;line-height:1.6;margin-bottom:14px">입력한 내용에서 특정 패턴이 감지되거나 뱃지에 마우스를 올리면 프롬프팅 팁이 펼쳐져요</p><div style="display:flex;justify-content:center;"><div style="zoom:0.65;background:#fff;border:1px solid rgba(26,26,22,0.10);border-radius:20px;box-shadow:0 4px 16px rgba(0,0,0,0.10);display:flex;align-items:center;padding:14px 20px 12px 18px;gap:0;overflow:hidden;white-space:nowrap;width:fit-content;"><span style="font-size:13px;font-weight:500;color:#1a1a16;padding-right:14px;margin-right:12px;border-right:1.5px solid #e5e5d8;flex-shrink:0;white-space:nowrap;">주제별로 나눠 물어보면 더 정확한 답변을 받을 수 있어요</span><div style="display:flex;align-items:center;gap:10px;flex-shrink:0;"><img src="${puriMap.low}" style="width:30px;height:30px;object-fit:contain;flex-shrink:0;" /><div><strong style="font-size:14px;font-weight:700;color:#1a1a16;display:block;line-height:1.3;">낮음 · 5자 · 3 tokens</strong><span style="font-size:11px;color:#5e5e57;">딱 좋은 길이예요</span></div></div></div></div>`
       },
       {
         slideImgSm: obAssets.puriFocus,
@@ -2433,12 +2432,12 @@
         htmlBody: `<p style="font-size:13px;color:#5e5e57;line-height:1.6;margin-bottom:8px">좋아하는 캐릭터 이미지를 검색하고<br>배경을 제거한 다음 업로드하면 돼요.</p><div class="customize-examples" style="margin-bottom:12px;justify-content:center"><div class="customize-ex default"><img src="${puriMap.low}" alt="기본 그루" /><span>기본 그루</span></div><div class="customize-arrow">→</div><div class="customize-ex custom"><div class="customize-placeholder"><span>✦</span><small>내 이미지</small></div><span>나만의 캐릭터</span></div></div><div class="customize-steps"><div class="customize-step"><span class="step-num">1</span><p>그루 뱃지 클릭</p></div><div class="customize-step"><span class="step-num">2</span><p>그루 캐릭터 클릭 후 연필 아이콘 선택</p></div><div class="customize-step"><span class="step-num">3</span><p>원하는 이미지 업로드</p></div></div><input type="file" accept="image/*" class="ob-char-upload-input" style="display:none" /><button class="ob-upload-btn" id="obCustomizeUpload">🖼 지금 이미지 업로드하기</button><p class="ob-upload-skip">나중에 할게요 →</p>`
       },
       {
-        title: "📊 오늘 얼마나 썼는지 확인해봐요",
-        htmlBody: `<p style="font-size:13px;color:#5e5e57;line-height:1.6;margin-bottom:12px">뱃지 클릭 또는 주소창 옆의 <img src="${obAssets.puzzle}" width="14" height="14" style="vertical-align:middle;margin:0 2px" alt="" /> 퍼즐 아이콘 → 그루 선택</p><div class="ob-browser-mockup"><div class="ob-browser-bar"><div class="ob-browser-dot"></div><div class="ob-browser-dot"></div><div class="ob-browser-dot"></div><span class="ob-browser-url">그루 리포트</span></div><div class="ob-browser-content"><div class="ob-mock-popup-card"><div class="ob-mini-puri-row"><img src="${chrome.runtime.getURL("assets/puri_low.svg")}" alt="푸리" /><div class="ob-mini-puri-bubble">오늘도 간결하게 잘 쓰고 있어요! 🌱</div></div><div class="ob-mini-stat-section"><p class="ob-mini-stat-sentence">오늘 <strong>ChatGPT에 7번</strong>, <strong>Claude에 1번</strong> 보냈어요.</p><p class="ob-mini-stat-sentence">한 번 보낼 때 평균 <strong>1,619자</strong> 정도 작성하셨네요.</p></div></div></div></div>`
+        title: "오늘 얼마나 썼는지 확인해봐요",
+        htmlBody: `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:left;"><p style="font-size:14px;color:#383833;font-weight:600;line-height:1.5;margin:0 0 3px;width:100%;">하루 AI 사용 기록을 리포트로 확인해보세요.</p><p style="font-size:13px;color:#5e5e57;line-height:1.6;margin:0 0 3px;">플랫폼별 전송 횟수, 평균 입력 길이, 최고 사용 시간대를 한눈에 볼 수 있어요.</p><p style="font-size:13px;color:#5e5e57;line-height:1.6;margin-bottom:8px">뱃지 클릭 또는 주소창 옆의 <img src="${obAssets.puzzle}" width="14" height="14" style="vertical-align:middle;margin:0 2px" alt="" /> 퍼즐 아이콘 → 그루 선택</p><div style="display:flex;justify-content:center;"><div style="zoom:0.5;width:360px;background:#f7f7f0;border-radius:16px;overflow:hidden;border:1px solid #e5e5d8;box-shadow:0 4px 20px rgba(0,0,0,0.1);font-family:inherit;"><div style="background:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e5e5d8;"><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:20px;font-weight:800;color:#1a1a16;letter-spacing:-0.03em;">Groo</span><span style="width:10px;height:10px;background:#d1d600;border-radius:50%;flex-shrink:0;display:inline-block;"></span></div><div style="width:40px;height:22px;background:#d1d600;border-radius:11px;position:relative;flex-shrink:0;"><div style="position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:2px;right:2px;"></div></div></div><div style="background:#efefea;padding:4px;display:flex;gap:4px;border-bottom:1px solid #e5e5d8;"><div style="flex:1;text-align:center;padding:8px;background:#fff;border-radius:8px;font-size:13px;font-weight:600;color:#4e5000;">Report</div><div style="flex:1;text-align:center;padding:8px;font-size:13px;font-weight:500;color:#919188;">Settings</div></div><div style="padding:8px 20px;display:flex;align-items:center;gap:6px;border-bottom:1px solid #efefea;"><span style="font-size:14px;color:#c8c8ba;cursor:default;">‹</span><span style="font-size:13px;font-weight:600;color:#1a1a16;">오늘</span><span style="font-size:14px;color:#c8c8ba;opacity:0.4;cursor:default;">›</span><div style="margin-left:auto;font-size:11px;color:#919188;border:1px solid #e5e5d8;border-radius:6px;padding:3px 10px;">새로고침</div></div><div style="background:#f2f47a;padding:16px 20px;display:flex;align-items:center;gap:14px;"><img src="${chrome.runtime.getURL("assets/puri_low.svg")}" style="width:52px;height:52px;object-fit:contain;flex-shrink:0;" /><div><p style="font-size:14px;font-weight:700;color:#1a1a16;margin:0 0 4px;line-height:1.3;">오늘도 수고했어요!</p><p style="font-size:12px;color:#4e5000;margin:0;line-height:1.4;">간결함이 빠른 답변의 비결이에요 ✨</p></div></div><div style="background:#fff;margin:12px 16px;border-radius:12px;padding:12px 16px;border:1px solid #e5e5d8;"><p style="font-size:11px;color:#919188;margin:0 0 4px;">한 번 보낼 때 평균</p><p style="font-size:14px;color:#383833;font-weight:600;margin:0;"><strong style="font-size:22px;font-weight:700;color:#383833;">1,619자</strong> 정도 작성하셨네요.</p></div><div style="padding:0 16px 12px;"><p style="font-size:12px;font-weight:600;color:#5e5e57;margin:0 0 8px;">오늘 프롬프트 길이</p><div style="height:8px;border-radius:999px;display:flex;overflow:hidden;background:#e5e5d8;"><div style="flex:6;background:#d1d600;"></div><div style="flex:3;background:#f97316;"></div><div style="flex:1;background:#ef4444;"></div></div><p style="font-size:10px;color:#919188;margin:5px 0 0;">● 낮음 60% &nbsp;● 중간 30% &nbsp;● 높음 10%</p></div><div style="padding:0 16px 12px;border-bottom:1px solid #e5e5d8;"><p style="font-size:12px;font-weight:600;color:#5e5e57;margin:0 0 8px;">일별 사용량</p><div style="display:flex;align-items:flex-end;gap:4px;height:44px;">${["수","목","금","토","일","월","화"].map((d,i)=>{const h=[5,5,10,20,40,70,100][i];const today=(i===6);return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;"><div style="width:100%;height:${h}%;background:${h>15?"#d1d600":"#efefea"};border-radius:3px 3px 0 0;margin-top:auto;"></div><span style="font-size:9px;color:${today?"#4e5000":"#919188"};font-weight:${today?"700":"400"};">${d}</span></div>`;}).join("")}</div></div><div style="padding:0 16px;"><div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0e8;"><span style="font-size:13px;color:#919188;">총 대화 수</span><span style="font-size:13px;font-weight:600;color:#383833;">8건</span></div><div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0e8;"><span style="font-size:13px;color:#919188;">평균 프롬프트</span><span style="font-size:13px;font-weight:600;color:#383833;">1,619자</span></div><div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0e8;"><span style="font-size:13px;color:#919188;">플랫폼별 전송</span><span style="font-size:13px;font-weight:600;color:#383833;">ChatGPT 7 · Claude 1</span></div><div style="display:flex;justify-content:space-between;padding:10px 0;"><span style="font-size:13px;color:#919188;">최고 사용 시간대</span><span style="font-size:13px;font-weight:600;color:#383833;">오후 3시</span></div></div></div></div></div>`
       },
       {
-        title: "💡 그루 사용 가이드를 다시 보고 싶다면?",
-        htmlBody: `<p class="onboarding-restart-hint">그루 뱃지 클릭 → 그루 사용 가이드 다시 열기</p><div class="onboarding-tip-card"><div class="tip-card-title">그루 사용 가이드</div><div class="tip-card-desc">ChatGPT · Claude · Gemini 입력창 위 그루 배지와 팁 사용법을 다시 볼 수 있어요.</div><button class="tip-restart-btn">그루 사용 가이드 다시 열기</button></div>`
+        title: "그루 사용 가이드를 다시 보고 싶다면?",
+        htmlBody: `<p style="font-size:13px;color:#5e5e57;line-height:1.6;margin-bottom:16px;">그루 뱃지 클릭 → Settings 탭에서 언제든지 다시 볼 수 있어요.</p><div style="background:#fff;border:1px solid #e5e5d8;border-radius:14px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;"><div><p style="font-size:14px;font-weight:700;color:#1a1a16;margin:0 0 3px;">처음 사용 팁</p><p style="font-size:12px;color:#919188;margin:0;line-height:1.5;">그루 사용법을 다시 볼 수 있어요.</p></div><button class="tip-restart-btn" style="flex-shrink:0;padding:8px 18px;border-radius:999px;border:1px solid #e5e5d8;background:#fff;font-size:13px;font-weight:600;color:#1a1a16;cursor:pointer;font-family:inherit;">열기</button></div>`
       }
     ];
 
@@ -2653,6 +2652,16 @@
       }, skipTransition);
     }
 
+    function posSlideTop(skipTransition) {
+      const CARD_W = Math.min(400, window.innerWidth - 32);
+      applyCardPos({
+        left: (window.innerWidth - CARD_W) / 2,
+        top: 16,
+        maxWidth: CARD_W,
+        tail: null
+      }, skipTransition);
+    }
+
     // --- Backdrop / spotlight ---
     function updateBackdrop(slideIndex) {
       backdrop.classList.add("visible");
@@ -2795,6 +2804,7 @@
         updateBackdrop(currentSlide);
 
         if (nextIndex === 1 || nextIndex === 2) posSlide1(false, badgeRect);
+        else if (nextIndex === 6) posSlideTop(false);
         else posSlide0(false);
 
         slideArea.classList.remove("cp-ob-exit");
@@ -2831,6 +2841,7 @@
         updateBackdrop(currentSlide);
 
         if (prevIndex === 1 || prevIndex === 2) posSlide1(false, badgeRect);
+        else if (prevIndex === 5) posSlideTop(false);
         else posSlide0(false);
 
         slideArea.classList.remove("cp-ob-exit-rev");
@@ -3399,7 +3410,50 @@
       .ob-browser-content { background: #ffffff; padding: 8px; }
       .ob-mock-popup-card {
         border: 1px solid #e5e5d8; border-radius: 10px; overflow: hidden;
+        font-family: inherit; background: #fff;
       }
+      .ob-popup-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 6px 10px; border-bottom: 1px solid #e5e5d8; background: #fff;
+      }
+      .ob-popup-logo { font-size: 9px !important; font-weight: 800; color: #1a1a16; letter-spacing: -.02em; }
+      .ob-popup-puri-card {
+        display: flex; align-items: center; gap: 8px;
+        padding: 8px 10px; background: #f9fac0;
+      }
+      .ob-popup-puri-card img { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
+      .ob-popup-puri-title { font-size: 9px !important; font-weight: 700; color: #1a1a16; margin: 0 0 1px; }
+      .ob-popup-puri-msg { font-size: 8px !important; color: #5e5e57; margin: 0; line-height: 1.4; }
+      .ob-popup-avg-card { padding: 6px 10px; border-bottom: 1px solid #f0f0e8; }
+      .ob-popup-avg-label { font-size: 8px !important; color: #919188; margin: 0 0 1px; }
+      .ob-popup-avg-value { font-size: 9px !important; color: #383833; font-weight: 600; margin: 0; }
+      .ob-popup-avg-value strong { font-size: 12px !important; }
+      .ob-popup-section { padding: 5px 10px; border-bottom: 1px solid #f0f0e8; }
+      .ob-popup-section-label { font-size: 8px !important; font-weight: 600; color: #5e5e57; margin: 0 0 4px; }
+      .ob-popup-level-bar {
+        display: flex; height: 5px; border-radius: 999px; overflow: hidden;
+        background: #e5e5d8; margin-bottom: 3px;
+      }
+      .ob-popup-stats { padding: 4px 10px 8px; display: flex; flex-direction: column; gap: 3px; zoom: 0.7; }
+      .ob-popup-stat-row {
+        display: flex; justify-content: space-between; align-items: center;
+      }
+      .ob-popup-stat-label { font-size: 8px !important; color: #919188 !important; line-height: 1.4 !important; }
+      .ob-popup-stat-value { font-size: 8px !important; font-weight: 600 !important; color: #383833 !important; line-height: 1.4 !important; }
+      .ob-popup-date-nav {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 5px 10px; border-bottom: 1px solid #f0f0e8;
+      }
+      .ob-popup-date-label { font-size: 9px; font-weight: 600; color: #1a1a16; }
+      .ob-popup-date-arrow { font-size: 8px; color: #c8c8ba; background: none; border: none; cursor: default; padding: 0 2px; }
+      .ob-popup-week-bars {
+        display: flex; align-items: flex-end; gap: 3px; height: 28px;
+      }
+      .ob-popup-week-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; height: 100%; }
+      .ob-popup-week-inner { width: 100%; border-radius: 2px 2px 0 0; background: #d1d600; margin-top: auto; }
+      .ob-popup-week-day { font-size: 6px; color: #919188; }
+      .ob-popup-footer { padding: 5px 10px; border-top: 1px solid #f0f0e8; text-align: center; font-size: 7px; color: #c8c8ba; }
+      /* legacy (customize slide) */
       .ob-mini-puri-row {
         display: flex; align-items: center; gap: 8px;
         background: #f9fac0; padding: 8px 10px;
