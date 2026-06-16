@@ -227,7 +227,9 @@ function renderCustomSheet() {
   nodes.sheetPresets.innerHTML = personaKeys.flatMap((personaKey) => {
     const p = CUSTOM_PROMPTS[personaKey];
     return p.presets.map((preset, idx) => {
-      const isActive = personaKey === sheetSelectedPersona && idx === sheetSelectedPreset;
+      const isActive = sheetSelectedPersona !== null
+        && personaKey === sheetSelectedPersona
+        && idx === sheetSelectedPreset;
       const preview = isActive
         ? `<p class="preset-preview-label">지침 미리보기</p><p class="preset-preview-text">${escapeHtml(preset.prompt)}</p>`
         : "";
@@ -245,11 +247,20 @@ function renderCustomSheet() {
       renderCustomSheet();
     });
   });
+
+  // 선택 없으면 복사 버튼 비활성화
+  nodes.sheetCopyBtn.disabled = sheetSelectedPersona === null;
 }
 
 function openCustomSheet() {
-  sheetSelectedPreset = 0;
+  sheetSelectedPersona = null;
+  sheetSelectedPreset  = 0;
   nodes.customSheet.hidden = false;
+
+  // 처음 열릴 때 상단 64px 아래부터 시작
+  const sheet = nodes.customSheet.querySelector(".sheet");
+  if (sheet) sheet.style.height = (window.innerHeight - 64) + "px";
+
   renderCustomSheet();
   initSheetDrag();
 }
@@ -349,6 +360,7 @@ function bindEvents(settings) {
 
   // Sheet copy button
   nodes.sheetCopyBtn.addEventListener("click", async () => {
+    if (!sheetSelectedPersona) return;
     const presets = CUSTOM_PROMPTS[sheetSelectedPersona]?.presets || [];
     const prompt  = presets[sheetSelectedPreset]?.prompt || "";
     if (!prompt) return;
