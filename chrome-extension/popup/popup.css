@@ -85,17 +85,19 @@ body {
   border: none;
   border-radius: 9px;
   background: transparent;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
+  font-family: "SUIT","Pretendard","Apple SD Gothic Neo",-apple-system,sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  font-style: normal;
+  line-height: normal;
+  text-align: center;
   color: var(--gray-400);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, font-weight 0.1s;
+  transition: background 0.15s, color 0.15s;
 }
 .tab-btn.active {
   background: #fff;
-  color: var(--gray-900);
-  font-weight: 700;
+  color: #4e5000;
   box-shadow: 0 1px 4px rgba(0,0,0,.10);
 }
 
