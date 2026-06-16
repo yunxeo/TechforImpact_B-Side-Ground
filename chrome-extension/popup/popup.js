@@ -242,8 +242,16 @@ function renderCustomSheet() {
 
   nodes.sheetPresets.querySelectorAll(".preset-item").forEach((btn) => {
     btn.addEventListener("click", () => {
-      sheetSelectedPersona = btn.dataset.persona;
-      sheetSelectedPreset  = Number(btn.dataset.idx);
+      const clickedPersona = btn.dataset.persona;
+      const clickedIdx     = Number(btn.dataset.idx);
+      // 이미 선택된 항목 재클릭 → 비활성화
+      if (sheetSelectedPersona === clickedPersona && sheetSelectedPreset === clickedIdx) {
+        sheetSelectedPersona = null;
+        sheetSelectedPreset  = 0;
+      } else {
+        sheetSelectedPersona = clickedPersona;
+        sheetSelectedPreset  = clickedIdx;
+      }
       renderCustomSheet();
     });
   });
@@ -555,14 +563,13 @@ function renderStatsGrid(stat) {
   const avgPerDay  = activeDays > 0 ? Math.round(weekTotal / activeDays * 10) / 10 : 0;
   nodes.statAvg.textContent = avgPerDay > 0 ? `${avgPerDay}개/일` : "—";
 
-  // 가장 많이 사용
+  // 플랫폼별 전송 횟수
   const pc = stat.platformCounts || {};
-  const platforms = { chatgpt: "ChatGPT", claude: "Claude", gemini: "Gemini" };
-  let topName = "—"; let topCount = 0;
-  for (const [key, label] of Object.entries(platforms)) {
-    if ((pc[key] || 0) > topCount) { topCount = pc[key]; topName = label; }
-  }
-  nodes.statPlatform.textContent = topCount > 0 ? topName : "—";
+  const platParts = [];
+  if (pc.chatgpt > 0) platParts.push(`ChatGPT ${formatNumber(pc.chatgpt)}번`);
+  if (pc.claude  > 0) platParts.push(`Claude ${formatNumber(pc.claude)}번`);
+  if (pc.gemini  > 0) platParts.push(`Gemini ${formatNumber(pc.gemini)}번`);
+  nodes.statPlatform.textContent = platParts.length > 0 ? platParts.join(" · ") : "—";
 
   // 최고 사용 시간대 (데이터 없음)
   nodes.statPeak.textContent = "—";
@@ -759,6 +766,24 @@ function getPuriComment(stat) {
     };
   }
 
+  // lo=0: 전부 중간 (높음 없음) — 낮음 횟수 언급 없이 중립 메시지
+  if (lo === 0) {
+    return {
+      imgKey: "low",
+      msg: isPast
+        ? pick([
+            `총 ${n}번 전부 중간 길이였어요. 전반적으로 잘 활용한 하루예요!`,
+            `${n}번 보냈는데 전부 중간 길이였어요. 조금 더 줄이면 더 좋아요 🌿`,
+            `${n}번 채팅했는데 모두 중간 길이였어요. 핵심만 남기면 더 빠른 답변을 받을 수 있어요.`
+          ])
+        : pick([
+            `오늘 ${n}번 전부 중간 길이예요. 조금 더 줄이면 더 좋아요 🌿`,
+            `오늘 ${n}번 보냈는데 전부 중간 길이예요. 핵심만 남겨보세요!`,
+            `오늘 ${n}번 채팅했어요. 중간 길이가 많아요 — 간결하게 줄이면 더 빠른 답변을 받을 수 있어요.`
+          ])
+    };
+  }
+
   return {
     imgKey: "low",
     msg: isPast
@@ -770,7 +795,7 @@ function getPuriComment(stat) {
       : pick([
           `오늘 총 ${n}번 중 낮음이 ${lo}번이에요. 훌륭한 습관이에요! 🌱`,
           `오늘 ${n}번 보냈는데 낮음이 ${lo}번이나 됐어요. 짧고 명확한 질문을 잘 하고 있어요. 이 페이스 유지해요!`,
-          `오늘 ${n}번 채팅 중 낮음이 ${lo}번이에요. 입력 길이가 딱 좋았어요. 덕분에 답변도 빨랐을 거예요 ✨`
+          `오늘 ${n}번 채팅 중 낮음이 ${lo}번이에요. 간결함이 빠른 답변의 비결이에요 ✨`
         ])
   };
 }
@@ -1056,7 +1081,7 @@ function renderWeekCalendar(daily) {
     });
   }
 
-  const maxCount = Math.max(...days.map((d) => d.count), 1);
+  const maxCount = Math.max(...days.map((d) => d.count), 5); // 최소 5 기준으로 스케일
 
   nodes.weekBars.innerHTML = days.map((day) => {
     const hasData = day.count > 0;

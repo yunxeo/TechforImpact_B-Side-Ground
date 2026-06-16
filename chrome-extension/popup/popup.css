@@ -249,8 +249,9 @@ body {
   background: rgba(229,229,216,0.4);
   position: relative; overflow: hidden;
 }
-.week-bar-wrap.today    { background: #e5e5d8; }
-.week-bar-wrap.has-count { background: #e5e5d8; }
+.week-bar-wrap.today                    { background: #e5e5d8; }
+.week-bar-wrap.today.has-count          { background: #e5e5d8; }
+.week-bar-wrap:not(.today) .week-bar-inner { opacity: 0.4; }
 .week-bar-inner {
   position: absolute; bottom: 0; left: 0; right: 0;
   border-radius: 4px;
@@ -280,7 +281,10 @@ body {
   border-bottom: 1px solid var(--color-border);
 }
 .stats-label { font-size: 13px; color: var(--gray-600); }
-.stats-value { font-size: 13px; font-weight: 700; color: var(--gray-900); }
+.stats-value {
+  font-family: "SUIT","Pretendard","Apple SD Gothic Neo",-apple-system,sans-serif;
+  font-size: 11px; font-weight: 600; color: #1a1a16; line-height: normal;
+}
 
 /* ── Share image button ── */
 .share-image-btn {
