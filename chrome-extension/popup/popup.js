@@ -128,16 +128,15 @@ const nodes = {
   sheetCopyBtn:   $("#sheetCopyBtn"),
 };
 
-let customCharacterUrl = null;
-let reportOffset = 0;
-let selectedPersona = Object.keys(CUSTOM_PROMPTS)[0];
-let lastRenderedStat = null;
-let lastRenderedPuri = null;
+let customCharacterUrl    = null;
+let reportOffset          = 0;
+let selectedPersona       = Object.keys(CUSTOM_PROMPTS)[0];
+let lastRenderedStat      = null;
+let lastRenderedPuri      = null;
+let sheetSelectedPersona  = Object.keys(CUSTOM_PROMPTS)[0];
+let sheetSelectedPreset   = 0;
 
 boot();
-
-let sheetSelectedPersona = Object.keys(CUSTOM_PROMPTS)[0];
-let sheetSelectedPreset  = 0;
 
 async function boot() {
   const state = await getState();
@@ -483,6 +482,9 @@ function renderReport(report) {
     nodes.avgCharsText.textContent = "사용을 시작하면 평균 작성 글자 수를 알려드려요.";
   }
 
+  // Share btn: activate when there's data
+  nodes.shareImageBtn.classList.toggle("has-data", stat.submitCount > 0);
+
   // Level bar
   nodes.lowRatio.style.width    = `${stat.lowRatioPct}%`;
   nodes.mediumRatio.style.width = `${stat.mediumRatioPct}%`;
@@ -790,7 +792,7 @@ async function downloadShareImage() {
   }
 
   nodes.shareImageBtn.disabled = true;
-  nodes.shareImageBtn.textContent = "생성 중…";
+  nodes.shareImageBtn.innerHTML = "생성 중…";
 
   try {
     // ── Compute "어제 대비" values ───────────────────────────
@@ -958,8 +960,8 @@ async function downloadShareImage() {
     }, "image/png");
 
   } finally {
-    nodes.shareImageBtn.disabled  = false;
-    nodes.shareImageBtn.textContent = "공유 이미지 저장 (베타)";
+    nodes.shareImageBtn.disabled = false;
+    nodes.shareImageBtn.innerHTML = `리포트 이미지 저장 <span class="beta-tag">(Beta)</span>`;
   }
 }
 
