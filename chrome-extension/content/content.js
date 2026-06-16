@@ -197,6 +197,7 @@
   let badgeClickSuppress = false;
   let reportNudgeShownThisPage = false;
   let onboardingGuideActive = false;
+  let tempDisabled = false;
   let lastOverlayRenderMode = "";
   let lastOverlayPromptTipKey = "";
   let lastTipBarWidthKey = "";
@@ -593,6 +594,7 @@
   }
 
   function triggerHoverBubble() {
+    if (tempDisabled) return;
     if (onboardingGuideActive || isOnboardingOpen()) return;
     if (settings.focusMode) return;
     const snapshot = buildSnapshot();
@@ -1045,7 +1047,8 @@
     const promptTipKey = promptTipVisible ? inlinePromptTip.key : "";
 
     card.className = "cp-widget variant-tree-status-badge";
-    card.dataset.visible = settings.enabled && currentEditor ? "true" : "false";
+    card.dataset.visible = settings.enabled && currentEditor && !tempDisabled ? "true" : "false";
+    card.style.pointerEvents = tempDisabled ? "none" : "";
     card.dataset.level = snapshot.level;
     card.dataset.promptTipVisible = promptTipVisible ? "true" : "false";
     card.dataset.dragEnabled = settings.dragEnabled ? "true" : "false";
@@ -1122,10 +1125,10 @@
 
   function openTipBarAnimated(tipBar) {
     if (!tipBar) return;
-    const width = measureTipBarTargetWidth(tipBar);
     tipBarAnimState = "opening";
     tipBar.classList.remove("closing");
 
+    const width = measureTipBarTargetWidth(tipBar);
     tipBar.style.transition = "none";
     tipBar.style.maxWidth = "0px";
     tipBar.style.opacity = "0";
@@ -1608,8 +1611,8 @@
     if (!focusBtn || !moreBtn || !sizeMenu) return;
 
     focusBtn.addEventListener("mouseenter", () => {
-      const msg = settings.focusMode ? "클릭하면 집중 모드가 꺼져요" : "클릭하면 집중 모드가 켜져요";
-      showBubble(buildSnapshot(), { title: "집중 모드", message: msg, duration: 1500, kind: "focus-hover" });
+      const title = settings.focusMode ? "클릭하면 집중 모드가 꺼져요" : "클릭하면 집중 모드가 켜져요";
+      showBubble(buildSnapshot(), { title, message: "꾹 누르면 그루를 잠시 끌 수 있어요", duration: 1500, kind: "focus-hover" });
     });
     focusBtn.addEventListener("mouseleave", () => {
       if (overlay?.bubble?.dataset.kind === "focus-hover") scheduleHideBubble(80);
@@ -1622,8 +1625,22 @@
     if (slider) slider.value = String(currentVal);
     if (sizeValue) sizeValue.textContent = `${currentVal}%`;
 
+    let longPressTimer = null;
+    let longPressTriggered = false;
+    focusBtn.addEventListener("mousedown", (e) => {
+      e.stopPropagation();
+      longPressTriggered = false;
+      longPressTimer = setTimeout(() => {
+        longPressTriggered = true;
+        showDisableConfirm();
+      }, 600);
+    });
+    focusBtn.addEventListener("mouseup",    () => clearTimeout(longPressTimer));
+    focusBtn.addEventListener("mouseleave", () => clearTimeout(longPressTimer));
+
     focusBtn.addEventListener("click", (e) => {
       e.stopPropagation();
+      if (longPressTriggered) { longPressTriggered = false; return; }
       settings.focusMode = !settings.focusMode;
       if (settings.focusMode) hideTipBar();
 
@@ -1725,6 +1742,48 @@
 
     clearTimeout(overlayTimer);
     if (!options.manual) overlayTimer = window.setTimeout(hideBubble, options.duration || 5200);
+  }
+
+  function showDisableConfirm() {
+    if (!overlay) return;
+    const shadow = overlay.host.shadowRoot;
+    let dlg = shadow.querySelector(".cp-disable-confirm");
+    if (!dlg) {
+      dlg = document.createElement("div");
+      dlg.className = "cp-disable-confirm";
+      shadow.appendChild(dlg);
+    }
+    dlg.innerHTML = `
+      <p style="margin:0 0 2px;font-size:12px;font-weight:600;color:#1a1a16">그루를 잠시 끌까요?</p>
+      <span class="cp-disable-hint">새로고침하면 다시 나타나요</span>
+      <div class="cp-disable-actions">
+        <button class="cp-disable-yes">끄기</button>
+        <button class="cp-disable-no">취소</button>
+      </div>
+    `;
+    const focusBtn = overlay.card.querySelector(".cp-focus-btn");
+    const rect = focusBtn?.getBoundingClientRect();
+    if (rect) {
+      dlg.style.bottom = `${window.innerHeight - rect.top + 8}px`;
+      dlg.style.right  = `${window.innerWidth  - rect.right}px`;
+    }
+    dlg.hidden = false;
+
+    dlg.querySelector(".cp-disable-yes").addEventListener("click", (e) => {
+      e.stopPropagation();
+      tempDisabled = true;
+      hideBubble();
+      if (overlay?.card) {
+        overlay.card.dataset.visible = "false";
+        overlay.card.style.pointerEvents = "none";
+      }
+      dlg.innerHTML = `<p class="cp-disable-permanent-hint">완전히 끄고 싶다면 뱃지 클릭 → 설정에서 켜기/끄기 토글을 눌러주세요</p>`;
+      setTimeout(() => { dlg.hidden = true; }, 3500);
+    });
+    dlg.querySelector(".cp-disable-no").addEventListener("click", (e) => {
+      e.stopPropagation();
+      dlg.hidden = true;
+    });
   }
 
   function hideBubble() {
@@ -2302,7 +2361,7 @@
     }, true);
 
     document.addEventListener("mousemove", (event) => {
-      if (!overlay || !settings.enabled || !currentEditor) return;
+      if (!overlay || !settings.enabled || !currentEditor || tempDisabled) return;
       const cardRect = overlay.card?.getBoundingClientRect();
       const insideCard = pointInRect(event.clientX, event.clientY, cardRect);
 
@@ -2367,7 +2426,7 @@
       {
         slideImgSm: obAssets.puriFocus,
         title: "긴 작업엔 집중 모드를 켜보세요",
-        htmlBody: `<span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block">보고서 분석, 코드 리뷰처럼<br>긴 입력이 필요한 작업 중일 때 사용해요</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">켜두면 프롬프팅 팁 없이<br>현재 글자수와 토큰수만 조용히 알려드려요</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">뱃지 오른쪽 <img src="${obAssets.focusIcon}" width="16" height="16" style="vertical-align:middle;margin:0 2px" alt="" /> 버튼으로 바로 켤 수 있어요</span>`
+        htmlBody: `<span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block">보고서 분석, 코드 리뷰처럼<br>긴 입력이 필요한 작업 중일 때 사용해요</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">켜두면 프롬프팅 팁 없이<br>현재 글자수와 토큰수만 조용히 알려드려요</span><span style="font-size:14px;color:#5e5e57;line-height:1.6;display:block;margin-top:8px">뱃지 오른쪽 <img src="${obAssets.focusIcon}" width="16" height="16" style="vertical-align:middle;margin:0 2px" alt="" /> 버튼으로 바로 켤 수 있어요</span><span style="font-size:12px;color:#919188;display:block;margin-top:10px;line-height:1.5">번개 버튼을 꾹 누르면 그루를 잠시 끌 수도 있어요 (새로고침하면 다시 나타나요)</span>`
       },
       {
         title: "내가 좋아하는 캐릭터로 뱃지를 꾸며보세요",
@@ -3554,7 +3613,7 @@
       }
       .cp-bubble strong.text-status {
         font-size: 13px;
-        font-weight: 700;
+        font-weight: 610;
         line-height: 130%;
       }
       .cp-bubble span {
@@ -3777,6 +3836,58 @@
         width: 100%;
         accent-color: #d1d600;
         cursor: pointer;
+      }
+      .cp-disable-confirm {
+        position: fixed;
+        background: #ffffff;
+        border: 1.5px solid #e5e5d8;
+        border-radius: 12px;
+        padding: 12px 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+        font-size: 12px;
+        z-index: 2147483647;
+        min-width: 170px;
+        pointer-events: auto;
+        font-family: inherit;
+        letter-spacing: inherit;
+        color: #1a1a16;
+      }
+      .cp-disable-hint {
+        font-size: 10px;
+        color: #919188;
+        display: block;
+        margin-top: 2px;
+      }
+      .cp-disable-actions {
+        display: flex;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .cp-disable-actions button {
+        flex: 1;
+        padding: 6px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        letter-spacing: inherit;
+      }
+      .cp-disable-yes {
+        background: #d1d600;
+        border: none;
+        color: #1a1a16;
+      }
+      .cp-disable-no {
+        background: transparent;
+        border: 1px solid #e5e5d8;
+        color: #5e5e57;
+      }
+      .cp-disable-permanent-hint {
+        font-size: 10px;
+        color: #919188;
+        margin: 0;
+        line-height: 1.5;
       }
       .cp-size-reset {
         background: none;
