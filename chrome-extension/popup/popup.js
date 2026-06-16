@@ -234,25 +234,31 @@ function renderCustomSheet() {
       sheetSelectedPersona = btn.dataset.persona;
       sheetSelectedPreset  = 0;
       renderCustomSheet();
+      // 해당 프리셋으로 스크롤
+      const target = nodes.sheetPresets.querySelector(`[data-persona="${btn.dataset.persona}"]`);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "nearest" });
     });
   });
 
-  // Preset list
-  const presets = CUSTOM_PROMPTS[sheetSelectedPersona]?.presets || [];
-  nodes.sheetPresets.innerHTML = presets.map((preset, idx) => {
-    const active = idx === sheetSelectedPreset;
-    const preview = active
-      ? `<p class="preset-preview-label">지침 미리보기</p><p class="preset-preview-text">${escapeHtml(preset.prompt)}</p>`
-      : "";
-    return `<button class="preset-item${active ? " active" : ""}" data-idx="${idx}" type="button">
-      <p class="preset-label">${escapeHtml(preset.label)}</p>
-      ${preview}
-    </button>`;
+  // 모든 페르소나의 프리셋을 플랫 리스트로 표시
+  nodes.sheetPresets.innerHTML = personaKeys.flatMap((personaKey) => {
+    const p = CUSTOM_PROMPTS[personaKey];
+    return p.presets.map((preset, idx) => {
+      const isActive = personaKey === sheetSelectedPersona && idx === sheetSelectedPreset;
+      const preview = isActive
+        ? `<p class="preset-preview-label">지침 미리보기</p><p class="preset-preview-text">${escapeHtml(preset.prompt)}</p>`
+        : "";
+      return `<button class="preset-item${isActive ? " active" : ""}" data-persona="${escapeHtml(personaKey)}" data-idx="${idx}" type="button">
+        <p class="preset-label">${escapeHtml(preset.label)}</p>
+        ${preview}
+      </button>`;
+    });
   }).join("");
 
   nodes.sheetPresets.querySelectorAll(".preset-item").forEach((btn) => {
     btn.addEventListener("click", () => {
-      sheetSelectedPreset = Number(btn.dataset.idx);
+      sheetSelectedPersona = btn.dataset.persona;
+      sheetSelectedPreset  = Number(btn.dataset.idx);
       renderCustomSheet();
     });
   });
@@ -1017,20 +1023,21 @@ function renderWeekCalendar(daily) {
   const maxCount = Math.max(...days.map((d) => d.count), 1);
 
   nodes.weekBars.innerHTML = days.map((day) => {
-    const heightPct = day.count > 0 ? Math.max((day.count / maxCount) * 100, 8) : 4;
+    const hasData = day.count > 0;
+    const heightPct = hasData ? Math.max((day.count / maxCount) * 100, 8) : 0;
     const total = day.low + day.medium + day.high;
-    const todayClass = day.isToday ? " today" : "";
-    const isEmpty = day.count === 0 ? " empty" : "";
-    const segments = day.count > 0 && total > 0
+    const todayClass    = day.isToday ? " today" : "";
+    const hasCountClass = hasData    ? " has-count" : "";
+    const segments = hasData && total > 0
       ? [
           day.low    > 0 ? `<div class="week-seg low"    style="flex:${day.low}"></div>`    : "",
           day.medium > 0 ? `<div class="week-seg medium" style="flex:${day.medium}"></div>` : "",
           day.high   > 0 ? `<div class="week-seg high"   style="flex:${day.high}"></div>`   : ""
         ].join("")
       : "";
-    return `<div class="week-bar-wrap${todayClass}${isEmpty}">
-      <div class="week-bar-inner" style="height:${heightPct}%">${segments}</div>
-    </div>`;
+    return `<div class="week-bar-wrap${todayClass}${hasCountClass}">${
+      hasData ? `<div class="week-bar-inner" style="height:${heightPct}%">${segments}</div>` : ""
+    }</div>`;
   }).join("");
 
   nodes.weekDaysLabel.innerHTML = days.map((day) => {

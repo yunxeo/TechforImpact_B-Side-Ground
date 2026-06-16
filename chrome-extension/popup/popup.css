@@ -239,25 +239,31 @@ body {
 /* ── Weekly chart ── */
 .week-bars {
   display: flex; align-items: flex-end; gap: 5px;
-  height: 60px; margin-bottom: 4px;
+  height: 52px; margin-bottom: 4px;
 }
-.week-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0; }
+.week-bar-wrap {
+  width: 28px; flex-shrink: 0;
+  height: 52px; border-radius: 4px;
+  background: rgba(229,229,216,0.4);
+  position: relative; overflow: hidden;
+}
+.week-bar-wrap.today { background: #e5e5d8; }
+.week-bar-wrap.has-count { background: #e5e5d8; }
 .week-bar-inner {
-  width: 100%; border-radius: 4px 4px 0 0;
+  position: absolute; bottom: 0; left: 0; right: 0;
+  border-radius: 4px;
   display: flex; flex-direction: column-reverse;
-  overflow: hidden; min-height: 4px;
+  overflow: hidden;
 }
+.week-seg { flex-shrink: 0; }
 .week-seg.low    { background: var(--green-400); }
 .week-seg.medium { background: var(--warning); }
 .week-seg.high   { background: var(--danger); }
-.week-bar-wrap.today .week-bar-inner { outline: 2px solid var(--green-900); outline-offset: 0; }
-.week-bar-wrap.empty .week-bar-inner { background: var(--gray-100); border-radius: 4px; }
 
-.week-days-label {
-  display: flex; gap: 5px;
-}
+.week-days-label { display: flex; gap: 5px; }
 .week-day-cell {
-  flex: 1; text-align: center; font-size: 10px; font-weight: 500; color: var(--gray-400);
+  width: 28px; flex-shrink: 0;
+  text-align: center; font-size: 10px; font-weight: 500; color: var(--gray-400);
 }
 .week-day-cell.today { color: var(--green-900); font-weight: 700; }
 
@@ -318,7 +324,7 @@ body {
   background: #f1f47a;
   border-radius: 8px;
   font-family: "SUIT","Pretendard","Apple SD Gothic Neo",-apple-system,sans-serif;
-  font-size: 8px; font-weight: 600;
+  font-size: 10px; font-weight: 600;
   color: #4e5000; line-height: normal; text-align: center;
 }
 
