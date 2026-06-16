@@ -189,6 +189,9 @@ function applySubmitToDailyStat(stat, safeEvent) {
 
   const platform = safeEvent.platform || "unknown";
   stat.platformCounts[platform] = (stat.platformCounts[platform] || 0) + 1;
+
+  const hour = new Date(safeEvent.timestamp).getHours();
+  stat.hourlyCounts[hour] = (stat.hourlyCounts[hour] || 0) + 1;
 }
 
 function applyDiscardToDailyStat(stat, safeEvent) {
@@ -355,6 +358,8 @@ function normalizeDailyStat(value, dateKey) {
   stat.latestSessionMaxChars = toNonNegativeInt(stat.latestSessionMaxChars);
   stat.latestSessionMaxTokens = toNonNegativeInt(stat.latestSessionMaxTokens);
 
+  stat.hourlyCounts = normalizeHourlyCounts(stat.hourlyCounts);
+
   stat.platformCounts = normalizePlatformCounts(stat.platformCounts);
   stat.discardPlatformCounts = normalizePlatformCounts(stat.discardPlatformCounts);
   stat.draftPlatformCounts = normalizePlatformCounts(stat.draftPlatformCounts);
@@ -412,6 +417,8 @@ function createEmptyDailyStat(dateKey) {
     totalDraftObservedTokens: 0,
     latestSessionMaxChars: 0,
     latestSessionMaxTokens: 0,
+
+    hourlyCounts: {},
 
     platformCounts: {
       chatgpt: 0,
@@ -534,7 +541,9 @@ function buildDailyReport(daily, dateKey) {
 
     diffAvgChars: avgFinalChars - yesterdayAvgFinalChars,
     diffAvgTokens: avgFinalTokens - yesterdayAvgFinalTokens,
-    diffHighRatioPct: highRatioPct - yesterdayHighRatioPct
+    diffHighRatioPct: highRatioPct - yesterdayHighRatioPct,
+
+    peakHour: calcPeakHour(today.hourlyCounts)
   };
 
   report.message = buildReportMessage(report);
@@ -635,6 +644,28 @@ function sum(values) {
 
 function toNonNegativeInt(value) {
   return Math.max(0, Math.round(Number(value) || 0));
+}
+
+function calcPeakHour(hourlyCounts) {
+  if (!hourlyCounts || typeof hourlyCounts !== "object") return null;
+  let peak = null;
+  let max = 0;
+  for (const [h, count] of Object.entries(hourlyCounts)) {
+    const n = Number(count) || 0;
+    if (n > max) { max = n; peak = Number(h); }
+  }
+  return max > 0 ? peak : null;
+}
+
+function normalizeHourlyCounts(value) {
+  const counts = {};
+  if (value && typeof value === "object") {
+    for (let h = 0; h < 24; h++) {
+      const n = toNonNegativeInt(value[h]);
+      if (n > 0) counts[h] = n;
+    }
+  }
+  return counts;
 }
 
 function normalizePlatformCounts(value) {

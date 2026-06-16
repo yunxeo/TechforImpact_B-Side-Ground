@@ -101,21 +101,13 @@
         </div>
       </div>
 
-      <!-- Share image CTA -->
+      <!-- 리포트 이미지 저장 버튼 (일시 비노출 — 로직은 popup.js downloadShareImage 함수 참고)
       <button class="share-image-btn" id="shareImageBtn" type="button">리포트 이미지 저장 <span class="beta-tag">(Beta)</span></button>
-
-      <!-- Custom instructions entry -->
-      <button class="custom-entry-card" id="openCustomSheet" type="button">
-        <div class="custom-entry-text">
-          <p class="custom-entry-title">맞춤형 지침 추천</p>
-          <p class="custom-entry-sub">내 사용 패턴에 맞는 프롬프트 지침</p>
-        </div>
-        <span class="custom-entry-pill">추천받기</span>
-      </button>
+      -->
 
       <footer class="popup-footer">
         <span>© 2026 Groo. B개발구역.</span>
-        <a href="https://b-side-ground.vercel.app/" target="_blank">공식 페이지 →</a>
+        <span><a href="https://forms.gle/3ucmeL6wRD5HegfU6" target="_blank" class="footer-feedback">피드백 보내기</a> · <a href="https://b-side-ground.vercel.app/" target="_blank">공식 페이지 →</a></span>
       </footer>
     </div>
 
@@ -143,7 +135,7 @@
 
       <p class="settings-section-label">데이터</p>
       <div class="settings-card">
-        <div class="settings-row">
+          <div class="settings-row">
           <span class="settings-row-label">리포트 내보내기</span>
           <button class="settings-action-btn" id="downloadLogBtn" type="button">내보내기</button>
         </div>
@@ -156,26 +148,8 @@
 
       <footer class="popup-footer">
         <span>© 2026 Groo. B개발구역.</span>
-        <a href="https://b-side-ground.vercel.app/" target="_blank">공식 페이지 →</a>
+        <span><a href="https://forms.gle/3ucmeL6wRD5HegfU6" target="_blank" class="footer-feedback">피드백 보내기</a> · <a href="https://b-side-ground.vercel.app/" target="_blank">공식 페이지 →</a></span>
       </footer>
-    </div>
-
-    <!-- ── Custom instructions sheet ── -->
-    <div id="customSheet" class="sheet-overlay" hidden>
-      <div class="sheet-backdrop" id="sheetBackdrop"></div>
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-          <span class="sheet-title">맞춤형 지침 추천</span>
-          <button class="sheet-close" id="closeSheet" type="button">✕</button>
-        </div>
-        <div class="sheet-persona-pills" id="sheetPersonaTabs"></div>
-        <div class="sheet-presets" id="sheetPresets"></div>
-        <div class="sheet-cta">
-          <button class="sheet-copy-btn" id="sheetCopyBtn" type="button">지침 복사하기</button>
-          <p class="sheet-copy-hint">복사한 지침을 ChatGPT · Claude · Gemini 맞춤형 지침에 붙여 넣어 보세요</p>
-        </div>
-      </div>
     </div>
 
     <script src="popup.js"></script>

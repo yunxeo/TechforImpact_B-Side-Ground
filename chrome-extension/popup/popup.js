@@ -22,63 +22,6 @@ const DEFAULT_SETTINGS = {
   thresholds: { lowMax: 100, mediumMax: 400 }
 };
 
-const CUSTOM_PROMPTS = {
-  "공통": {
-    icon: "🌐",
-    presets: [
-      { label: "공통 압축형 기본 설정", prompt: `너는 토큰 사용량을 줄이고 불필요한 반복 대화를 최소화하는 압축형 AI 어시스턴트다. 답변의 목표는 사용자가 필요한 정보를 빠르게 얻도록 하면서, 입력 토큰과 출력 토큰을 모두 줄이는 것이다. 모든 답변은 짧고 명확하게 작성하며, 중복 설명, 장황한 배경, 과도한 예시, 불필요한 선택지 나열은 생략한다.\n\n항상 결론이나 결과물을 먼저 제시한다. 필요한 경우에만 핵심 근거, 실행 단계, 주의점을 짧게 덧붙인다. 사용자가 요청하지 않은 부가 설명이나 심화 내용은 제공하지 않는다. 여러 가능성이 있을 때는 가장 가능성 높은 답이나 가장 추천하는 방향을 먼저 제시하고, 대안은 1~2개로 제한한다.\n\n사용자의 요청이 충분히 명확하면 추가 질문 없이 바로 답변한다. 정보가 부족해 답변 품질이 크게 떨어질 경우에만 가장 중요한 확인 질문 1개를 한다. 전체적으로 최소한의 토큰으로 최대한의 정보를 전달한다.` }
-    ]
-  },
-  "과제 중심 대학생": {
-    icon: "📚",
-    presets: [
-      { label: "과제 중심 대학생", prompt: `너는 대학생의 과제 수행을 돕는 압축형 학습 보조자다. 답변의 목표는 과제에 필요한 내용을 한 번에 충분히 제공하고, 불필요한 설명과 반복 질문을 줄여 전체 토큰 사용량을 절감하는 것이다. 보고서, 발표, 요약, 자료조사, 팀플 문서, 교수님 메일 등 대학 과제 상황에 맞게 답변한다.\n\n항상 결론이나 완성본을 먼저 제시한다. 필요한 경우에만 짧은 근거를 덧붙인다. 장황한 배경 설명, 과도한 예시, 비슷한 표현의 반복은 생략한다. 과제에 바로 활용할 수 있도록 핵심 주장, 근거, 예시, 정리 순서로 구성한다.\n\n요청이 충분히 명확하면 추가 질문 없이 바로 결과물을 제공한다. 정보가 부족해 답변 품질이 크게 떨어질 때만 확인 질문 1개를 한다.` }
-    ]
-  },
-  "시험공부형 학생": {
-    icon: "📝",
-    presets: [
-      { label: "시험공부형 학생", prompt: `너는 시험공부를 돕는 압축형 튜터다. 답변의 목표는 사용자가 개념을 빠르게 이해하고 문제에 적용하게 하며, 불필요한 설명과 반복 질문을 줄여 전체 토큰 사용량을 절감하는 것이다.\n\n개념 설명은 정의, 핵심 원리, 적용 상황, 시험 포인트 순서로 정리한다. 헷갈리는 개념은 비교표나 짧은 항목으로 차이만 정리한다. 문제 풀이는 풀이 방향을 먼저 제시하고, 핵심 식과 판단 근거만 보여준다. 시험 직전 정리는 핵심 개념, 자주 나오는 유형, 실수 포인트 순서로 구성한다.` }
-    ]
-  },
-  "코딩 중심 사용자": {
-    icon: "💻",
-    presets: [
-      { label: "코딩 중심 사용자", prompt: `너는 개발을 돕는 압축형 코딩 어시스턴트다. 오류 해결과 구현에 필요한 정보를 바로 제공하고, 불필요한 설명과 반복 질문을 줄여 전체 토큰 사용량을 절감하는 것이다.\n\n오류 해결은 가장 가능성 높은 원인과 수정 방법을 먼저 제시한다. 어느 파일의 어느 부분을 어떻게 바꿔야 하는지 우선 알려준다. 전체 코드를 반복하지 않고 바뀌는 부분 중심으로 보여준다. 기능 구현은 파일명, 함수명, 수정 위치, 코드 순서로 답한다.` }
-    ]
-  },
-  "기획 / PM형": {
-    icon: "📋",
-    presets: [
-      { label: "기획 / PM형 사용자", prompt: `너는 서비스 기획과 프로젝트 관리를 돕는 압축형 PM 어시스턴트다. 기획 의사결정에 필요한 구조를 빠르게 제공하고, 불필요한 설명과 반복 질문을 줄여 전체 토큰 사용량을 절감하는 것이다.\n\n서비스 아이디어는 문제, 사용자, 해결 방식, 핵심 기능, 사용자 가치, 리스크 순서로 정리한다. 유저리서치는 목적, 대상, 절차, 질문, 관찰 항목, 지표, 분석 방식으로 정리한다. 발표 구성은 문제 제기, 조사, 인사이트, 솔루션, 구현, 테스트, 기대효과 흐름으로 정리한다.` }
-    ]
-  },
-  "글쓰기 / 커뮤니케이션형": {
-    icon: "✍️",
-    presets: [
-      { label: "글쓰기 / 커뮤니케이션형", prompt: `너는 글쓰기와 커뮤니케이션을 돕는 압축형 문장 편집자다. 바로 사용할 수 있는 문장을 제공하고, 수정 요청과 반복 질문을 줄여 전체 토큰 사용량을 절감하는 것이다.\n\n항상 완성본을 먼저 제시한다. 문장은 자연스럽고 사람이 쓴 것처럼 작성한다. AI가 쓴 것처럼 보이는 장식적인 표현은 피한다. 메일은 제목과 본문을 구분한다. 문장 다듬기는 원래 의미를 유지하면서 더 간결하고 자연스럽게 고친다.` }
-    ]
-  },
-  "리서치 / 자료조사형": {
-    icon: "🔍",
-    presets: [
-      { label: "리서치 / 자료조사형", prompt: `너는 자료조사와 정보 정리를 돕는 압축형 리서치 어시스턴트다. 신뢰할 수 있는 핵심 정보를 구조화해 제공하고, 불필요한 탐색과 반복 질문을 줄여 전체 토큰 사용량을 절감하는 것이다.\n\n조사는 핵심 결론을 먼저 제시하고, 그다음 근거와 활용 방향을 짧게 정리한다. 확실하지 않은 내용은 단정하지 않고 불확실하다고 표시한다. 비교 분석은 비교 기준을 먼저 세우고 핵심 차이를 표나 짧은 항목으로 정리한다.` }
-    ]
-  },
-  "창업 / 비즈니스형": {
-    icon: "🚀",
-    presets: [
-      { label: "창업 / 비즈니스형", prompt: `너는 창업과 비즈니스 실행을 돕는 압축형 전략 어시스턴트다. 실행 가능한 판단을 빠르게 제공하고, 불필요한 아이디어 확장과 반복 질문을 줄여 전체 토큰 사용량을 절감하는 것이다.\n\n아이디어 검토는 문제의 강도, 고객, 지불 의사, 검증 가능성, 수익성, 리스크를 기준으로 판단한다. 장점만 말하지 않고 실패 가능성과 현실적인 수정 방향도 함께 제시한다. MVP는 필수 기능과 후순위 기능을 구분한다.` }
-    ]
-  },
-  "초압축 효율형": {
-    icon: "⚡",
-    presets: [
-      { label: "초압축 효율형", prompt: `너는 답변을 최대한 짧고 효율적으로 제공하는 압축형 어시스턴트다. 항상 결론을 먼저 말한다. 배경, 역사, 원리, 예시는 생략한다. 여러 선택지가 있을 때는 가장 추천하는 선택지를 먼저 말하고, 대안은 1~2개만 제시한다. 단, 중요한 리스크나 사용자가 놓치면 큰 문제가 생길 수 있는 부분은 짧게라도 반드시 알려준다.` }
-    ]
-  }
-};
-
 const PURI_ASSETS = {
   idle: "../assets/puri_idle.svg",
   low: "../assets/puri_low.svg",
@@ -119,22 +62,12 @@ const nodes = {
   downloadLogBtn: $("#downloadLogBtn"),
   openGuide:      $("#openGuide"),
   resetStatsBtn:  $("#resetStatsBtn"),
-  openCustomSheet:$("#openCustomSheet"),
-  customSheet:    $("#customSheet"),
-  sheetBackdrop:  $("#sheetBackdrop"),
-  closeSheet:     $("#closeSheet"),
-  sheetPersonaTabs: $("#sheetPersonaTabs"),
-  sheetPresets:   $("#sheetPresets"),
-  sheetCopyBtn:   $("#sheetCopyBtn"),
 };
 
 let customCharacterUrl    = null;
 let reportOffset          = 0;
-let selectedPersona       = Object.keys(CUSTOM_PROMPTS)[0];
 let lastRenderedStat      = null;
 let lastRenderedPuri      = null;
-let sheetSelectedPersona  = Object.keys(CUSTOM_PROMPTS)[0];
-let sheetSelectedPreset   = 0;
 
 boot();
 
@@ -213,110 +146,6 @@ function render(state) {
   if (nodes.focusMode) nodes.focusMode.checked = Boolean(state.settings.focusMode);
 }
 
-function renderCustomPrompts() {
-  // legacy stub – sheet rendering handled by renderCustomSheet
-  const personaKeys = Object.keys(CUSTOM_PROMPTS);
-
-}
-
-// ── Custom instructions sheet ─────────────────────────────
-function renderCustomSheet() {
-  const personaKeys = Object.keys(CUSTOM_PROMPTS);
-
-  // 모든 페르소나의 프리셋을 플랫 리스트로 표시
-  nodes.sheetPresets.innerHTML = personaKeys.flatMap((personaKey) => {
-    const p = CUSTOM_PROMPTS[personaKey];
-    return p.presets.map((preset, idx) => {
-      const isActive = sheetSelectedPersona !== null
-        && personaKey === sheetSelectedPersona
-        && idx === sheetSelectedPreset;
-      const preview = isActive
-        ? `<p class="preset-preview-label">지침 미리보기</p><p class="preset-preview-text">${escapeHtml(preset.prompt)}</p>`
-        : "";
-      return `<button class="preset-item${isActive ? " active" : ""}" data-persona="${escapeHtml(personaKey)}" data-idx="${idx}" type="button">
-        <p class="preset-label">${escapeHtml(preset.label)}</p>
-        ${preview}
-      </button>`;
-    });
-  }).join("");
-
-  nodes.sheetPresets.querySelectorAll(".preset-item").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const clickedPersona = btn.dataset.persona;
-      const clickedIdx     = Number(btn.dataset.idx);
-      // 이미 선택된 항목 재클릭 → 비활성화
-      if (sheetSelectedPersona === clickedPersona && sheetSelectedPreset === clickedIdx) {
-        sheetSelectedPersona = null;
-        sheetSelectedPreset  = 0;
-      } else {
-        sheetSelectedPersona = clickedPersona;
-        sheetSelectedPreset  = clickedIdx;
-      }
-      renderCustomSheet();
-    });
-  });
-
-  // 선택 없으면 복사 버튼 비활성화
-  nodes.sheetCopyBtn.disabled = sheetSelectedPersona === null;
-}
-
-function openCustomSheet() {
-  sheetSelectedPersona = null;
-  sheetSelectedPreset  = 0;
-  nodes.customSheet.hidden = false;
-
-  // 처음 열릴 때 상단 64px 아래부터 시작
-  const sheet = nodes.customSheet.querySelector(".sheet");
-  if (sheet) sheet.style.height = (window.innerHeight - 64) + "px";
-
-  renderCustomSheet();
-  initSheetDrag();
-}
-
-function initSheetDrag() {
-  const handle = nodes.customSheet.querySelector(".sheet-handle");
-  const sheet  = nodes.customSheet.querySelector(".sheet");
-  if (!handle || !sheet) return;
-
-  let startY = 0;
-  let startH = 0;
-
-  function onMove(e) {
-    const y = e.touches ? e.touches[0].clientY : e.clientY;
-    const delta = startY - y;
-    const maxH  = window.innerHeight;
-    const newH  = Math.min(maxH, Math.max(160, startH + delta));
-    sheet.style.height = newH + "px";
-  }
-
-  function onUp() {
-    document.removeEventListener("mousemove", onMove);
-    document.removeEventListener("mouseup",   onUp);
-    document.removeEventListener("touchmove", onMove);
-    document.removeEventListener("touchend",  onUp);
-    sheet.style.transition = "";
-  }
-
-  handle.onmousedown = (e) => {
-    startY = e.clientY;
-    startH = sheet.offsetHeight;
-    sheet.style.transition = "none";
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup",   onUp);
-  };
-  handle.ontouchstart = (e) => {
-    startY = e.touches[0].clientY;
-    startH = sheet.offsetHeight;
-    sheet.style.transition = "none";
-    document.addEventListener("touchmove", onMove, { passive: true });
-    document.addEventListener("touchend",  onUp);
-  };
-}
-
-function closeCustomSheet() {
-  nodes.customSheet.hidden = true;
-}
-
 function bindEvents(settings) {
   async function updateSetting(patch) {
     const next = sanitizeSettings(merge(settings, patch));
@@ -359,32 +188,7 @@ function bindEvents(settings) {
   });
 
   // Share image
-  nodes.shareImageBtn.addEventListener("click", downloadShareImage);
-
-  // Custom sheet open/close
-  nodes.openCustomSheet.addEventListener("click", openCustomSheet);
-  nodes.closeSheet.addEventListener("click", closeCustomSheet);
-  nodes.sheetBackdrop.addEventListener("click", closeCustomSheet);
-
-  // Sheet copy button
-  nodes.sheetCopyBtn.addEventListener("click", async () => {
-    if (!sheetSelectedPersona) return;
-    const presets = CUSTOM_PROMPTS[sheetSelectedPersona]?.presets || [];
-    const prompt  = presets[sheetSelectedPreset]?.prompt || "";
-    if (!prompt) return;
-    try {
-      await navigator.clipboard.writeText(prompt);
-      nodes.sheetCopyBtn.textContent = "복사됐어요! ✓";
-      nodes.sheetCopyBtn.classList.add("copied");
-      setTimeout(() => {
-        nodes.sheetCopyBtn.textContent = "지침 복사하기";
-        nodes.sheetCopyBtn.classList.remove("copied");
-      }, 2000);
-    } catch {
-      nodes.sheetCopyBtn.textContent = "복사 실패";
-      setTimeout(() => { nodes.sheetCopyBtn.textContent = "지침 복사하기"; }, 2000);
-    }
-  });
+  if (nodes.shareImageBtn) nodes.shareImageBtn.addEventListener("click", downloadShareImage);
 
   // Settings actions
   nodes.openGuide.addEventListener("click", openOnboardingOnActiveTab);
@@ -503,7 +307,8 @@ function renderReport(report) {
     lowRatioPct:    report?.lowRatioPct    || 0,
     mediumRatioPct: report?.mediumRatioPct || 0,
     highRatioPct:   report?.highRatioPct   || 0,
-    platformCounts: report?.platformCounts || {}
+    platformCounts: report?.platformCounts || {},
+    peakHour:       report?.peakHour ?? null
   };
 
   const puri = getPuriComment(stat);
@@ -527,13 +332,13 @@ function renderReport(report) {
 
   // Avg chars card
   if (stat.submitCount > 0 && stat.avgFinalChars > 0) {
-    nodes.avgCharsText.textContent = `${formatNumber(stat.avgFinalChars)}자 정도 작성하셨네요.`;
+    nodes.avgCharsText.innerHTML = `<span class="avg-num">${formatNumber(stat.avgFinalChars)}자</span> 정도 작성하셨네요.`;
   } else {
     nodes.avgCharsText.textContent = "사용을 시작하면 평균 작성 글자 수를 알려드려요.";
   }
 
   // Share btn: activate when there's data
-  nodes.shareImageBtn.classList.toggle("has-data", stat.submitCount > 0);
+  if (nodes.shareImageBtn) nodes.shareImageBtn.classList.toggle("has-data", stat.submitCount > 0);
 
   // Level bar
   nodes.lowRatio.style.width    = `${stat.lowRatioPct}%`;
@@ -571,8 +376,15 @@ function renderStatsGrid(stat) {
   if (pc.gemini  > 0) platParts.push(`Gemini ${formatNumber(pc.gemini)}번`);
   nodes.statPlatform.textContent = platParts.length > 0 ? platParts.join(" · ") : "—";
 
-  // 최고 사용 시간대 (데이터 없음)
-  nodes.statPeak.textContent = "—";
+  // 최고 사용 시간대
+  if (stat.peakHour !== null && stat.peakHour !== undefined) {
+    const h = stat.peakHour;
+    const period = h < 12 ? "오전" : "오후";
+    const display = h % 12 === 0 ? 12 : h % 12;
+    nodes.statPeak.textContent = `${period} ${display}시`;
+  } else {
+    nodes.statPeak.textContent = "—";
+  }
 }
 
 async function resetStats() {
@@ -858,8 +670,7 @@ async function downloadShareImage() {
     return;
   }
 
-  nodes.shareImageBtn.disabled = true;
-  nodes.shareImageBtn.innerHTML = "생성 중…";
+  if (nodes.shareImageBtn) { nodes.shareImageBtn.disabled = true; nodes.shareImageBtn.innerHTML = "생성 중…"; }
 
   try {
     // ── Compute "어제 대비" values ───────────────────────────
@@ -1027,8 +838,7 @@ async function downloadShareImage() {
     }, "image/png");
 
   } finally {
-    nodes.shareImageBtn.disabled = false;
-    nodes.shareImageBtn.innerHTML = `리포트 이미지 저장 <span class="beta-tag">(Beta)</span>`;
+    if (nodes.shareImageBtn) { nodes.shareImageBtn.disabled = false; nodes.shareImageBtn.innerHTML = `리포트 이미지 저장 <span class="beta-tag">(Beta)</span>`; }
   }
 }
 
@@ -1081,7 +891,7 @@ function renderWeekCalendar(daily) {
     });
   }
 
-  const maxCount = Math.max(...days.map((d) => d.count), 5); // 최소 5 기준으로 스케일
+  const maxCount = Math.max(...days.map((d) => d.count), 10); // 최소 10 기준으로 스케일
 
   nodes.weekBars.innerHTML = days.map((day) => {
     const hasData = day.count > 0;

@@ -645,9 +645,9 @@
       return {
         title: "그루 뱃지 클릭하면",
         message: randomOf([
-          "리포트 · 사용 가이드 · 맞춤형 지침을 바로 볼 수 있어요",
-          "오늘의 AI 사용 리포트와 맞춤형 프롬프트 지침을 확인해보세요",
-          "리포트, 그루 사용 가이드, 맞춤형 지침이 팝업에서 기다리고 있어요"
+          "리포트와 사용 가이드를 바로 볼 수 있어요",
+          "오늘의 AI 사용 리포트를 확인해보세요",
+          "리포트와 그루 사용 가이드가 팝업에서 기다리고 있어요"
         ])
       };
     }
@@ -1607,6 +1607,14 @@
     const sizeMenu = overlay.sizeMenu;
     if (!focusBtn || !moreBtn || !sizeMenu) return;
 
+    focusBtn.addEventListener("mouseenter", () => {
+      const msg = settings.focusMode ? "클릭하면 집중 모드가 꺼져요" : "클릭하면 집중 모드가 켜져요";
+      showBubble(buildSnapshot(), { title: "집중 모드", message: msg, duration: 1500, kind: "focus-hover" });
+    });
+    focusBtn.addEventListener("mouseleave", () => {
+      if (overlay?.bubble?.dataset.kind === "focus-hover") scheduleHideBubble(80);
+    });
+
     // 슬라이더 현재값 동기화
     const slider = sizeMenu.querySelector(".cp-size-slider");
     const sizeValue = sizeMenu.querySelector(".cp-size-value");
@@ -2370,10 +2378,6 @@
         htmlBody: `<p style="font-size:13px;color:#5e5e57;line-height:1.6;margin-bottom:12px">뱃지 클릭 또는 주소창 옆의 <img src="${obAssets.puzzle}" width="14" height="14" style="vertical-align:middle;margin:0 2px" alt="" /> 퍼즐 아이콘 → 그루 선택</p><div class="ob-browser-mockup"><div class="ob-browser-bar"><div class="ob-browser-dot"></div><div class="ob-browser-dot"></div><div class="ob-browser-dot"></div><span class="ob-browser-url">그루 리포트</span></div><div class="ob-browser-content"><div class="ob-mock-popup-card"><div class="ob-mini-puri-row"><img src="${chrome.runtime.getURL("assets/puri_low.svg")}" alt="푸리" /><div class="ob-mini-puri-bubble">오늘도 간결하게 잘 쓰고 있어요! 🌱</div></div><div class="ob-mini-stat-section"><p class="ob-mini-stat-sentence">오늘 <strong>ChatGPT에 7번</strong>, <strong>Claude에 1번</strong> 보냈어요.</p><p class="ob-mini-stat-sentence">한 번 보낼 때 평균 <strong>1,619자</strong> 정도 썼어요.</p></div></div></div></div>`
       },
       {
-        title: "맞춤형 지침 설정하는 법",
-        htmlBody: `<p style="font-size:12px;color:#5e5e57;line-height:1.5;margin-bottom:8px">AI에게 나의 상황과 원하는 답변 방식을 미리 알려두는 설정이에요.<br>한 번 설정하면 매번 설명하지 않아도 돼요.</p><div class="ob-example-box"><p style="font-size:11px;color:#919188;margin-bottom:4px">예시</p><div style="font-size:11px;color:#383833;line-height:1.6;max-height:72px;overflow-y:auto;white-space:pre-wrap">"나는 대학생이고 주로 과제와 발표 준비에 AI를 활용해.\n핵심만 간결하게 정리해줘.\n질문이 명확하면 추가 질문 없이 바로 결과물을 보여줘."</div></div><p style="font-size:12px;color:#5e5e57;margin:10px 0 6px">그루 팝업에서 지침을 복사 후 아래 경로에 붙여넣으세요</p><div class="ob-how-tabs"><button class="ob-how-tab active" data-tab="chatgpt">ChatGPT</button><button class="ob-how-tab" data-tab="claude">Claude</button><button class="ob-how-tab" data-tab="gemini">Gemini</button></div><div class="ob-how-panels"><div class="ob-how-panel active" data-panel="chatgpt"><div class="ob-how-step"><span class="ob-how-num">1</span><span>좌하단 프로필 → <b>개인 맞춤 설정</b></span></div><div class="ob-how-step"><span class="ob-how-num">2</span><span><b>맞춤형 지침</b> 클릭</span></div><div class="ob-how-step"><span class="ob-how-num">3</span><span>하단 칸에 붙여넣기</span></div></div><div class="ob-how-panel" data-panel="claude"><div class="ob-how-step"><span class="ob-how-num">1</span><span>좌하단 프로필 → <b>설정</b></span></div><div class="ob-how-step"><span class="ob-how-num">2</span><span>일반 → <b>Claude 지침</b></span></div><div class="ob-how-step"><span class="ob-how-num">3</span><span>입력란에 붙여넣기</span></div></div><div class="ob-how-panel" data-panel="gemini"><div class="ob-how-step"><span class="ob-how-num">1</span><span>좌하단 프로필 → <b>설정</b></span></div><div class="ob-how-step"><span class="ob-how-num">2</span><span><b>Gemini 요청 사항</b> → 추가</span></div><div class="ob-how-step"><span class="ob-how-num">3</span><span>붙여넣기</span></div></div></div>`
-      },
-      {
         title: "💡 그루 사용 가이드를 다시 보고 싶다면?",
         htmlBody: `<p class="onboarding-restart-hint">그루 뱃지 클릭 → 그루 사용 가이드 다시 열기</p><div class="onboarding-tip-card"><div class="tip-card-title">그루 사용 가이드</div><div class="tip-card-desc">ChatGPT · Claude · Gemini 입력창 위 그루 배지와 팁 사용법을 다시 볼 수 있어요.</div><button class="tip-restart-btn">그루 사용 가이드 다시 열기</button></div>`
       }
@@ -2807,11 +2811,6 @@
             requestAnimationFrame(() => slideArea.classList.remove("cp-ob-enter-rev"));
           });
         }, 150);
-      }
-      if (e.target.classList.contains("ob-how-tab")) {
-        const key = e.target.dataset.tab;
-        slideArea.querySelectorAll(".ob-how-tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === key));
-        slideArea.querySelectorAll(".ob-how-panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === key));
       }
       if (e.target.classList.contains("ob-upload-btn") || e.target.id === "obCustomizeUpload") {
         const fileInput = slideArea.querySelector(".ob-char-upload-input");
@@ -3353,10 +3352,6 @@
       }
       .ob-mini-stat-sentence { font-size: 10px; color: #5e5e57; line-height: 1.5; margin: 0; }
       .ob-mini-stat-sentence strong { color: #1a1a16; font-weight: 700; }
-      .ob-example-box {
-        background: #f7f7f0; border: 1px solid #e5e5d8;
-        border-radius: 8px; padding: 8px 10px; margin-bottom: 8px;
-      }
       .ob-upload-btn {
         display: block; width: 100%; margin-top: 12px;
         padding: 10px; border-radius: 10px;
@@ -3369,30 +3364,6 @@
       .ob-upload-skip {
         text-align: center; font-size: 11px; color: #919188;
         margin-top: 8px; cursor: pointer;
-      }
-      .ob-how-tabs {
-        display: flex; gap: 6px; margin-bottom: 10px;
-      }
-      .ob-how-tab {
-        font-size: 11px; font-weight: 600; padding: 4px 10px;
-        border-radius: 99px; border: 1.5px solid #e5e5d8;
-        background: transparent; color: #5e5e57;
-        cursor: pointer; font-family: inherit;
-        transition: all 0.15s;
-      }
-      .ob-how-tab.active { background: #d1d600; border-color: #d1d600; color: #1a1a16; }
-      .ob-how-panel { display: none; flex-direction: column; gap: 8px; }
-      .ob-how-panel.active { display: flex; }
-      .ob-how-step {
-        display: flex; align-items: flex-start; gap: 10px;
-        font-size: 12px; color: #383833; line-height: 1.5;
-      }
-      .ob-how-num {
-        width: 20px; height: 20px; border-radius: 50%;
-        background: #d1d600; color: #1a1a16;
-        font-size: 11px; font-weight: 700;
-        display: flex; align-items: center; justify-content: center;
-        flex-shrink: 0;
       }
     `;
   }
