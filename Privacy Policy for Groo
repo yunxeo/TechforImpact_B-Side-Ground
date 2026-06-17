@@ -1,0 +1,26 @@
+Privacy Policy for Groo
+
+Groo is a Chrome extension that helps users write clearer and more efficient prompts on supported AI websites, including ChatGPT, Gemini, and Claude.
+
+Data processed by Groo:
+- Text entered in supported AI prompt fields is processed locally in the browser to estimate length, token count, and prompt status.
+- Groo stores local usage statistics such as estimated token counts, character counts, prompt length categories, submission counts, hover counts, and daily summaries.
+- Groo may store user preferences, onboarding status, display settings, and locally uploaded character images if the user chooses to customize the extension.
+
+How data is used:
+- Data is used only to provide prompt-writing assistance, visual feedback, local statistics, and extension settings.
+- Groo does not sell user data.
+- Groo does not use user data for creditworthiness, lending, advertising, or unrelated purposes.
+- Groo does not transmit user prompt content or local statistics to an external server.
+
+Data storage:
+- Data is stored locally in the user’s browser through Chrome extension storage.
+- Users may remove stored data by resetting extension data or uninstalling the extension.
+
+Third-party sharing:
+- Groo does not share user data with third parties except as required by law or as necessary to comply with Chrome Web Store policies.
+
+Contact:
+For privacy-related questions, contact: haega0200@gmail.com
+
+Last updated: June 17, 2026
