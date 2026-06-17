@@ -234,11 +234,11 @@
     @keyframes tagFadeIn { to { opacity: 1; transform: translateY(0); } }
     .problem p { font-size: 15px; line-height: 1.8; color: rgba(255,255,255,.45); max-width: 480px; word-break: keep-all; }
     .problem p + p { margin-top: 12px; }
-    .problem-stat { display: flex; align-items: center; gap: 10px; margin-top: 28px; padding: 12px 18px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: var(--radius-md); flex-direction: column; text-align: center; }
-    .problem-stat-top { display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .problem-stat { display: inline-flex; align-items: flex-start; gap: 10px; margin-top: 28px; padding: 12px 18px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: var(--radius-md); flex-direction: column; }
+    .problem-stat-top { display: flex; align-items: center; gap: 10px; }
     .problem-stat-icon { font-size: 20px; }
     .problem-stat-text { font-size: 15px; font-weight: 500; color: rgba(255,255,255,.9); line-height: 1.5; }
-    .stat-source { font-size: 11px; color: rgba(255,255,255,.35); margin-top: 4px; text-align: left; width: 100%; }
+    .stat-source { font-size: 11px; color: rgba(255,255,255,.35); margin-top: 4px; }
     .impact-stat-source { font-size: 10px; color: var(--gray-400); margin-top: 6px; }
     .problem-puri { flex-shrink: 0; animation: float 4s ease-in-out infinite; }
     .problem-puri img { width: 100%; max-width: 380px; height: auto; aspect-ratio: 1/1; object-fit: contain; filter: drop-shadow(0 20px 40px rgba(0,0,0,.4)); display: block; }
@@ -786,7 +786,7 @@
       <p data-animate data-delay="2">하지만 대부분의 사용자는 자신이 얼마나 많은 토큰을 사용하는지,<br>그것이 어떤 영향을 미치는지 잘 모릅니다.</p>
       <div class="problem-stat" data-animate data-delay="3">
         <div class="problem-stat-top">
-          <span class="problem-stat-text">ChatGPT 하루 탄소 배출량 상쇄에<br>나무 260만 그루 × 10년이 필요합니다</span>
+          <span class="problem-stat-text">ChatGPT 하루 탄소 배출량 상쇄에 나무 260만 그루 × 10년이 필요합니다</span>
         </div>
         <p class="stat-source">※ 유엔 대학 수자원·환경·보건연구소(UNU-INWEH), 2026</p>
       </div>
