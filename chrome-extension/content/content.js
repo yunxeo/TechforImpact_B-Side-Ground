@@ -131,10 +131,8 @@
     { caseId: "code_ui_request", category: "code", priority: 112 },
     { caseId: "code_refactor", category: "code", priority: 110 },
     { caseId: "code_large_task", category: "code", priority: 108 },
-    { caseId: "research_no_source", category: "research", priority: 104 },
-    { caseId: "research_no_date", category: "research", priority: 102 },
-    { caseId: "research_no_scope", category: "research", priority: 100 },
-    { caseId: "citation_needed", category: "research", priority: 98 },
+    // research_no_source, research_no_date, research_no_scope, citation_needed 비활성화 (유저 테스트 결과)
+
     { caseId: "compare_no_criteria", category: "analysis", priority: 94 },
     { caseId: "decision_no_criteria", category: "analysis", priority: 92 },
     { caseId: "strategy_no_constraint", category: "analysis", priority: 90 },
@@ -142,12 +140,14 @@
     { caseId: "idea_no_user", category: "analysis", priority: 86 },
     { caseId: "priority_request", category: "analysis", priority: 84 },
     { caseId: "summary_need_action", category: "summary", priority: 80 },
-    { caseId: "summary_exam", category: "study", priority: 78 },
+    // summary_exam 비활성화 (유저 테스트 결과)
+
     { caseId: "summary_no_purpose", category: "summary", priority: 76 },
     { caseId: "summary_no_depth", category: "summary", priority: 74 },
     { caseId: "writing_sensitive", category: "writing", priority: 72 },
     { caseId: "writing_presentation", category: "writing", priority: 70 },
-    { caseId: "writing_academic", category: "writing", priority: 68 },
+    // writing_academic 비활성화 (유저 테스트 결과)
+
     { caseId: "writing_marketing", category: "writing", priority: 66 },
     { caseId: "writing_variants", category: "writing", priority: 64 },
     { caseId: "writing_no_recipient", category: "writing", priority: 62 },
@@ -163,7 +163,8 @@
     { caseId: "too_vague", category: "input_quality", priority: 34 },
     { caseId: "missing_context", category: "input_quality", priority: 32 },
     { caseId: "no_goal", category: "input_quality", priority: 30 },
-    { caseId: "too_short", category: "input_quality", priority: 28 },
+    // too_short 비활성화 (유저 테스트 결과)
+
     { caseId: "general_good", category: "general", priority: 10 },
     { caseId: "general_medium", category: "general", priority: 10 },
     { caseId: "general_high", category: "general", priority: 10 }
