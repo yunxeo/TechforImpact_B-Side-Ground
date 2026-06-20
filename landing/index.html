@@ -412,21 +412,6 @@
     .footer-link:hover { color: #383833; }
 
     /* ─── Install Modal ─── */
-    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 500; align-items: center; justify-content: center; padding: 16px; }
-    .modal-overlay.open { display: flex; }
-    .modal-backdrop { position: absolute; inset: 0; background: rgba(26,26,22,.65); backdrop-filter: blur(6px); }
-    .modal-card { position: relative; z-index: 1; background: var(--white); border-radius: var(--radius-xl); padding: 32px; width: min(480px, 100%); box-shadow: 0 32px 80px rgba(0,0,0,.24); animation: modal-in .28s cubic-bezier(.16,1,.3,1); }
-    @keyframes modal-in { from { opacity:0; transform: translateY(16px) scale(.97); } to { opacity:1; transform:none; } }
-    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-    .modal-header h3 { font-size: 18px; font-weight: 800; color: var(--dark); }
-    .modal-close { width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--gray-100); display: grid; place-items: center; cursor: pointer; font-size: 18px; color: var(--gray-600); transition: background .15s; }
-    .modal-close:hover { background: var(--gray-200); }
-    .modal-download-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; margin-bottom: 20px; background: var(--green-400); color: var(--green-900); border-radius: var(--radius-md); font-size: 14px; font-weight: 800; text-decoration: none; transition: background .15s; }
-    .modal-download-btn:hover { background: var(--green-200); }
-    .modal-steps { list-style: none; display: flex; flex-direction: column; gap: 4px; }
-    .modal-steps li { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--gray-50); font-size: 13px; color: var(--gray-800); line-height: 1.5; }
-    .step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--gray-900); color: var(--white); display: grid; place-items: center; font-size: 10px; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
-    .modal-note { margin-top: 14px; font-size: 12px; color: var(--gray-400); text-align: center; }
 
     /* ─── Responsive ─── */
     @media (max-width: 900px) {
@@ -687,10 +672,10 @@
       <li><a href="#features">Features</a></li>
       <li><a href="#team">Team</a></li>
     </ul>
-    <button class="nav-cta" onclick="openInstallModal()">
+    <a class="nav-cta" href="https://chromewebstore.google.com/detail/hgabaikdjeiplcaimladccjnbpijjaoo?utm_source=item-share-cb" target="_blank" rel="noopener">
       <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/chrome_logo.png" alt="" aria-hidden="true" />
       Chrome에 추가하기
-    </button>
+    </a>
   </div>
 </nav>
 
@@ -701,10 +686,10 @@
       <h1 class="hero-heading">더 나은 질문,<br>더 <em>가벼운</em> AI.</h1>
       <p class="hero-sub">그루는 ChatGPT·Claude·Gemini 위에서 실시간으로 작동하는<br>Chrome 확장 프로그램입니다.<br>토큰 시각화와 프롬프팅 가이드로 AI 사용 습관을 바꿔보세요.</p>
       <div class="hero-actions">
-        <button class="btn-primary" onclick="openInstallModal()">
+        <a class="btn-primary" href="https://chromewebstore.google.com/detail/hgabaikdjeiplcaimladccjnbpijjaoo?utm_source=item-share-cb" target="_blank" rel="noopener">
           <img src="https://raw.githubusercontent.com/yunxeo/TechforImpact_B-Side-Ground/main/chrome-extension/assets/chrome_logo.png" alt="" aria-hidden="true" />
           지금 설치하기
-        </button>
+        </a>
         <button class="btn-ghost" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">기능 살펴보기 →</button>
       </div>
     </div>
@@ -744,6 +729,7 @@
           </div>
         </div>
       </div>
+      <p style="margin-top:10px;font-size:11px;color:var(--gray-200);text-align:center;line-height:1.5;">본 애니메이션은 서비스 이해를 위한 예시이며, 실제 토큰 산정 결과와는 차이가 있을 수 있습니다.</p>
     </div>
   </div>
 </section>
@@ -1270,9 +1256,9 @@
 <section class="cta" id="cta">
   <h2 data-animate>좋은 질문은<br><em>더 적은 토큰</em>에서 시작됩니다.</h2>
   <div style="display:flex; flex-direction:column; align-items:center; gap:32px;">
-    <button class="btn-lime" data-animate data-delay="1" onclick="openInstallModal()">
+    <a class="btn-lime" data-animate data-delay="1" href="https://chromewebstore.google.com/detail/hgabaikdjeiplcaimladccjnbpijjaoo?utm_source=item-share-cb" target="_blank" rel="noopener">
       그루 무료로 설치하기
-    </button>
+    </a>
     <a href="https://forms.gle/3ucmeL6wRD5HegfU6" target="_blank" class="btn-feedback" data-animate data-delay="2">
       피드백 남기기 →
     </a>
@@ -1333,26 +1319,6 @@
 </footer>
 
 <!-- ══════════ INSTALL MODAL ══════════ -->
-<div class="modal-overlay" id="installModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-  <div class="modal-backdrop" id="modalBackdrop"></div>
-  <div class="modal-card">
-    <div class="modal-header">
-      <h3 id="modalTitle">그루 설치 방법</h3>
-      <button class="modal-close" id="modalClose" aria-label="닫기">×</button>
-    </div>
-    <a class="modal-download-btn"
-      href="https://github.com/yunxeo/TechforImpact_B-Side-Ground/archive/refs/heads/main.zip"
-      download>⬇ zip 파일 다운로드</a>
-    <ol class="modal-steps">
-      <li><span class="step-num">1</span><span>위 버튼으로 zip 파일을 다운로드한 후 압축을 풀어주세요.</span></li>
-      <li><span class="step-num">2</span><span>Chrome 주소창에 <strong>chrome://extensions</strong> 을 입력하고 이동합니다.</span></li>
-      <li><span class="step-num">3</span><span>우측 상단의 <strong>개발자 모드</strong> 스위치를 켜주세요.</span></li>
-      <li><span class="step-num">4</span><span><strong>압축 해제된 확장 프로그램 로드</strong> 버튼을 클릭합니다.</span></li>
-      <li><span class="step-num">5</span><span>압축을 푼 <strong>chrome-extension</strong> 폴더를 선택하면 설치 완료입니다!</span></li>
-    </ol>
-    <p class="modal-note">설치 후 ChatGPT·Claude·Gemini 접속 시 자동으로 그루가 활성화됩니다.</p>
-  </div>
-</div>
 
 <script>
   /* ── Puri 2D SVG URLs (for badge) ── */
@@ -1560,17 +1526,6 @@
     sloganObs.observe(sloganH2);
   }
 
-  /* ── Install Modal ── */
-  const installModal  = document.getElementById('installModal');
-  const modalBackdrop = document.getElementById('modalBackdrop');
-  const modalClose    = document.getElementById('modalClose');
-
-  function openInstallModal()  { installModal.classList.add('open'); document.body.style.overflow = 'hidden'; }
-  function closeInstallModal() { installModal.classList.remove('open'); document.body.style.overflow = ''; }
-
-  modalBackdrop.addEventListener('click', closeInstallModal);
-  modalClose.addEventListener('click', closeInstallModal);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeInstallModal(); });
 
   /* ── How to Set — 탭 전환 + 타이핑 애니메이션 ── */
   const howTexts = {
