@@ -673,163 +673,241 @@ async function downloadShareImage() {
   if (nodes.shareImageBtn) { nodes.shareImageBtn.disabled = true; nodes.shareImageBtn.innerHTML = "생성 중…"; }
 
   try {
-    // ── Compute "어제 대비" values ───────────────────────────
-    const reportDate = new Date();
-    reportDate.setDate(reportDate.getDate() + reportOffset);
-    const yDate = new Date(reportDate);
-    yDate.setDate(yDate.getDate() - 1);
-    const ydData   = latestDaily[formatDateKey(yDate)] || {};
-    const ydAvg    = Math.round(ydData.avgFinalChars || 0);
-    const todayAvg = Math.round(stat.avgFinalChars || 0);
-    const charDiff = ydAvg > 0 ? ydAvg - todayAvg : null;   // positive = improved
-
-    // Environmental impact based on chars saved vs yesterday
-    const totalSaved    = charDiff !== null && charDiff > 0 ? charDiff * stat.submitCount : 0;
-    const tokensSaved   = Math.round(totalSaved / CHARS_PER_TOKEN);
-    const waterMl       = Math.round(tokensSaved * WATER_ML_PER_1K_TOKEN / 1000 * 10) / 10;
-    const whSaved       = Math.round(tokensSaved * WH_PER_1K_TOKEN / 1000 * 100) / 100;
-
-    const dateLabel = `${reportDate.getFullYear()}.${String(reportDate.getMonth()+1).padStart(2,"0")}.${String(reportDate.getDate()).padStart(2,"0")}`;
-
-    // ── Canvas setup ────────────────────────────────────────
-    const W = 1080, H = 1080;
+    // 4× scale → 1360 × 1840px for crisp output
+    const S = 4;
+    const CW = 340 * S, CH = 460 * S;
     const canvas = document.createElement("canvas");
-    canvas.width = W; canvas.height = H;
+    canvas.width = CW; canvas.height = CH;
     const ctx = canvas.getContext("2d");
 
-    const KO    = "'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
-    const BRAND = "#d1d600";
-    const DEEP  = "#4e5000";
-    const DARK  = "#1a1a16";
-    const MUTED = "#919188";
-    const PAD   = 72;
-    const IW    = W - PAD * 2;   // 936px inner width
+    const KO = "'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
+    const C = {
+      brand:     "#d1d600",
+      brandDeep: "#4e5000",
+      brandLight:"#f9fac0",
+      brandPill: "#f1f47a",
+      brandSub:  "#6b6e00",
+      dark:      "#1a1a16",
+      muted:     "#929288",
+      sub:       "#5e5e57",
+      white:     "#ffffff",
+      orange:    "#f97316",
+      red:       "#ef4444",
+      border:    "rgba(209,214,0,0.5)",
+    };
 
-    // ── Load assets ─────────────────────────────────────────
-    const imgKey = puri?.imgKey || "low";
-    const puriSrc = imgKey === "high" ? "../assets/puri_high_3d.png" : "../assets/puri_low_3d.png";
-    const [puriImg, logoImg] = await Promise.all([loadImg(puriSrc), loadImg("../assets/logo_eng.svg")]);
-
-    // ── Background ──────────────────────────────────────────
-    const bg = ctx.createLinearGradient(0, 0, W, H);
-    bg.addColorStop(0, "#f0f27a"); bg.addColorStop(0.5, "#fafbcc"); bg.addColorStop(1, "#ffffff");
-    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-
-    // Radial glow behind puri
-    const grd = ctx.createRadialGradient(W/2, 300, 20, W/2, 300, 260);
-    grd.addColorStop(0, "rgba(255,255,255,0.7)"); grd.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
-
-    // ── Helpers ──────────────────────────────────────────────
-    function divider(y) {
-      ctx.strokeStyle = "rgba(26,26,22,0.12)";
-      ctx.lineWidth   = 1.5;
-      ctx.beginPath(); ctx.moveTo(PAD, y); ctx.lineTo(W - PAD, y); ctx.stroke();
+    // Scale-aware helpers using existing canvasRR
+    function fillRR(x, y, w, h, r, color) {
+      ctx.fillStyle = color;
+      canvasRR(ctx, x * S, y * S, w * S, h * S, r * S);
+      ctx.fill();
+    }
+    function strokeRR(x, y, w, h, r, color, lw) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lw * S;
+      canvasRR(ctx, x * S, y * S, w * S, h * S, r * S);
+      ctx.stroke();
+    }
+    function txt(str, x, y, size, weight, color, align = "left", baseline = "top") {
+      ctx.font = `${weight} ${size * S}px ${KO}`;
+      ctx.fillStyle = color;
+      ctx.textAlign = align;
+      ctx.textBaseline = baseline;
+      ctx.fillText(str, x * S, y * S);
     }
 
-    // ── Y cursor ────────────────────────────────────────────
-    let y = 0;
+    // Clip entire canvas to card rounded rect
+    canvasRR(ctx, 0, 0, CW, CH, 10 * S);
+    ctx.clip();
 
-    // Header
-    y = 78;
-    ctx.font = `700 28px ${KO}`; ctx.fillStyle = DEEP; ctx.textAlign = "left";
-    ctx.fillText("AI 사용 리포트", PAD, y);
-    ctx.font = `500 24px ${KO}`; ctx.fillStyle = MUTED; ctx.textAlign = "right";
-    ctx.fillText(dateLabel, W - PAD, y);
+    // ── WHITE HEADER (y 0–135) ────────────────────────────────
+    ctx.fillStyle = C.white;
+    ctx.fillRect(0, 0, CW, 135 * S);
 
-    // Puri image
-    const PURI_SZ = 260;
-    y = 114;
-    if (puriImg) ctx.drawImage(puriImg, (W - PURI_SZ) / 2, y, PURI_SZ, PURI_SZ);
-    y += PURI_SZ + 20;   // y = 394
+    // Date badge
+    const reportDate = new Date();
+    reportDate.setDate(reportDate.getDate() + reportOffset);
+    const mon = reportDate.getMonth() + 1;
+    const wk = Math.ceil(reportDate.getDate() / 7);
+    const dateLabel = `${reportDate.getFullYear()}.${String(mon).padStart(2,"0")}.${String(reportDate.getDate()).padStart(2,"0")}`;
 
-    // Puri message (max 2 lines, 28px)
-    ctx.font = `600 28px ${KO}`;
-    const msgLines = wrapCanvasText(ctx, puri?.msg || "", IW).slice(0, 2);
-    ctx.fillStyle = DARK; ctx.textAlign = "center";
-    msgLines.forEach((line, i) => ctx.fillText(line, W / 2, y + 28 + 40 * i));
-    y += 28 + 40 * (msgLines.length - 1) + 20;   // ~462 (2 lines)
-
-    // Divider
-    y += 20; divider(y); y += 32;   // ~514
-
-    // ── Hero: 어제 대비 입력 길이 ──────────────────────────
-    ctx.font = `500 22px ${KO}`; ctx.fillStyle = MUTED; ctx.textAlign = "center";
-    ctx.fillText("어제 대비 평균 입력 길이", W / 2, y + 22); y += 38;
-
-    ctx.font = `800 62px ${KO}`;
-    let heroText, heroColor;
-    if (charDiff === null) {
-      heroText = `평균 ${formatNumber(todayAvg)}자`; heroColor = DEEP;
-    } else if (charDiff > 0) {
-      heroText = `${formatNumber(charDiff)}자 줄였어요`; heroColor = DEEP;
-    } else if (charDiff < 0) {
-      heroText = `${formatNumber(Math.abs(charDiff))}자 늘었어요`; heroColor = "#c05000";
-    } else {
-      heroText = "어제와 동일해요"; heroColor = DEEP;
+    fillRR(258, 15, 62, 20, 10, C.brand);
+    // Center badge text using actual glyph metrics (not em-box estimates)
+    {
+      const badgeTxt = `${mon}월 ${wk}주차`;
+      ctx.font = `500 ${8 * S}px ${KO}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
+      const bm = ctx.measureText(badgeTxt);
+      const cy = (15 + 10) * S;  // badge vertical center in canvas px
+      ctx.fillStyle = C.brandDeep;
+      ctx.fillText(badgeTxt, 289 * S, cy + (bm.actualBoundingBoxAscent - bm.actualBoundingBoxDescent) / 2);
     }
-    // scale down if too wide
-    let heroSize = 62;
-    ctx.font = `800 ${heroSize}px ${KO}`;
-    while (ctx.measureText(heroText).width > IW && heroSize > 36) {
-      heroSize -= 2; ctx.font = `800 ${heroSize}px ${KO}`;
-    }
-    ctx.fillStyle = heroColor; ctx.textAlign = "center";
-    ctx.fillText(heroText, W / 2, y + heroSize); y += heroSize + 28;   // ~666
 
-    // Divider
-    divider(y); y += 32;   // ~698
+    // Load assets: English logo + 2D low mascot
+    const mascotSrc = customCharacterUrl || "../assets/puri_low.svg";
+    const [logoImg, mascotImg] = await Promise.all([
+      loadImg("../assets/logo_eng.svg"),
+      loadImg(mascotSrc),
+    ]);
 
-    // ── Environmental section ────────────────────────────────
-    ctx.font = `500 22px ${KO}`; ctx.fillStyle = MUTED; ctx.textAlign = "center";
-    const envLabel = charDiff !== null && charDiff > 0
-      ? "AI 입력을 줄여 어제보다 아낀 것들"
-      : "어제 대비 절감 데이터";
-    ctx.fillText(envLabel, W / 2, y + 22); y += 48;   // ~746
-
-    // Two-column: 💧 물 / ⚡ 전기 — no cards, large text
-    const lcx = W / 4;   // 270
-    const rcx = W * 3 / 4;   // 810
-
-    // Emoji row
-    ctx.font = `54px serif`; ctx.textAlign = "center";
-    ctx.fillText("💧", lcx, y + 54);
-    ctx.fillText("⚡", rcx, y + 54);
-    y += 54 + 14;   // ~814
-
-    // Value row
-    ctx.font = `800 52px ${KO}`; ctx.fillStyle = DEEP; ctx.textAlign = "center";
-    const waterStr = waterMl > 0 ? `${waterMl}ml` : "–";
-    const whStr    = whSaved > 0 ? `${whSaved}Wh` : "–";
-    ctx.fillText(waterStr, lcx, y + 52);
-    ctx.fillText(whStr,    rcx, y + 52);
-    y += 52 + 12;   // ~878
-
-    // Label row
-    ctx.font = `500 24px ${KO}`; ctx.fillStyle = MUTED; ctx.textAlign = "center";
-    ctx.fillText("물 절약", lcx, y + 24);
-    ctx.fillText("전기 절약", rcx, y + 24);
-    y += 24 + 20;   // ~922
-
-    // Estimate note
-    ctx.font = `400 18px ${KO}`; ctx.fillStyle = "#c8c8ba"; ctx.textAlign = "center";
-    ctx.fillText("* 환경 절감 수치는 추정값이에요", W / 2, y + 18);
-
-    // ── Groo logo (pinned near bottom) ───────────────────────
-    const LOGO_H = 32;
-    const LOGO_TOP = H - 14 - 20 - LOGO_H;   // 1014
+    // Logo at (23, 19), natural height 12px
     if (logoImg) {
-      const lw = LOGO_H * (361 / 95);
-      ctx.drawImage(logoImg, (W - lw) / 2, LOGO_TOP, lw, LOGO_H);
-    } else {
-      ctx.font = `700 32px ${KO}`; ctx.fillStyle = DEEP; ctx.textAlign = "center";
-      ctx.fillText("Groo", W / 2, LOGO_TOP + 28);
+      const lh = 12 * S;
+      const ar = logoImg.naturalWidth && logoImg.naturalHeight
+        ? logoImg.naturalWidth / logoImg.naturalHeight : 3.83;
+      ctx.drawImage(logoImg, 23 * S, 19 * S, ar * lh, lh);
     }
 
-    // ── Brand strip ──────────────────────────────────────────
-    ctx.fillStyle = BRAND; ctx.fillRect(0, H - 14, W, 14);
+    // Mascot at (22, 44) 80×75px
+    if (mascotImg) ctx.drawImage(mascotImg, 22 * S, 44 * S, 80 * S, 75 * S);
 
-    // ── Export ───────────────────────────────────────────────
+    // Headline: "오늘도" / "{N}개 프롬프트!"
+    const hl1 = reportOffset === 0 ? "오늘도" : getDateLabel(reportOffset) + "도";
+    const hl2 = `${formatNumber(stat.submitCount)}개 프롬프트!`;
+    txt(hl1, 114, 48, 22, "700", C.brandDeep);
+    txt(hl2, 114, 74, 22, "700", C.brandDeep);
+
+    // Subtitle: comparison vs yesterday
+    const ydDate = new Date(reportDate); ydDate.setDate(ydDate.getDate() - 1);
+    const ydRaw = latestDaily[formatDateKey(ydDate)] || {};
+    const ydCount = ydRaw.submitCount || 0;
+    const ydAvgChars = ydCount > 0 ? Math.round((ydRaw.totalSubmittedChars || 0) / ydCount) : 0;
+    let subtitle;
+    if (ydCount > 0) {
+      const diff = stat.submitCount - ydCount;
+      const pct = Math.round(Math.abs(diff) / ydCount * 100);
+      subtitle = diff > 0 ? `어제보다 ${pct}% 더 많이 사용했어요`
+               : diff < 0 ? `어제보다 ${pct}% 적게 사용했어요`
+               : "어제와 동일하게 사용했어요";
+    } else {
+      subtitle = `총 ${formatNumber(stat.submitCount)}개의 프롬프트를 보냈어요`;
+    }
+    txt(subtitle, 114, 103, 10, "500", C.brandSub);
+
+    // ── YELLOW SECTION (y 135–460) ────────────────────────────
+    ctx.fillStyle = C.brandLight;
+    ctx.fillRect(0, 135 * S, CW, 325 * S);
+
+    // Stat card: draws a white bordered card and its content
+    function drawStatCard(cardX, label, value, unit, chip) {
+      fillRR(cardX, 153, 146, 80, 12, C.white);
+      strokeRR(cardX, 153, 146, 80, 12, C.border, 1);
+      txt(label, cardX + 13, 163, 8, "500", C.muted);
+      // Number at Figma position (top=176, 22px)
+      const NUM_TOP = 176, NUM_SIZE = 22, UNIT_SIZE = 11;
+      txt(value, cardX + 13, NUM_TOP, NUM_SIZE, "700", C.dark, "left", "top");
+      ctx.font = `700 ${NUM_SIZE * S}px ${KO}`;
+      const valPx = ctx.measureText(value).width;
+      // Unit vertically centered on the number (avoids "1" appearing to float above "개")
+      const unitTop = NUM_TOP + (NUM_SIZE - UNIT_SIZE) / 2;  // = 181.5
+      txt(unit, cardX + 13 + valPx / S + 3, unitTop, UNIT_SIZE, "500", C.sub, "left", "top");
+      if (chip) {
+        fillRR(cardX + 13, 207, 84, 16, 8, C.brandPill);
+        ctx.font = `500 ${8 * S}px ${KO}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "alphabetic";
+        const cm = ctx.measureText(chip);
+        const chipCY = (207 + 8) * S;
+        ctx.fillStyle = C.brandDeep;
+        ctx.fillText(chip, (cardX + 13 + 42) * S, chipCY + (cm.actualBoundingBoxAscent - cm.actualBoundingBoxDescent) / 2);
+      }
+    }
+
+    // Card 1: 총 프롬프트
+    const chip1 = ydCount > 0
+      ? (stat.submitCount >= ydCount
+          ? `+${Math.round((stat.submitCount - ydCount) / ydCount * 100)}% 어제 대비`
+          : `-${Math.round((ydCount - stat.submitCount) / ydCount * 100)}% 어제 대비`)
+      : null;
+    drawStatCard(20, "총 프롬프트", formatNumber(stat.submitCount), "개", chip1);
+
+    // Card 2: 평균 프롬프트 (chip = 전날 대비)
+    const todayAvg = stat.avgFinalChars || 0;
+    const chip2 = ydAvgChars > 0 && todayAvg > 0
+      ? (todayAvg >= ydAvgChars
+          ? `+${Math.round((todayAvg - ydAvgChars) / ydAvgChars * 100)}% 전날 대비`
+          : `-${Math.round((ydAvgChars - todayAvg) / ydAvgChars * 100)}% 전날 대비`)
+      : null;
+    drawStatCard(174, "평균 프롬프트", formatNumber(todayAvg), "자", chip2);
+
+    // Bar chart label
+    txt("평균 프롬프트 길이", 20, 241, 8, "500", C.muted);
+
+    // Bar chart (total 300px wide)
+    const bx = 20, by = 255, bw = 300, bh = 8;
+    const lW = Math.round(bw * stat.lowRatioPct / 100);
+    const mW = Math.round(bw * stat.mediumRatioPct / 100);
+    const hW = bw - lW - mW;
+    const totalPct = stat.lowRatioPct + stat.mediumRatioPct + stat.highRatioPct;
+    if (totalPct > 0) {
+      if (lW > 0) fillRR(bx, by, lW, bh, 4, C.brand);
+      if (mW > 0) fillRR(bx + lW, by, mW, bh, 4, C.orange);
+      if (hW > 0) fillRR(bx + lW + mW, by, hW, bh, 4, C.red);
+    } else {
+      fillRR(bx, by, bw, bh, 4, "#e5e5d8");
+    }
+
+    // Legend
+    fillRR(20, 274, 6, 6, 3, C.brand);
+    txt(`낮음 ${Math.round(stat.lowRatioPct)}%`, 30, 271, 10, "500", C.sub);
+    fillRR(81, 274, 6, 6, 3, C.orange);
+    txt(`중간 ${Math.round(stat.mediumRatioPct)}%`, 91, 271, 10, "500", C.sub);
+    fillRR(142, 274, 6, 6, 3, C.red);
+    txt(`높음 ${Math.round(stat.highRatioPct)}%`, 152, 271, 10, "500", C.sub);
+
+    // Divider
+    ctx.strokeStyle = C.border;
+    ctx.lineWidth = S;
+    ctx.beginPath();
+    ctx.moveTo(20 * S, 292 * S); ctx.lineTo(320 * S, 292 * S);
+    ctx.stroke();
+
+    // Streak card
+    fillRR(20, 303, 300, 60, 12, C.white);
+    strokeRR(20, 303, 300, 60, 12, C.border, 1);
+
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(reportDate); d.setDate(d.getDate() - i);
+      if ((latestDaily[formatDateKey(d)]?.submitCount || 0) > 0) streak++;
+      else break;
+    }
+    const streakTitle = streak >= 2 ? `${streak}일 연속 Groo 사용 중!` : "오늘도 Groo 사용 중!";
+
+    let peakStr = "사용 패턴을 분석 중이에요";
+    if (stat.peakHour !== null && stat.peakHour !== undefined) {
+      const h = stat.peakHour;
+      peakStr = `${h < 12 ? "오전" : "오후"} ${h % 12 === 0 ? 12 : h % 12}시에 가장 활발해요`;
+    }
+
+    // Precisely center two-line text block in streak card (y=303, h=60)
+    {
+      // textBaseline MUST be set before measureText so actualBoundingBoxAscent/Descent are relative to the alphabetic baseline
+      ctx.textBaseline = "alphabetic";
+      ctx.font = `700 ${12 * S}px ${KO}`;
+      const m1 = ctx.measureText(streakTitle);
+      ctx.font = `500 ${10 * S}px ${KO}`;
+      const m2 = ctx.measureText(peakStr);
+      const gap = 5 * S;
+      const blockH = m1.actualBoundingBoxAscent + m1.actualBoundingBoxDescent + gap + m2.actualBoundingBoxAscent + m2.actualBoundingBoxDescent;
+      const cardCY = (303 + 30) * S;
+      const l1base = cardCY - blockH / 2 + m1.actualBoundingBoxAscent;
+      const l2base = l1base + m1.actualBoundingBoxDescent + gap + m2.actualBoundingBoxAscent;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillStyle = C.dark;
+      ctx.font = `700 ${12 * S}px ${KO}`;
+      ctx.fillText(streakTitle, 37 * S, l1base);
+      ctx.fillStyle = C.muted;
+      ctx.font = `500 ${10 * S}px ${KO}`;
+      ctx.fillText(peakStr, 37 * S, l2base);
+    }
+
+    // Footer
+    txt("© 2026 Groo. B개발구역.", 170, 447, 8, "500", C.sub, "center", "middle");
+
+    // ── Export ────────────────────────────────────────────────
     canvas.toBlob((blob) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
