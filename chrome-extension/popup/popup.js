@@ -916,7 +916,7 @@ async function downloadShareImage() {
     }, "image/png");
 
   } finally {
-    if (nodes.shareImageBtn) { nodes.shareImageBtn.disabled = false; nodes.shareImageBtn.innerHTML = `리포트 이미지 저장 <span class="beta-tag">(Beta)</span>`; }
+    if (nodes.shareImageBtn) { nodes.shareImageBtn.disabled = false; nodes.shareImageBtn.innerHTML = `리포트 이미지 저장`; }
   }
 }
 
