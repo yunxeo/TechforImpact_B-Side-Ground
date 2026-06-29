@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Groo",
-  "version": "0.3.14",
+  "version": "0.3.16",
   "description": "ChatGPT·Claude·Gemini 입력창의 토큰량을 실시간으로 시각화하고, 맞춤형 프롬프팅 팁과 지침을 제공하는 Groo입니다.",
   "permissions": [
     "storage"
