@@ -3518,7 +3518,17 @@
       if (areaName !== "local") return;
       if (changes[STORAGE_KEYS.SETTINGS]) {
         settings = sanitizeSettings(deepMerge(settings, changes[STORAGE_KEYS.SETTINGS].newValue || {}));
-        if (overlay) overlay.card.dataset.focus = settings.focusMode ? "true" : "false";
+        if (overlay) {
+          overlay.card.dataset.focus = settings.focusMode ? "true" : "false";
+          if (!customCharacterUrl) {
+            const charImg = overlay.card.querySelector(".cp-character");
+            if (charImg) charImg.src = settings.focusMode
+              ? chrome.runtime.getURL("assets/puri_focus.svg")
+              : chrome.runtime.getURL(`assets/puri_${lastLevel || "idle"}.svg`);
+          }
+          const focusBtn = overlay.card.querySelector(".cp-focus-btn");
+          if (focusBtn) focusBtn.classList.toggle("active", settings.focusMode);
+        }
         handleTextChange();
       }
       if (ONBOARDING_KEY in changes && changes[ONBOARDING_KEY].newValue !== true) {
