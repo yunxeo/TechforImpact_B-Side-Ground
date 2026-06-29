@@ -2430,7 +2430,7 @@
       },
       {
         title: "내가 좋아하는 캐릭터로 뱃지를 꾸며보세요",
-        htmlBody: `<p style="font-size:13px;color:#5e5e57;line-height:1.6;margin-bottom:8px">좋아하는 캐릭터 이미지를 검색하고<br>배경을 제거한 다음 업로드하면 돼요.</p><div class="customize-examples" style="margin-bottom:12px;justify-content:center"><div class="customize-ex default"><img src="${puriMap.low}" alt="기본 그루" /><span>기본 그루</span></div><div class="customize-arrow">→</div><div class="customize-ex custom"><div class="customize-placeholder"><span>✦</span><small>내 이미지</small></div><span>나만의 캐릭터</span></div></div><div class="customize-steps"><div class="customize-step"><span class="step-num">1</span><p>그루 뱃지 클릭</p></div><div class="customize-step"><span class="step-num">2</span><p>그루 캐릭터 클릭 후 연필 아이콘 선택</p></div><div class="customize-step"><span class="step-num">3</span><p>원하는 이미지 업로드</p></div></div><input type="file" accept="image/*" class="ob-char-upload-input" style="display:none" /><button class="ob-upload-btn" id="obCustomizeUpload">🖼 지금 이미지 업로드하기</button><p class="ob-upload-skip">나중에 할게요 →</p>`
+        htmlBody: `<p style="font-size:13px;color:#5e5e57;line-height:1.6;margin-bottom:8px">좋아하는 캐릭터 이미지를 검색하고<br>배경을 제거한 다음 업로드하면 돼요.</p><div class="customize-examples" style="margin-bottom:12px;justify-content:center"><div class="customize-ex default"><img src="${puriMap.low}" alt="기본 그루" /><span>기본 그루</span></div><div class="customize-arrow">→</div><div class="customize-ex custom"><div class="customize-placeholder"><span>✦</span><small>내 이미지</small></div><span>나만의 캐릭터</span></div></div><div class="customize-steps"><div class="customize-step"><span class="step-num">1</span><p>그루 뱃지 클릭</p></div><div class="customize-step"><span class="step-num">2</span><p>그루 캐릭터 클릭 후 연필 아이콘 선택</p></div><div class="customize-step"><span class="step-num">3</span><p>원하는 이미지 업로드</p></div></div><input type="file" accept="image/*" class="ob-char-upload-input" style="display:none" /><button class="ob-upload-btn" id="obCustomizeUpload">지금 이미지 업로드하기</button><p class="ob-upload-skip">나중에 할게요 →</p>`
       },
       {
         title: "오늘 얼마나 썼는지 확인해봐요",
@@ -3518,6 +3518,7 @@
       if (areaName !== "local") return;
       if (changes[STORAGE_KEYS.SETTINGS]) {
         settings = sanitizeSettings(deepMerge(settings, changes[STORAGE_KEYS.SETTINGS].newValue || {}));
+        if (overlay) overlay.card.dataset.focus = settings.focusMode ? "true" : "false";
         handleTextChange();
       }
       if (ONBOARDING_KEY in changes && changes[ONBOARDING_KEY].newValue !== true) {
